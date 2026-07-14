@@ -1,0 +1,20 @@
+# Repository-scoped copy for Codex sessions opened directly in GenericGachaRPG.
+
+[mcp_servers.unityMCP]
+command = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/uv/0.11.28/uvx.exe"
+args = ["--offline", "--python", "3.12.13", "--from", "mcpforunityserver==10.1.0", "mcp-for-unity", "--transport", "stdio", "--default-instance", "GenericGachaRPG", "--project-scoped-tools"]
+cwd = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG"
+startup_timeout_sec = 120
+tool_timeout_sec = 300
+required = false
+default_tools_approval_mode = "writes"
+env = { SystemRoot = "C:\\Windows", UV_CACHE_DIR = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/uv/cache", UV_PYTHON_INSTALL_DIR = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/uv/python", UV_PYTHON_CACHE_DIR = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/uv/python-cache", UV_PYTHON_PREFERENCE = "only-managed", UV_LINK_MODE = "copy", UV_TOOL_DIR = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/uv/tools", UV_TOOL_BIN_DIR = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/uv/bin", UV_NO_MODIFY_PATH = "1", PYTHONUTF8 = "1", PYTHONIOENCODING = "utf-8", UNITY_MCP_STATUS_DIR = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/UnityMCPStatus", UNITY_MCP_PROJECT_SCOPED_TOOLS = "1", UNITY_MCP_PROJECT_ISOLATED = "1", UNITY_MCP_ALLOW_GLOBAL_EDITOR_PREFS = "0", UNITY_MCP_DISABLE_TELEMETRY = "1", MCP_DISABLE_TELEMETRY = "1", DISABLE_TELEMETRY = "1", HOME = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/Home", USERPROFILE = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/Home", XDG_CONFIG_HOME = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/XDG/Config", XDG_CACHE_HOME = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/XDG/Cache", XDG_DATA_HOME = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/XDG/Data", XDG_STATE_HOME = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/XDG/State", APPDATA = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/AppData/Roaming", LOCALAPPDATA = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/AppData/Local", TEMP = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/Temp", TMP = "C:/Users/yshaw/OneDrive/Desktop/Game-jjk/GenericGachaRPG/_ProjectTools/runtime/Temp" }
+
+[mcp_servers.unityMCP.tools.execute_code]
+approval_mode = "prompt"
+
+[mcp_servers.unityMCP.tools.execute_menu_item]
+approval_mode = "prompt"
+
+[mcp_servers.unityMCP.tools.manage_packages]
+approval_mode = "prompt"

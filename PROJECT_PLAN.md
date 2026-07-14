@@ -1,7 +1,7 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v1.3-studioops  
-> 当前状态：P0 垂直切片已完成并生成 Windows 试玩版；本地版本基线已建立，长期制作基础设施正在接入  
+> 计划版本：v1.4-infrastructure<br>
+> 当前状态：P0 垂直切片、Windows 试玩版与项目内长期制作基础设施已完成；1 个项目外残留待用户授权清理<br>
 > 最近更新：2026-07-14  
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文  
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
@@ -69,7 +69,9 @@ PROJECT_PLAN.md
 - Unity 已安装 Windows Standalone 与 WebGL Build Support。
 - Git 与 Git LFS 已在本项目本地启用。Python 仅可用于已批准、项目内隔离的工具流程；不得写入系统环境或其他项目。
 - Blender 当前未安装，且 P0 不需要 Blender。程序化角色全部由 Unity Primitive 创建。
-- 当前 Unity 组件已经足够创建、编译、测试并试玩 P0 Demo；本轮实际没有下载、安装或引入任何额外工具与第三方资产。
+- 长期制作基础设施已固定使用便携 `uv 0.11.28`、uv 管理的 CPython `3.12.13`、`mcpforunityserver==10.1.0` 与嵌入式 `CoplayDev/unity-mcp 10.1.0-project.1`；上游基线固定到 v10.1.0 / 提交 `c14de1e6dc01ab42d2bb358730cff954bce0ce6b`。
+- 所有下载、缓存、Python、临时运行状态与 MCP 状态均位于 `_ProjectTools/`；没有修改系统 PATH，没有创建远程仓库，也没有安装 Blender 或接入外部资产服务。
+- Codex 与 Python MCP Server 使用项目内 stdio；Python Server 与 Unity Editor 之间的 MCP 桥接仅使用 `127.0.0.1:6400` 回环端口。未启用 MCP HTTP `8080`、LAN/远程 HTTP 或遥测；用户客户端配置和机器级 Unity 偏好写入默认禁用。
 
 ### 用户授予的工具下载权限与强制隔离规则
 
@@ -794,13 +796,14 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.2 已保存并同步实际交付状态 | 2026-07-13 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.4 已保存并同步实际交付状态 | 2026-07-14 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
 | 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 六角色/三技能/一抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-13 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
 | 阶段 3：3v3 战斗核心 | 已完成 | 确定性自动战斗 | 固定 Tick、同 Seed 完整事件序列一致；胜负与超时验证通过 | 2026-07-13 |
 | 阶段 4：表现与场景 | 已完成 | 角色、UI、VFX、Generator、Scene | 程序化角色、运行时 UI、表现层及场景已在 Unity Play Mode 实测 | 2026-07-13 |
 | 阶段 5：P0 验证与试玩 | 已完成 | 可重复试玩的完整流程与 Windows Build | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS`；详见 `VerificationReport.md` | 2026-07-13 |
+| 长期制作基础设施 | 已完成（清理待授权） | 本地 Git/LFS、`AGENTS.md`、StudioOps、项目级 `.codex/config.toml`、嵌入式隔离 Unity MCP、隔离 uv/Python 与 Editor Bootstrap | 48 工具离线协议复测、`UNITY_MCP_SMOKE_PASS`、P0/Play 回归与最终 Windows 构建均通过；项目外残留详见 `VerificationReport.md` | 2026-07-14 |
 | 阶段 6：P1 | 未开始 | 十连、碎片、升级、润色等 | — | — |
 
 状态仅使用：`未开始 / 进行中 / 已完成 / 阻塞`。
@@ -824,7 +827,9 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-13 | P0 以三组自动验证作为完成门槛 | 防止只写代码但未编译或未实际走流程 | 核心验证、Play Mode UI 冒烟和 Windows Build 全部留下 PASS 标记 |
 | 2026-07-14 | 仅在 `GenericGachaRPG` 内建立 Git/Git LFS 基线 | 长期项目必须先具备可靠回滚，同时隔离同级分析与 XAPK | 已创建 `main` 基线提交 `27ac1da`；没有远程仓库，生成目录和本地工具被忽略 |
 | 2026-07-14 | 采用精简的 Codex 原生 `StudioOps`，不安装 Claude-Code-Game-Studios/BMAD | 现有主计划已经完整，项目真正缺少当前工作包、美术契约和资产台账 | 以 `AGENTS.md`、五个 StudioOps 文件和八类按需职责替代重型虚拟工作室框架 |
-| 2026-07-14 | 固定接入 `CoplayDev/unity-mcp v10.1.0` | 为长期任务补齐 Codex 直接查看和操作 Unity Editor 的桥梁 | 仅使用项目内便携 uv 与 stdio；禁用遥测/远程访问，写操作保持审批，安装后必须验证 Unity 6000.5 兼容性 |
+| 2026-07-14 | 以 `10.1.0-project.1` 嵌入并隔离 `CoplayDev/unity-mcp v10.1.0` | 上游自动设置、更新、HTTP 与用户级偏好路径不满足严格项目边界 | 保留上游提交和 MIT 许可证；在 Unity 6000.5.3f1 完成 48 工具离线连接、P0 与 Windows Build 回归；仅保留项目 stdio + `127.0.0.1:6400` MCP 回环，遥测和全局配置写入默认禁用 |
+| 2026-07-14 | 不擅自清理项目外残留 | 隔离加固前的验证意外创建 `C:\Users\yshaw\AppData\Local\UnityMCP`，用户要求不得越界操作 | 已封堵未来外部写入；未读取或删除该目录，等待用户明确授权后只清理这一精确路径 |
+| 2026-07-14 | 项目级 Codex MCP 配置作为后续任务入口 | 当前任务不会热加载新建的 `.codex/config.toml` | 新 Codex 任务或应用重启并信任项目后加载；当前 Unity Bridge 与手动 MCP 协议验证已通过 |
 
 ---
 

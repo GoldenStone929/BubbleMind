@@ -29,7 +29,9 @@
 - Unity 采用 Visible Meta Files 与 Force Text；新增、移动或删除 `Assets/` 内容时必须保持 `.meta` 一致。
 - 工程已经打开时，不启动会冲突的第二个 Editor 实例，也不强制关闭用户的 Unity。
 - Package 变更必须固定版本，并同步提交 `Packages/manifest.json` 与 `Packages/packages-lock.json`。
-- Unity MCP 默认仅使用本机 stdio；不启用 LAN/远程 HTTP，不接入外部资产服务或 API Key。
+- Codex 侧仅使用项目内 stdio MCP Server；Unity 内部桥接只允许 `127.0.0.1:6400` 回环通信，状态写入 `_ProjectTools/runtime/UnityMCPStatus`；禁止 LAN、远程 HTTP、遥测、全局配置写入、外部资产服务和 API Key。
+- Unity MCP 使用项目内嵌入包 `Packages/com.coplaydev.unity-mcp`；上游设置窗口、自动更新和客户端配置器在隔离模式中被禁用。不得绕过隔离补丁或把包改回全局配置流程。
+- 通过 Unity MCP 创建、加载或保存场景时只使用 `Assets/_Game/` 下的项目相对路径；不得传入绝对路径或 `..`。
 
 ## 依赖与下载
 
