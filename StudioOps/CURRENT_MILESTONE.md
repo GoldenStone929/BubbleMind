@@ -44,11 +44,11 @@ Unity 游戏资产：Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/
 
 | 阶段 | 状态 | 完成门槛 |
 |---|---|---|
-| 1. 审计与交接 | 进行中 | Claude 日志、Git、Unity、参考图和安全边界均已核实；延期事项写入 Markdown |
-| 2. 角色规格与来源登记 | 进行中 | Asset Spec、Art Bible、资产台账和第三方记录一致 |
+| 1. 审计与交接 | 已完成 | Claude 日志、Git、Unity、参考图和安全边界均已核实；延期事项写入 Markdown |
+| 2. 角色规格与来源登记 | 已完成 | Asset Spec、Art Bible、资产台账和第三方记录一致 |
 | 3. Tripo 候选 | 跳过（余额 0） | 余额检查为 available 0 / frozen 0；未上传、未建任务、未消费 |
-| 4. Blender 本地建模与清理 | 待开始 | 轮廓、比例、法线、拓扑、UV、材质槽、Pivot 与导出符合规格 |
-| 5. Unity 集成 | 待开始 | URP 材质、Prefabs、Sockets、CharacterView 与战斗数据接通 |
+| 4. Blender 本地建模与清理 | 已完成 | 可重复脚本、`.blend`、FBX、轮廓、法线、拓扑、3 材质槽、Pivot 与 4,632 三角面审计通过 |
+| 5. Unity 集成 | 进行中 | 模型已由 Unity 6000.5.3f1 成功导入；URP 材质、Prefab、Sockets、CharacterView 与战斗数据待接通 |
 | 6. 验证与交付 | 待开始 | 编译、场景显示、Play 冒烟、性能检查和 Windows Build 回归通过 |
 
 ## 美术方向
@@ -83,4 +83,4 @@ Unity 游戏资产：Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/
 
 ## 当前恢复点
 
-如果任务中断，下一代理应先阅读本文件、角色 Asset Spec 与 `DEFERRED_WORK.md`，检查 Git/Unity 实际状态，再从表格中第一个未完成阶段继续；不得重新从空项目开始。
+如果任务中断，下一代理应先阅读本文件、角色 Asset Spec、`MILESTONES/2026-07-14_COSMIC_SLIME_MODEL.md` 与 `DEFERRED_WORK.md`，检查 Git/Unity 实际状态，再从阶段 5 Unity 集成继续；不得重新从空项目开始或覆盖已验证的 Blender 基线。
