@@ -100,20 +100,91 @@ namespace GenericGachaRPG.Editor
                 return false;
             }
 
+            for (int i = 0; i < database.Characters.Count; i++)
+            {
+                CharacterDefinition character = database.Characters[i];
+                if (character == null ||
+                    !IsFinitePositive(character.AttackRange) ||
+                    !IsFinitePositive(character.MoveSpeed))
+                {
+                    return false;
+                }
+            }
+
             GachaBannerDefinition banner = database.DefaultBanner;
             if (banner == null || banner.Entries.Count != 6 || banner.TotalWeight <= 0f)
             {
                 return false;
             }
 
+            if (database.StarterCharacterIds.Count != TeamFormationState.RequiredMemberCount ||
+                !string.Equals(database.StarterCharacterIds[0], "ur_cosmic_slime", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < banner.Entries.Count; i++)
+            {
+                GachaPoolEntry entry = banner.Entries[i];
+                CharacterDefinition standardCharacter = entry == null
+                    ? null
+                    : database.GetCharacter(entry.CharacterId);
+                if (standardCharacter == null || standardCharacter.IsLimited)
+                {
+                    return false;
+                }
+            }
+
             CharacterDefinition cosmicSlime = database.GetCharacter("ur_cosmic_slime");
+            SkillDefinition spectrumNova = database.GetSkill("spectrum_nova");
             return cosmicSlime != null &&
-                   cosmicSlime.Rarity == Rarity.UltraRare &&
+                   cosmicSlime.Role == CharacterRole.Guardian &&
+                   cosmicSlime.Rarity == Rarity.UR &&
+                   cosmicSlime.IsLimited &&
+                   cosmicSlime.AttackRange <= BattleRules.GuardianAttackRange + BattleRules.RangeEpsilon &&
                    cosmicSlime.CharacterPrefab != null &&
+                   HasRarity(database, "azure_vanguard", Rarity.R) &&
+                   HasRarity(database, "ember_striker", Rarity.R) &&
+                   HasRarity(database, "verdant_medic", Rarity.SR) &&
+                   HasRarity(database, "violet_arcanist", Rarity.SR) &&
+                   HasRarity(database, "gold_ranger", Rarity.SSR) &&
+                   HasRarity(database, "cyan_warden", Rarity.SSR) &&
+                   HasCombatProfile(database, "azure_vanguard", 1.45f, 3.2f) &&
+                   HasCombatProfile(database, "ember_striker", 1.55f, 4.2f) &&
+                   HasCombatProfile(database, "verdant_medic", 4.4f, 3.0f) &&
+                   HasCombatProfile(database, "ur_cosmic_slime", 1.45f, 3.3f) &&
+                   HasCombatProfile(database, "violet_arcanist", 3.8f, 3.4f) &&
+                   HasCombatProfile(database, "gold_ranger", 4.6f, 3.8f) &&
+                   HasCombatProfile(database, "cyan_warden", 1.55f, 3.15f) &&
                    AssetDatabase.LoadAssetAtPath<Material>(AbyssalObservatoryAssetBuilder.BackdropMaterialPath) != null &&
                    database.GetSkill("pulse_strike") != null &&
-                   database.GetSkill("spectrum_nova") != null &&
+                   spectrumNova != null &&
+                   spectrumNova.TargetMode == SkillTargetMode.AllEnemies &&
+                   spectrumNova.TargetCount == BattleRules.TeamSize &&
                    database.GetSkill("restore_wave") != null;
+        }
+
+        private static bool HasRarity(GameDatabase database, string characterId, Rarity expectedRarity)
+        {
+            CharacterDefinition character = database.GetCharacter(characterId);
+            return character != null && character.Rarity == expectedRarity && !character.IsLimited;
+        }
+
+        private static bool IsFinitePositive(float value)
+        {
+            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static bool HasCombatProfile(
+            GameDatabase database,
+            string characterId,
+            float expectedAttackRange,
+            float expectedMoveSpeed)
+        {
+            CharacterDefinition character = database.GetCharacter(characterId);
+            return character != null &&
+                   Mathf.Approximately(character.AttackRange, expectedAttackRange) &&
+                   Mathf.Approximately(character.MoveSpeed, expectedMoveSpeed);
         }
 
         private static GameDatabase GenerateContentIfNeeded()
@@ -147,7 +218,7 @@ namespace GenericGachaRPG.Editor
                 0f,
                 100,
                 0.48f,
-                3,
+                BattleRules.TeamSize,
                 "A wide spectrum blast that hits every opponent.");
             EditorUtility.SetDirty(novaSkill);
 
@@ -174,85 +245,100 @@ namespace GenericGachaRPG.Editor
                     "azure_vanguard",
                     "Azure Vanguard",
                     CharacterRole.Guardian,
-                    Rarity.Common,
+                    Rarity.R,
                     new Color(0.13f, 0.48f, 0.95f, 1f),
                     1620f,
                     116f,
                     58f,
                     1.45f,
+                    1.45f,
+                    3.2f,
                     strikeSkill,
                     "A steady frontline defender."),
                 CreateCharacter(
                     "ember_striker",
                     "Ember Striker",
                     CharacterRole.Striker,
-                    Rarity.Common,
+                    Rarity.R,
                     new Color(0.96f, 0.28f, 0.14f, 1f),
                     1180f,
                     172f,
                     29f,
                     1.12f,
+                    1.55f,
+                    4.2f,
                     strikeSkill,
                     "A fast close-range attacker."),
                 CreateCharacter(
                     "verdant_medic",
                     "Verdant Medic",
                     CharacterRole.Support,
-                    Rarity.Rare,
+                    Rarity.SR,
                     new Color(0.20f, 0.78f, 0.37f, 1f),
                     1250f,
                     122f,
                     34f,
                     1.34f,
+                    4.4f,
+                    3.0f,
                     healSkill,
                     "A support unit that restores weakened allies."),
                 CreateCharacter(
                     "ur_cosmic_slime",
                     "Abyssal Slime",
-                    CharacterRole.Striker,
-                    Rarity.UltraRare,
+                    CharacterRole.Guardian,
+                    Rarity.UR,
                     new Color(0.52f, 0.16f, 0.96f, 1f),
-                    1380f,
-                    186f,
-                    38f,
-                    1.24f,
+                    2280f,
+                    124f,
+                    86f,
+                    1.52f,
+                    1.45f,
+                    3.3f,
                     novaSkill,
-                    "A singularity-born caster that bends the battlefield.",
-                    cosmicSlimePrefab),
+                    "A limited singularity tank that advances first and anchors the frontline.",
+                    cosmicSlimePrefab,
+                    true),
                 CreateCharacter(
                     "violet_arcanist",
                     "Violet Arcanist",
                     CharacterRole.Striker,
-                    Rarity.Rare,
+                    Rarity.SR,
                     new Color(0.62f, 0.25f, 0.91f, 1f),
                     1110f,
                     158f,
                     26f,
                     1.28f,
+                    3.8f,
+                    3.4f,
                     novaSkill,
                     "A ranged caster with a team-wide burst."),
                 CreateCharacter(
                     "gold_ranger",
                     "Gold Ranger",
                     CharacterRole.Striker,
-                    Rarity.Epic,
+                    Rarity.SSR,
                     new Color(0.96f, 0.68f, 0.13f, 1f),
                     1220f,
                     184f,
                     31f,
                     1.02f,
+                    4.6f,
+                    3.8f,
                     strikeSkill,
                     "A precise high-speed specialist."),
                 CreateCharacter(
                     "cyan_warden",
                     "Cyan Warden",
                     CharacterRole.Guardian,
-                    Rarity.Epic,
+                    Rarity.SSR,
                     new Color(0.10f, 0.77f, 0.82f, 1f),
                     1780f,
                     132f,
                     64f,
                     1.50f,
+                    1.55f,
+                    3.15f,
                     novaSkill,
                     "A durable guardian with an area disruption skill.")
             };
@@ -279,7 +365,14 @@ namespace GenericGachaRPG.Editor
             GameDatabase database = GetOrCreateAsset<GameDatabase>(DatabasePath, out _);
             database.Configure(
                 3000,
-                new[] { "azure_vanguard", "ur_cosmic_slime", "verdant_medic" },
+                new[]
+                {
+                    "ur_cosmic_slime",
+                    "ember_striker",
+                    "verdant_medic",
+                    "violet_arcanist",
+                    "gold_ranger"
+                },
                 characters,
                 skills,
                 new[] { banner });
@@ -298,9 +391,12 @@ namespace GenericGachaRPG.Editor
             float attack,
             float defense,
             float attackInterval,
+            float attackRange,
+            float moveSpeed,
             SkillDefinition skill,
             string description,
-            GameObject prefab = null)
+            GameObject prefab = null,
+            bool isLimited = false)
         {
             string path = $"{CharacterFolder}/Character_{id}.asset";
             CharacterDefinition character = GetOrCreateAsset<CharacterDefinition>(path, out _);
@@ -314,13 +410,16 @@ namespace GenericGachaRPG.Editor
                 attack,
                 defense,
                 attackInterval,
+                attackRange,
+                moveSpeed,
                 100,
                 24,
                 12,
                 skill,
                 description,
                 null,
-                prefab);
+                prefab,
+                isLimited);
             EditorUtility.SetDirty(character);
 
             return character;
@@ -343,7 +442,7 @@ namespace GenericGachaRPG.Editor
             Camera camera = cameraObject.GetComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.025f, 0.045f, 0.085f, 1f);
-            camera.fieldOfView = 43f;
+            camera.fieldOfView = 46f;
             camera.transform.position = new Vector3(0f, 5.6f, -12.8f);
             camera.transform.rotation = Quaternion.LookRotation(new Vector3(0f, 1.15f, 0f) - camera.transform.position);
 

@@ -12,8 +12,11 @@ namespace GenericGachaRPG.Editor
 
         private const string MaterialFolder = "Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/Materials";
         private const string ShellMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_Shell.mat";
+        private const string NebulaMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_Nebula.mat";
         private const string CoreMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_Core.mat";
+        private const string BlackCoreMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_BlackCore.mat";
         private const string OrbitMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_Orbit.mat";
+        private const string OrbitTrimMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_OrbitTrim.mat";
 
         public static GameObject EnsureAssets()
         {
@@ -23,24 +26,45 @@ namespace GenericGachaRPG.Editor
 
             Material shell = EnsureMaterial(
                 ShellMaterialPath,
-                new Color(0.055f, 0.008f, 0.16f, 0.93f),
-                new Color(0.16f, 0.018f, 0.48f, 1f) * 0.8f,
-                0.08f,
-                0.84f,
+                new Color(0.004f, 0.0005f, 0.014f, 0.82f),
+                new Color(0.025f, 0.002f, 0.075f, 1f) * 0.24f,
+                0f,
+                0.90f,
                 true);
+            Material nebula = EnsureMaterial(
+                NebulaMaterialPath,
+                new Color(0.008f, 0.0005f, 0.025f, 1f),
+                new Color(0.07f, 0.004f, 0.20f, 1f) * 0.34f,
+                0f,
+                0.62f,
+                false);
             Material core = EnsureMaterial(
                 CoreMaterialPath,
-                new Color(0.56f, 0.10f, 1f, 1f),
-                new Color(0.64f, 0.14f, 1f, 1f) * 4.2f,
-                0.05f,
-                0.78f,
+                new Color(0.86f, 0.72f, 1f, 1f),
+                new Color(0.82f, 0.38f, 1f, 1f) * 5.6f,
+                0.02f,
+                0.82f,
+                false);
+            Material blackCore = EnsureMaterial(
+                BlackCoreMaterialPath,
+                Color.black,
+                Color.black,
+                0f,
+                0.02f,
                 false);
             Material orbit = EnsureMaterial(
                 OrbitMaterialPath,
-                new Color(0.28f, 0.15f, 0.34f, 1f),
-                new Color(0.18f, 0.035f, 0.42f, 1f) * 1.15f,
-                0.76f,
-                0.48f,
+                new Color(0.035f, 0.006f, 0.078f, 1f),
+                new Color(0.12f, 0.010f, 0.30f, 1f) * 0.36f,
+                0.74f,
+                0.58f,
+                false);
+            Material orbitTrim = EnsureMaterial(
+                OrbitTrimMaterialPath,
+                new Color(0.30f, 0.16f, 0.055f, 1f),
+                new Color(0.16f, 0.045f, 0.008f, 1f) * 0.18f,
+                0.86f,
+                0.62f,
                 false);
 
             GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
@@ -61,10 +85,11 @@ namespace GenericGachaRPG.Editor
                 model.name = "UR_CosmicSlime_Model";
                 model.transform.SetParent(modelRoot, false);
                 model.transform.localPosition = Vector3.zero;
-                model.transform.localRotation = Quaternion.identity;
-                model.transform.localScale = Vector3.one;
+                // The battle camera is side-on, so a slight three-quarter presentation keeps the facial singularity readable.
+                model.transform.localRotation = Quaternion.Euler(0f, -34f, 0f);
+                model.transform.localScale = Vector3.one * 0.92f;
 
-                AssignMaterials(model, shell, core, orbit);
+                AssignMaterials(model, shell, nebula, core, blackCore, orbit, orbitTrim);
 
                 Transform rightHand = FindDescendant(model.transform, "RightHandSocket") ??
                                       CreateSocket(modelRoot, "RightHand", new Vector3(0.72f, 0.68f, 0f));
@@ -76,7 +101,7 @@ namespace GenericGachaRPG.Editor
                                        CreateSocket(modelRoot, "Projectile", new Vector3(0f, 0.76f, -0.78f));
                 Transform ground = CreateSocket(root.transform, "GroundVfx", new Vector3(0f, 0.03f, 0f));
                 Transform target = CreateSocket(root.transform, "Target", new Vector3(0f, 0.95f, 0f));
-                Transform health = CreateSocket(root.transform, "HealthBar", new Vector3(0f, 1.88f, 0f));
+                Transform health = CreateSocket(root.transform, "HealthBar", new Vector3(0f, 2.35f, 0f));
 
                 view.ConfigureSockets(modelRoot, rightHand, leftHand, skill, projectile, ground, target, health);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
@@ -156,6 +181,7 @@ namespace GenericGachaRPG.Editor
             }
 
             ConfigureSurface(material, transparent);
+            material.enableInstancing = true;
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -197,22 +223,52 @@ namespace GenericGachaRPG.Editor
             }
         }
 
-        private static void AssignMaterials(GameObject model, Material shell, Material core, Material orbit)
+        private static void AssignMaterials(
+            GameObject model,
+            Material shell,
+            Material nebula,
+            Material core,
+            Material blackCore,
+            Material orbit,
+            Material orbitTrim)
         {
             Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < renderers.Length; i++)
             {
                 string objectName = renderers[i].name;
-                Material selected = objectName.StartsWith("Orbit", StringComparison.Ordinal) ||
-                                    objectName == "ForeheadSigilInner" ||
-                                    objectName == "SingularityCore"
-                    ? orbit
-                    : objectName.StartsWith("Eye", StringComparison.Ordinal) ||
-                      objectName.StartsWith("CosmicDroplet", StringComparison.Ordinal) ||
-                      objectName == "ForeheadSigil" ||
-                      objectName == "SingularityAccretion"
-                        ? core
-                        : shell;
+                Material selected;
+                if (objectName.StartsWith("OrbitTrim", StringComparison.Ordinal))
+                {
+                    selected = orbitTrim;
+                }
+                else if (objectName.StartsWith("OrbitBand", StringComparison.Ordinal))
+                {
+                    selected = orbit;
+                }
+                else if (objectName == "NebulaInner")
+                {
+                    selected = nebula;
+                }
+                else if (objectName == "SingularityCore" || objectName == "ForeheadSigilInner")
+                {
+                    selected = blackCore;
+                }
+                else if (objectName.StartsWith("Eye", StringComparison.Ordinal) ||
+                         objectName.StartsWith("CosmicDroplet", StringComparison.Ordinal) ||
+                         objectName.StartsWith("AccretionSpiral", StringComparison.Ordinal) ||
+                         objectName.StartsWith("NebulaVeil", StringComparison.Ordinal) ||
+                         objectName == "StarCloudPoints" ||
+                         objectName == "ForeheadSigil" ||
+                         objectName == "SingularityAccretion" ||
+                         objectName == "Horn_Center" ||
+                         objectName == "Horn_RightFluid")
+                {
+                    selected = core;
+                }
+                else
+                {
+                    selected = shell;
+                }
                 Material[] slots = renderers[i].sharedMaterials;
                 for (int slot = 0; slot < slots.Length; slot++)
                 {

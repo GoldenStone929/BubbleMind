@@ -17,6 +17,7 @@ MonoBehaviour:
   description: A precise high-speed specialist.
   role: 1
   rarity: 2
+  isLimited: 0
   displayColor: {r: 0.96, g: 0.68, b: 0.13, a: 1}
   portrait: {fileID: 0}
   characterPrefab: {fileID: 0}
@@ -24,6 +25,8 @@ MonoBehaviour:
   attack: 184
   defense: 31
   attackInterval: 1.02
+  attackRange: 4.6
+  moveSpeed: 3.8
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12

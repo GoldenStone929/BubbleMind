@@ -42,7 +42,7 @@ namespace GenericGachaRPG
     [Serializable]
     public sealed class TeamFormationState
     {
-        public const int RequiredMemberCount = 3;
+        public const int RequiredMemberCount = BattleRules.TeamSize;
 
         [SerializeField] private List<string> characterIds = new List<string>();
 
@@ -97,7 +97,7 @@ namespace GenericGachaRPG
     [Serializable]
     public sealed class PlayerState
     {
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         [SerializeField] private int schemaVersion = CurrentSchemaVersion;
         [Min(0), SerializeField] private int currency;

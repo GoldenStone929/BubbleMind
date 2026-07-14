@@ -20,7 +20,7 @@ namespace GenericGachaRPG
         [SerializeField] private bool buildVisualsIfMissing = true;
         [SerializeField] private bool faceCamera = true;
         [Min(0.1f)] [SerializeField] private float interpolationSpeed = 6f;
-        [Min(0.001f)] [SerializeField] private float worldScale = 0.0065f;
+        [Min(0.001f)] [SerializeField] private float worldScale = 0.0056f;
         [SerializeField] private int sortingOrder = 30;
 
         [Header("Colors")]

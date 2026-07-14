@@ -5,22 +5,14 @@ using System.Collections.ObjectModel;
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Immutable, fixed-slot input for one side of a P0 battle.
+    /// Immutable, fixed-slot input for one side of a battle.
     /// </summary>
     public sealed class BattleTeam
     {
-        public const int RequiredMemberCount = 3;
+        public const int RequiredMemberCount = BattleRules.TeamSize;
 
         private readonly CharacterDefinition[] _members;
         private readonly ReadOnlyCollection<CharacterDefinition> _readOnlyMembers;
-
-        public BattleTeam(
-            CharacterDefinition slot0,
-            CharacterDefinition slot1,
-            CharacterDefinition slot2)
-            : this(new[] { slot0, slot1, slot2 })
-        {
-        }
 
         public BattleTeam(IEnumerable<CharacterDefinition> members)
         {

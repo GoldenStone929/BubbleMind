@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace GenericGachaRPG
 {
     /// <summary>
@@ -17,7 +19,9 @@ namespace GenericGachaRPG
             float healthAfter,
             int energyAfter,
             string skillId,
-            BattleOutcome outcome)
+            BattleOutcome outcome,
+            Vector3 actorPositionAfter,
+            float duration)
         {
             Sequence = sequence;
             Tick = tick;
@@ -34,6 +38,8 @@ namespace GenericGachaRPG
             EnergyAfter = energyAfter;
             SkillId = skillId;
             Outcome = outcome;
+            ActorPositionAfter = actorPositionAfter;
+            Duration = duration;
         }
 
         public long Sequence { get; }
@@ -65,5 +71,9 @@ namespace GenericGachaRPG
         public string SkillId { get; }
 
         public BattleOutcome Outcome { get; }
+
+        public Vector3 ActorPositionAfter { get; }
+
+        public float Duration { get; }
     }
 }

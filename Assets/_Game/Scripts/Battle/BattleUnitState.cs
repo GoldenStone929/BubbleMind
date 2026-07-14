@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace GenericGachaRPG
 {
@@ -24,6 +25,12 @@ namespace GenericGachaRPG
             Attack = SanitizeNonNegative(definition.Attack);
             Defense = SanitizeNonNegative(definition.Defense);
             AttackInterval = SanitizePositive(definition.AttackInterval, BattleContext.DefaultTickDuration);
+            AttackRange = SanitizePositive(
+                definition.AttackRange,
+                BattleRules.GetDefaultAttackRange(definition.Role));
+            MoveSpeed = SanitizePositive(
+                definition.MoveSpeed,
+                BattleRules.GetDefaultMoveSpeed(definition.Role));
             MaxEnergy = Math.Max(0, definition.MaxEnergy);
             EnergyPerAttack = Math.Max(0, definition.EnergyPerAttack);
             EnergyWhenHit = Math.Max(0, definition.EnergyWhenHit);
@@ -31,6 +38,7 @@ namespace GenericGachaRPG
 
             CurrentHealth = MaxHealth;
             CurrentEnergy = 0;
+            CurrentPosition = BattleRules.GetSlotPosition(side, slotIndex);
         }
 
         private BattleUnitState(BattleUnitState source)
@@ -45,12 +53,16 @@ namespace GenericGachaRPG
             Attack = source.Attack;
             Defense = source.Defense;
             AttackInterval = source.AttackInterval;
+            AttackRange = source.AttackRange;
+            MoveSpeed = source.MoveSpeed;
             MaxEnergy = source.MaxEnergy;
             EnergyPerAttack = source.EnergyPerAttack;
             EnergyWhenHit = source.EnergyWhenHit;
             Skill = source.Skill;
             CurrentHealth = source.CurrentHealth;
             CurrentEnergy = source.CurrentEnergy;
+            CurrentPosition = source.CurrentPosition;
+            LockedTargetRuntimeId = source.LockedTargetRuntimeId;
             NextActionTick = source.NextActionTick;
         }
 
@@ -74,6 +86,10 @@ namespace GenericGachaRPG
 
         public float AttackInterval { get; }
 
+        public float AttackRange { get; }
+
+        public float MoveSpeed { get; }
+
         public int MaxEnergy { get; }
 
         public int EnergyPerAttack { get; }
@@ -86,6 +102,10 @@ namespace GenericGachaRPG
 
         public int CurrentEnergy { get; private set; }
 
+        public Vector3 CurrentPosition { get; private set; }
+
+        public string LockedTargetRuntimeId { get; private set; }
+
         public bool IsAlive => CurrentHealth > 0f;
 
         public float HealthNormalized => MaxHealth <= 0f ? 0f : CurrentHealth / MaxHealth;
@@ -95,6 +115,21 @@ namespace GenericGachaRPG
         internal int NextActionTick { get; set; }
 
         internal bool CanCastSkill => Skill != null && MaxEnergy > 0 && CurrentEnergy >= MaxEnergy;
+
+        internal void SetCurrentPosition(Vector3 position)
+        {
+            if (!IsFinite(position.x) || !IsFinite(position.y) || !IsFinite(position.z))
+            {
+                throw new ArgumentOutOfRangeException(nameof(position), "Battle position must be finite.");
+            }
+
+            CurrentPosition = position;
+        }
+
+        internal void LockTarget(BattleUnitState target)
+        {
+            LockedTargetRuntimeId = target == null ? null : target.RuntimeId;
+        }
 
         internal float ApplyDamage(float requestedDamage)
         {
@@ -158,6 +193,11 @@ namespace GenericGachaRPG
         private static float SanitizeNonNegative(float value)
         {
             return value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value) ? value : 0f;
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
     }
 }

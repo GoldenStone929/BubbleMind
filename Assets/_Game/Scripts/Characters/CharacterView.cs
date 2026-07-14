@@ -63,10 +63,13 @@ namespace GenericGachaRPG
         private readonly List<RendererColorInfo> rendererColors = new List<RendererColorInfo>();
         private Coroutine activeAction;
         private Coroutine idleRoutine;
+        private Coroutine movementRoutine;
         private Vector3 restLocalPosition;
         private Quaternion restLocalRotation;
         private Vector3 restLocalScale = Vector3.one;
+        private Vector3 spawnWorldPosition;
         private bool restPoseCaptured;
+        private bool spawnPositionCaptured;
         private bool isDead;
 
         public Transform ModelRoot => modelRoot != null ? modelRoot : transform;
@@ -81,6 +84,8 @@ namespace GenericGachaRPG
         public CharacterViewState State { get; private set; } = CharacterViewState.Idle;
         public bool IsDead => isDead;
         public bool UsesAnimator => animator != null && animator.runtimeAnimatorController != null;
+        public bool HasPerformedApproach { get; private set; }
+        public float MaximumRootTravelDistance { get; private set; }
 
         /// <summary>Raised when the visible state changes. It never changes battle state.</summary>
         public event Action<CharacterView, CharacterViewState> StateChanged;
@@ -96,6 +101,7 @@ namespace GenericGachaRPG
                 animator = GetComponentInChildren<Animator>();
             }
 
+            CaptureSpawnPosition();
             CaptureRestPose();
             RefreshRenderers();
         }
@@ -111,6 +117,7 @@ namespace GenericGachaRPG
         private void OnDisable()
         {
             StopAllPresentationCoroutines(false);
+            StopRootMovement(false);
         }
 
         /// <summary>
@@ -198,6 +205,67 @@ namespace GenericGachaRPG
             return activeAction;
         }
 
+        /// <summary>
+        /// Plays a basic attack whose authored impact is synchronized with the
+        /// deterministic simulation hit. World movement is driven separately by
+        /// UnitMoved events and is never rolled back by an attack.
+        /// </summary>
+        public Coroutine PlayBasicAttack(
+            Vector3 targetWorldPosition,
+            float impactDelay,
+            Action onImpact = null)
+        {
+            if (isDead || !isActiveAndEnabled)
+            {
+                return null;
+            }
+
+            StopAllPresentationCoroutines(true);
+            activeAction = StartCoroutine(PlayTimedBasicAttack(
+                targetWorldPosition,
+                Mathf.Max(0.05f, impactDelay),
+                onImpact));
+            return activeAction;
+        }
+
+        public Coroutine PlayBasicAttack(
+            Transform target,
+            float impactDelay,
+            Action onImpact = null)
+        {
+            Vector3 targetWorldPosition = target != null
+                ? target.position
+                : transform.position + transform.forward * 2f;
+            if (isDead || !isActiveAndEnabled)
+            {
+                return null;
+            }
+
+            StopAllPresentationCoroutines(true);
+            activeAction = StartCoroutine(PlayTimedBasicAttack(
+                targetWorldPosition,
+                Mathf.Max(0.05f, impactDelay),
+                onImpact));
+            return activeAction;
+        }
+
+        /// <summary>Moves the world root to a deterministic position and stays there.</summary>
+        public Coroutine MoveRootTo(Vector3 destinationWorldPosition, float duration)
+        {
+            if (isDead || !isActiveAndEnabled)
+            {
+                return null;
+            }
+
+            StopRootMovement(false);
+            destinationWorldPosition.y = transform.position.y;
+            FaceTarget(destinationWorldPosition);
+            movementRoutine = StartCoroutine(MoveRootPersistent(
+                destinationWorldPosition,
+                Mathf.Max(0f, duration)));
+            return movementRoutine;
+        }
+
         public Coroutine PlaySkill(Action onImpact = null)
         {
             return PlaySkill(transform.position + transform.forward * 2f, onImpact);
@@ -254,6 +322,7 @@ namespace GenericGachaRPG
             }
 
             StopAllPresentationCoroutines(true);
+            StopRootMovement(false);
             isDead = true;
             activeAction = StartCoroutine(HasAnimatorTrigger(deathTrigger) ? PlayAnimatorDeath() : PlayFallbackDeath());
             return activeAction;
@@ -263,7 +332,10 @@ namespace GenericGachaRPG
         public void ResetView(bool playIdle = true)
         {
             StopAllPresentationCoroutines(true);
+            StopRootMovement(true);
             isDead = false;
+            HasPerformedApproach = false;
+            MaximumRootTravelDistance = 0f;
             RestoreRendererColors();
             SetState(CharacterViewState.Idle);
 
@@ -395,6 +467,87 @@ namespace GenericGachaRPG
                 restLocalRotation,
                 Vector3.Scale(restLocalScale, new Vector3(0.94f, 1.11f, 0.94f)),
                 restLocalScale);
+
+            RestoreRestPose();
+            activeAction = null;
+            if (!isDead)
+            {
+                BeginIdle();
+            }
+        }
+
+        private IEnumerator PlayTimedBasicAttack(
+            Vector3 targetWorldPosition,
+            float impactDelay,
+            Action onImpact)
+        {
+            SetState(CharacterViewState.Attacking);
+            bool useAnimator = HasAnimatorTrigger(attackTrigger);
+            if (useAnimator)
+            {
+                SetAnimatorTrigger(attackTrigger);
+            }
+
+            bool animateFallbackPose = !useAnimator && ModelRoot != transform;
+            Vector3 localDirection = GetLocalHorizontalDirection(targetWorldPosition, Vector3.forward);
+            Vector3 anticipationPosition = restLocalPosition - localDirection * (lungeDistance * 0.12f);
+            Vector3 strikePosition = restLocalPosition + localDirection * lungeDistance;
+            Quaternion anticipationRotation = restLocalRotation * Quaternion.Euler(-8f, 0f, 0f);
+            Quaternion strikeRotation = restLocalRotation * Quaternion.Euler(13f, 0f, 0f);
+            Vector3 anticipationScale = Vector3.Scale(restLocalScale, new Vector3(1.08f, 0.91f, 1.08f));
+            Vector3 strikeScale = Vector3.Scale(restLocalScale, new Vector3(0.94f, 1.11f, 0.94f));
+
+            float elapsed = 0f;
+            while (elapsed < impactDelay)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / impactDelay);
+                if (animateFallbackPose)
+                {
+                    if (t < 0.58f)
+                    {
+                        float poseT = Mathf.SmoothStep(0f, 1f, t / 0.58f);
+                        SetModelPose(
+                            Vector3.LerpUnclamped(restLocalPosition, anticipationPosition, poseT),
+                            Quaternion.SlerpUnclamped(restLocalRotation, anticipationRotation, poseT),
+                            Vector3.LerpUnclamped(restLocalScale, anticipationScale, poseT));
+                    }
+                    else
+                    {
+                        float poseT = Mathf.SmoothStep(0f, 1f, (t - 0.58f) / 0.42f);
+                        SetModelPose(
+                            Vector3.LerpUnclamped(anticipationPosition, strikePosition, poseT),
+                            Quaternion.SlerpUnclamped(anticipationRotation, strikeRotation, poseT),
+                            Vector3.LerpUnclamped(anticipationScale, strikeScale, poseT));
+                    }
+                }
+
+                yield return null;
+            }
+
+            if (animateFallbackPose)
+            {
+                SetModelPose(strikePosition, strikeRotation, strikeScale);
+            }
+
+            InvokeImpact(onImpact);
+
+            const float recoveryDuration = 0.2f;
+            elapsed = 0f;
+            while (elapsed < recoveryDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / recoveryDuration));
+                if (animateFallbackPose)
+                {
+                    SetModelPose(
+                        Vector3.LerpUnclamped(strikePosition, restLocalPosition, t),
+                        Quaternion.SlerpUnclamped(strikeRotation, restLocalRotation, t),
+                        Vector3.LerpUnclamped(strikeScale, restLocalScale, t));
+                }
+
+                yield return null;
+            }
 
             RestoreRestPose();
             activeAction = null;
@@ -607,6 +760,12 @@ namespace GenericGachaRPG
             restPoseCaptured = true;
         }
 
+        private void CaptureSpawnPosition()
+        {
+            spawnWorldPosition = transform.position;
+            spawnPositionCaptured = true;
+        }
+
         private void RestoreRestPose()
         {
             if (!restPoseCaptured)
@@ -639,6 +798,70 @@ namespace GenericGachaRPG
             {
                 RestoreRestPose();
             }
+
+        }
+
+        private IEnumerator MoveRootPersistent(Vector3 destinationWorldPosition, float duration)
+        {
+            Vector3 startWorldPosition = transform.position;
+            if (duration <= 0f)
+            {
+                transform.position = destinationWorldPosition;
+                RecordRootTravel();
+                movementRoutine = null;
+                yield break;
+            }
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                transform.position = Vector3.LerpUnclamped(startWorldPosition, destinationWorldPosition, t);
+                RecordRootTravel();
+                yield return null;
+            }
+
+            transform.position = destinationWorldPosition;
+            RecordRootTravel();
+            movementRoutine = null;
+        }
+
+        private void StopRootMovement(bool restoreSpawnPosition)
+        {
+            if (movementRoutine != null)
+            {
+                StopCoroutine(movementRoutine);
+                movementRoutine = null;
+            }
+
+            if (restoreSpawnPosition && spawnPositionCaptured)
+            {
+                transform.position = spawnWorldPosition;
+            }
+        }
+
+        private void RecordRootTravel()
+        {
+            if (!spawnPositionCaptured)
+            {
+                CaptureSpawnPosition();
+            }
+
+            float distance = Vector3.Distance(spawnWorldPosition, transform.position);
+            MaximumRootTravelDistance = Mathf.Max(MaximumRootTravelDistance, distance);
+            if (distance > 0.05f)
+            {
+                HasPerformedApproach = true;
+            }
+        }
+
+        private void SetModelPose(Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            Transform root = ModelRoot;
+            root.localPosition = position;
+            root.localRotation = rotation;
+            root.localScale = scale;
         }
 
         private Vector3 GetLocalHorizontalDirection(Vector3 targetWorldPosition, Vector3 fallback)

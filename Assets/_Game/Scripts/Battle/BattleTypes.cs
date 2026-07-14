@@ -23,6 +23,7 @@ namespace GenericGachaRPG
         HealingApplied = 4,
         EnergyChanged = 5,
         UnitDefeated = 6,
-        BattleFinished = 7
+        BattleFinished = 7,
+        UnitMoved = 8
     }
 }

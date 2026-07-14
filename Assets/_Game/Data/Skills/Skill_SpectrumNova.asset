@@ -21,4 +21,4 @@ MonoBehaviour:
   healingMultiplier: 0
   energyCost: 100
   hitTiming: 0.48
-  targetCount: 3
+  targetCount: 5

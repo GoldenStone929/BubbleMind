@@ -14,16 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterDefinition
   id: ur_cosmic_slime
   displayName: Abyssal Slime
-  description: A singularity-born caster that bends the battlefield.
-  role: 1
-  rarity: 3
+  description: A limited singularity tank that advances first and anchors the frontline.
+  role: 0
+  rarity: 4
+  isLimited: 1
   displayColor: {r: 0.52, g: 0.16, b: 0.96, a: 1}
   portrait: {fileID: 0}
   characterPrefab: {fileID: 5644442184119989972, guid: 75d6e2c17249a9a4aa81f0f2f95d3531, type: 3}
-  maxHealth: 1380
-  attack: 186
-  defense: 38
-  attackInterval: 1.24
+  maxHealth: 2280
+  attack: 124
+  defense: 86
+  attackInterval: 1.52
+  attackRange: 1.45
+  moveSpeed: 3.3
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12

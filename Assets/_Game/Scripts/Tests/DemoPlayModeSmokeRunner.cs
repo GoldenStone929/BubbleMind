@@ -120,6 +120,17 @@ namespace GenericGachaRPG
                 StepTimeoutSeconds);
             Require(CountDescendantsWithPrefix("CollectionScreen", "Card_") == 7,
                 "Collection screen does not contain exactly seven character cards.");
+            GameObject cosmicCard = FindSceneObject("Card_ur_cosmic_slime");
+            Text cosmicCardBody = cosmicCard == null
+                ? null
+                : FindComponentInChildrenByName<Text>(cosmicCard, "Body");
+            Require(cosmicCardBody != null &&
+                    cosmicCardBody.text.IndexOf("UR", StringComparison.Ordinal) >= 0 &&
+                    cosmicCardBody.text.IndexOf("TANK", StringComparison.Ordinal) >= 0 &&
+                    cosmicCardBody.text.IndexOf("LIMITED", StringComparison.Ordinal) >= 0 &&
+                    cosmicCardBody.text.IndexOf("RNG 1.5", StringComparison.Ordinal) >= 0 &&
+                    cosmicCardBody.text.IndexOf("MOVE 3.3", StringComparison.Ordinal) >= 0,
+                $"Cosmic Slime collection tags are incomplete. Text='{cosmicCardBody?.text ?? "<missing>"}'.");
 
             ClickActiveButton("BackButton");
             yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
@@ -129,12 +140,18 @@ namespace GenericGachaRPG
             yield return WaitForScreen("FormationScreen", StepTimeoutSeconds);
             AssertOnlyScreenActive("FormationScreen");
             yield return WaitFor(
+                () => CountDescendantsWithPrefix("FormationScreen", "Slot_") == BattleRules.TeamSize,
+                "five stable formation slots",
+                StepTimeoutSeconds);
+            Require(CountDescendantsWithPrefix("FormationScreen", "Slot_") == BattleRules.TeamSize,
+                $"Formation screen does not contain exactly {BattleRules.TeamSize} slot units.");
+            yield return WaitFor(
                 () =>
                 {
                     Button button = FindActiveButton("BattleButton", false);
                     return button != null && button.interactable;
                 },
-                "valid three-character formation and battle button",
+                "valid five-character formation and battle button",
                 StepTimeoutSeconds);
 
             ClickActiveButton("BattleButton");
@@ -142,7 +159,9 @@ namespace GenericGachaRPG
             AssertOnlyScreenActive("BattleScreen");
             yield return WaitFor(
                 () => FindSceneObject("AbyssalObservatory_Backdrop") != null &&
-                      FindSceneObject("P1_Abyssal Slime") != null,
+                      FindSceneObjectOfType<CosmicSlimeVisualController>() != null &&
+                      CountBattleUnits("P") == BattleRules.TeamSize &&
+                      CountBattleUnits("E") == BattleRules.TeamSize,
                 "Abyssal Observatory and authored Cosmic Slime",
                 StepTimeoutSeconds);
             GameObject backdrop = FindSceneObject("AbyssalObservatory_Backdrop");
@@ -152,11 +171,41 @@ namespace GenericGachaRPG
                 "Abyssal Observatory backdrop has no runtime material.");
             Require(backdropRenderer.sharedMaterial.shader != null,
                 "Abyssal Observatory backdrop material has no runtime shader.");
-            GameObject cosmicSlime = FindSceneObject("P1_Abyssal Slime");
-            Require(cosmicSlime != null && cosmicSlime.GetComponent<CosmicSlimeVisualController>() != null,
+            CosmicSlimeVisualController cosmicSlimeController = FindSceneObjectOfType<CosmicSlimeVisualController>();
+            GameObject cosmicSlime = cosmicSlimeController == null ? null : cosmicSlimeController.gameObject;
+            Require(cosmicSlime != null,
                 "Player Cosmic Slime did not instantiate from the authored prefab.");
+            Require(cosmicSlime.name.StartsWith("P0_", StringComparison.Ordinal),
+                $"Cosmic Slime must occupy player slot 0; found '{cosmicSlime.name}'.");
             Require(cosmicSlime.GetComponentsInChildren<Renderer>(true).Length > 0,
                 "Player Cosmic Slime prefab has no visible renderer.");
+            Require(CountBattleUnits("P") == BattleRules.TeamSize &&
+                    CountBattleUnits("E") == BattleRules.TeamSize,
+                "Battle did not instantiate complete five-unit teams.");
+
+            CharacterView cosmicSlimeView = cosmicSlime.GetComponent<CharacterView>();
+            Require(cosmicSlimeView != null, "Player Cosmic Slime has no CharacterView.");
+            DemoBattlePresenter presenter = FindSceneObjectOfType<DemoBattlePresenter>();
+            Require(presenter != null && presenter.LastResult != null,
+                "Battle presenter has no deterministic result to replay.");
+            BattleEvent firstTankAttack = VerifyTankTargetLockAndRetarget(presenter.LastResult);
+            Vector3 tankSpawnPosition = BattleRules.GetSlotPosition(BattleTeamSide.Player, 0);
+            yield return WaitFor(
+                () => cosmicSlimeView.HasPerformedApproach &&
+                      cosmicSlimeView.MaximumRootTravelDistance > 0.5f &&
+                      Vector3.Distance(cosmicSlimeView.transform.position, firstTankAttack.ActorPositionAfter) < 0.12f,
+                "player slot 0 tank reaches its first locked target",
+                BattleTimeoutSeconds);
+            Require(cosmicSlimeView.HasPerformedApproach &&
+                    cosmicSlimeView.MaximumRootTravelDistance > 0.5f,
+                "Player slot 0 tank never advanced toward its target.");
+
+            Vector3 heldFrontlinePosition = cosmicSlimeView.transform.position;
+            yield return new WaitForSecondsRealtime(0.015f);
+            Require(Vector3.Distance(cosmicSlimeView.transform.position, tankSpawnPosition) > 0.5f,
+                "Player slot 0 tank returned to its formation spawn after attacking.");
+            Require(Vector3.Distance(cosmicSlimeView.transform.position, heldFrontlinePosition) < 0.12f,
+                "Player slot 0 tank did not hold position while its locked target remained alive.");
 
             yield return WaitFor(
                 () =>
@@ -367,6 +416,76 @@ namespace GenericGachaRPG
             }
 
             return count;
+        }
+
+        private static int CountBattleUnits(string runtimeIdPrefix)
+        {
+            CharacterView[] views = UnityEngine.Object.FindObjectsByType<CharacterView>(FindObjectsInactive.Include);
+            int count = 0;
+            for (int i = 0; i < views.Length; i++)
+            {
+                CharacterView view = views[i];
+                string objectName = view == null ? string.Empty : view.gameObject.name;
+                if (view != null &&
+                    view.gameObject.scene.IsValid() &&
+                    objectName.StartsWith(runtimeIdPrefix, StringComparison.Ordinal) &&
+                    objectName.Length > runtimeIdPrefix.Length &&
+                    char.IsDigit(objectName[runtimeIdPrefix.Length]))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static BattleEvent VerifyTankTargetLockAndRetarget(BattleResult result)
+        {
+            var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
+            var tankTargets = new HashSet<string>(StringComparer.Ordinal);
+            string lockedTarget = null;
+            BattleEvent firstAttack = null;
+
+            for (int i = 0; i < result.Events.Count; i++)
+            {
+                BattleEvent battleEvent = result.Events[i];
+                if (battleEvent.Type == BattleEventType.UnitDefeated)
+                {
+                    defeatedUnits.Add(battleEvent.TargetRuntimeId);
+                    continue;
+                }
+
+                if (!string.Equals(battleEvent.ActorRuntimeId, "P0", StringComparison.Ordinal) ||
+                    (battleEvent.Type != BattleEventType.UnitMoved &&
+                     battleEvent.Type != BattleEventType.BasicAttackStarted &&
+                     battleEvent.Type != BattleEventType.SkillCastStarted))
+                {
+                    continue;
+                }
+
+                if (lockedTarget != null &&
+                    !string.Equals(lockedTarget, battleEvent.TargetRuntimeId, StringComparison.Ordinal))
+                {
+                    Require(defeatedUnits.Contains(lockedTarget),
+                        $"Player tank changed from living target '{lockedTarget}' to '{battleEvent.TargetRuntimeId}'.");
+                }
+
+                lockedTarget = battleEvent.TargetRuntimeId;
+                tankTargets.Add(lockedTarget);
+                if (firstAttack == null && battleEvent.Type == BattleEventType.BasicAttackStarted)
+                {
+                    firstAttack = battleEvent;
+                }
+            }
+
+            Require(firstAttack != null, "Player tank has no basic attack event after approaching.");
+            Require(tankTargets.Count >= 2,
+                "Player tank never locked a second target after its first target was defeated.");
+            Require(Vector3.Distance(
+                    result.PlayerUnits[0].CurrentPosition,
+                    BattleRules.GetSlotPosition(BattleTeamSide.Player, 0)) > 0.5f,
+                "Player tank simulation ended back at its formation spawn.");
+            return firstAttack;
         }
 
         private static T FindDescendantComponent<T>(string rootName, string objectName)

@@ -41,7 +41,7 @@ namespace GenericGachaRPG
                 bannerId = resultBannerId ?? string.Empty,
                 characterId = drawnCharacter == null ? string.Empty : drawnCharacter.Id,
                 character = drawnCharacter,
-                rarity = drawnCharacter == null ? Rarity.Common : drawnCharacter.Rarity,
+                rarity = drawnCharacter == null ? Rarity.R : drawnCharacter.Rarity,
                 isNewCharacter = isNew,
                 currencySpent = Math.Max(0, spent),
                 remainingCurrency = Math.Max(0, balance),

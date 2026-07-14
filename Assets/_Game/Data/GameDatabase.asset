@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.GameDatabase
   startingCurrency: 3000
   starterCharacterIds:
-  - azure_vanguard
   - ur_cosmic_slime
+  - ember_striker
   - verdant_medic
+  - violet_arcanist
+  - gold_ranger
   characters:
   - {fileID: 11400000, guid: d252b67e7af2e164a97012b7313d07a6, type: 2}
   - {fileID: 11400000, guid: 991533b0817edf946805777ee84c6ca9, type: 2}

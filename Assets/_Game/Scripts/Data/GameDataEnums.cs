@@ -9,10 +9,11 @@ namespace GenericGachaRPG
 
     public enum Rarity
     {
-        Common,
-        Rare,
-        Epic,
-        UltraRare
+        R = 0,
+        SR = 1,
+        SSR = 2,
+        SP = 3,
+        UR = 4
     }
 
     public enum SkillCategory

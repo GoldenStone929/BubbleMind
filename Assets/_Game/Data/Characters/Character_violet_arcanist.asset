@@ -17,6 +17,7 @@ MonoBehaviour:
   description: A ranged caster with a team-wide burst.
   role: 1
   rarity: 1
+  isLimited: 0
   displayColor: {r: 0.62, g: 0.25, b: 0.91, a: 1}
   portrait: {fileID: 0}
   characterPrefab: {fileID: 0}
@@ -24,6 +25,8 @@ MonoBehaviour:
   attack: 158
   defense: 26
   attackInterval: 1.28
+  attackRange: 3.8
+  moveSpeed: 3.4
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12

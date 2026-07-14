@@ -337,21 +337,18 @@ namespace GenericGachaRPG
         private List<CharacterDefinition> BuildEnemyTeam()
         {
             var result = new List<CharacterDefinition>(BattleTeam.RequiredMemberCount);
-            if (database.Characters.Count < BattleTeam.RequiredMemberCount)
-            {
-                return result;
-            }
-
-            int start = Mathf.Max(0, database.Characters.Count - BattleTeam.RequiredMemberCount);
-            for (int i = start; i < database.Characters.Count && result.Count < BattleTeam.RequiredMemberCount; i++)
+            for (int i = database.Characters.Count - 1;
+                 i >= 0 && result.Count < BattleTeam.RequiredMemberCount;
+                 i--)
             {
                 CharacterDefinition definition = database.Characters[i];
-                if (definition != null)
+                if (definition != null && !definition.IsLimited)
                 {
                     result.Add(definition);
                 }
             }
 
+            result.Reverse();
             return result;
         }
 

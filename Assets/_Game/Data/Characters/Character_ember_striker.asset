@@ -17,6 +17,7 @@ MonoBehaviour:
   description: A fast close-range attacker.
   role: 1
   rarity: 0
+  isLimited: 0
   displayColor: {r: 0.96, g: 0.28, b: 0.14, a: 1}
   portrait: {fileID: 0}
   characterPrefab: {fileID: 0}
@@ -24,6 +25,8 @@ MonoBehaviour:
   attack: 172
   defense: 29
   attackInterval: 1.12
+  attackRange: 1.55
+  moveSpeed: 4.2
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12

@@ -7,7 +7,7 @@ namespace GenericGachaRPG
     [DisallowMultipleComponent]
     public sealed class WorldNameplateView : MonoBehaviour
     {
-        private const float WorldScale = 0.0055f;
+        private const float WorldScale = 0.0045f;
 
         private RectTransform visualRoot;
         private Text label;
@@ -57,7 +57,7 @@ namespace GenericGachaRPG
             visualRoot.localPosition = Vector3.zero;
             visualRoot.localRotation = Quaternion.identity;
             visualRoot.localScale = Vector3.one * WorldScale;
-            visualRoot.sizeDelta = new Vector2(250f, 44f);
+            visualRoot.sizeDelta = new Vector2(220f, 40f);
 
             Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
@@ -84,7 +84,7 @@ namespace GenericGachaRPG
 
             label = textObject.GetComponent<Text>();
             label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            label.fontSize = 24;
+            label.fontSize = 21;
             label.fontStyle = FontStyle.Bold;
             label.alignment = TextAnchor.MiddleCenter;
             label.horizontalOverflow = HorizontalWrapMode.Overflow;

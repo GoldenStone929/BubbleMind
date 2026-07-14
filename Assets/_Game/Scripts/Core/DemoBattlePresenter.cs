@@ -13,7 +13,7 @@ namespace GenericGachaRPG
     /// </summary>
     public sealed class DemoBattlePresenter : MonoBehaviour
     {
-        private const float PlaybackSpeed = 1.8f;
+        private const float PlaybackSpeed = 1.6f;
         private const string ArenaBackdropResource = "AbyssalObservatory_Concept";
         private const string ArenaBackdropMaterialResource = "MAT_AbyssalObservatoryBackdrop";
 
@@ -44,12 +44,12 @@ namespace GenericGachaRPG
         {
             if (playerCharacters == null || playerCharacters.Count != BattleTeam.RequiredMemberCount)
             {
-                throw new ArgumentException("Player battle team must contain exactly three characters.", nameof(playerCharacters));
+                throw new ArgumentException("Player battle team must contain exactly five characters.", nameof(playerCharacters));
             }
 
             if (enemyCharacters == null || enemyCharacters.Count != BattleTeam.RequiredMemberCount)
             {
-                throw new ArgumentException("Enemy battle team must contain exactly three characters.", nameof(enemyCharacters));
+                throw new ArgumentException("Enemy battle team must contain exactly five characters.", nameof(enemyCharacters));
             }
 
             StopBattle();
@@ -128,11 +128,23 @@ namespace GenericGachaRPG
 
             switch (battleEvent.Type)
             {
+                case BattleEventType.UnitMoved:
+                    if (actor != null)
+                    {
+                        actor.View.MoveRootTo(
+                            battleEvent.ActorPositionAfter,
+                            battleEvent.Duration / PlaybackSpeed);
+                    }
+
+                    break;
+
                 case BattleEventType.BasicAttackStarted:
                     if (actor != null && target != null)
                     {
                         actor.View.FaceTarget(target.View.transform.position);
-                        actor.View.PlayAttack(target.View.transform.position);
+                        actor.View.PlayBasicAttack(
+                            target.View.transform,
+                            BattleRules.BasicAttackHitDelay / PlaybackSpeed);
                         screen?.SetBattleStatus(battleEvent.Time, $"{actor.Definition.DisplayName} attacks");
                     }
 
@@ -212,23 +224,22 @@ namespace GenericGachaRPG
             worldRoot = rootObject.transform;
 
             BuildEnvironment();
-            Vector3[] playerPositions =
-            {
-                new Vector3(-4.2f, 0f, -1.8f),
-                new Vector3(-3.7f, 0f, 0f),
-                new Vector3(-4.2f, 0f, 1.8f)
-            };
-            Vector3[] enemyPositions =
-            {
-                new Vector3(4.2f, 0f, 1.8f),
-                new Vector3(3.7f, 0f, 0f),
-                new Vector3(4.2f, 0f, -1.8f)
-            };
-
             for (int i = 0; i < BattleTeam.RequiredMemberCount; i++)
             {
-                CreateUnit($"P{i}", playerCharacters[i], playerPositions[i], Quaternion.Euler(0f, 90f, 0f), i, false);
-                CreateUnit($"E{i}", enemyCharacters[i], enemyPositions[i], Quaternion.Euler(0f, -90f, 0f), i + 20, true);
+                CreateUnit(
+                    $"P{i}",
+                    playerCharacters[i],
+                    BattleRules.GetSlotPosition(BattleTeamSide.Player, i),
+                    Quaternion.Euler(0f, 90f, 0f),
+                    i,
+                    false);
+                CreateUnit(
+                    $"E{i}",
+                    enemyCharacters[i],
+                    BattleRules.GetSlotPosition(BattleTeamSide.Enemy, i),
+                    Quaternion.Euler(0f, -90f, 0f),
+                    i + 20,
+                    true);
             }
         }
 
@@ -280,20 +291,20 @@ namespace GenericGachaRPG
             backdropRenderer.receiveShadows = false;
             RemoveCollider(backdropObject);
 
-            Vector3[] markerPositions =
+            for (int sideIndex = 0; sideIndex < 2; sideIndex++)
             {
-                new Vector3(-4.2f, 0.035f, -1.8f), new Vector3(-3.7f, 0.035f, 0f), new Vector3(-4.2f, 0.035f, 1.8f),
-                new Vector3(4.2f, 0.035f, 1.8f), new Vector3(3.7f, 0.035f, 0f), new Vector3(4.2f, 0.035f, -1.8f)
-            };
-
-            for (int i = 0; i < markerPositions.Length; i++)
-            {
-                GameObject marker = CreateArenaCylinder(
-                    i < 3 ? $"PlayerMarker_{i}" : $"EnemyMarker_{i - 3}",
-                    markerPositions[i],
-                    new Vector3(0.78f, 0.014f, 0.78f),
-                    energy);
-                marker.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+                BattleTeamSide side = sideIndex == 0 ? BattleTeamSide.Player : BattleTeamSide.Enemy;
+                for (int slot = 0; slot < BattleRules.TeamSize; slot++)
+                {
+                    Vector3 position = BattleRules.GetSlotPosition(side, slot);
+                    position.y = 0.035f;
+                    GameObject marker = CreateArenaCylinder(
+                        side == BattleTeamSide.Player ? $"PlayerMarker_{slot}" : $"EnemyMarker_{slot}",
+                        position,
+                        new Vector3(0.78f, 0.014f, 0.78f),
+                        energy);
+                    marker.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+                }
             }
 
             Vector3[] ruinPositions =
@@ -368,21 +379,25 @@ namespace GenericGachaRPG
             floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
             RemoveCollider(floor);
 
-            Vector3[] markerPositions =
+            for (int sideIndex = 0; sideIndex < 2; sideIndex++)
             {
-                new Vector3(-4.2f, 0.005f, -1.8f), new Vector3(-3.7f, 0.005f, 0f), new Vector3(-4.2f, 0.005f, 1.8f),
-                new Vector3(4.2f, 0.005f, 1.8f), new Vector3(3.7f, 0.005f, 0f), new Vector3(4.2f, 0.005f, -1.8f)
-            };
-
-            for (int i = 0; i < markerPositions.Length; i++)
-            {
-                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                marker.name = i < 3 ? $"PlayerMarker_{i}" : $"EnemyMarker_{i - 3}";
-                marker.transform.SetParent(worldRoot, false);
-                marker.transform.position = markerPositions[i];
-                marker.transform.localScale = new Vector3(0.85f, 0.018f, 0.85f);
-                marker.GetComponent<Renderer>().sharedMaterial = i < 3 ? markerPlayer : markerEnemy;
-                RemoveCollider(marker);
+                BattleTeamSide side = sideIndex == 0 ? BattleTeamSide.Player : BattleTeamSide.Enemy;
+                for (int slot = 0; slot < BattleRules.TeamSize; slot++)
+                {
+                    Vector3 position = BattleRules.GetSlotPosition(side, slot);
+                    position.y = 0.005f;
+                    GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    marker.name = side == BattleTeamSide.Player
+                        ? $"PlayerMarker_{slot}"
+                        : $"EnemyMarker_{slot}";
+                    marker.transform.SetParent(worldRoot, false);
+                    marker.transform.position = position;
+                    marker.transform.localScale = new Vector3(0.85f, 0.018f, 0.85f);
+                    marker.GetComponent<Renderer>().sharedMaterial = side == BattleTeamSide.Player
+                        ? markerPlayer
+                        : markerEnemy;
+                    RemoveCollider(marker);
+                }
             }
 
             for (int i = 0; i < 7; i++)
@@ -574,7 +589,7 @@ namespace GenericGachaRPG
             battleCamera.transform.rotation = Quaternion.LookRotation(
                 new Vector3(0f, 1.15f, 0f) - battleCamera.transform.position,
                 Vector3.up);
-            battleCamera.fieldOfView = 43f;
+            battleCamera.fieldOfView = 46f;
             battleCamera.clearFlags = CameraClearFlags.SolidColor;
             battleCamera.backgroundColor = new Color(0.025f, 0.045f, 0.085f, 1f);
         }

@@ -1,14 +1,14 @@
 # Asset Spec：`ART-CHAR-UR-COSMIC-SLIME-001 星渊吞噬体`
 
 > 状态：已批准用于内部原型  
-> 稀有度/定位：UR 限定样板 / 非人形术士型角色  
+> 稀有度/定位：UR 限定坦克 / 非人形前线角色
 > 英文工作名：Abyssal Singularity Slime  
 > 负责人：Codex  
 > 最后更新：2026-07-14
 
 ## 1. 用途与玩家视角
 
-- 游戏内用途：首个正式 3D 角色样板；进入收藏预览、编队和现有 3v3 战斗。
+- 游戏内用途：首个正式 3D 角色样板；进入收藏、默认编队首槽和现有 5v5 射程战斗。
 - 出现场景与典型屏幕占比：战斗中高度约占画面 12%–20%；收藏页允许近景旋转预览。
 - 必须传达的信息：UR 稀有度、宇宙/黑洞主题、沉重引力感、非人形凝胶生命、危险但可读。
 - 不在本资产范围内：完整限定池经济规则、商业发布权、整套角色阵容、付费皮肤、最终移动端优化。
@@ -26,10 +26,10 @@
 ## 3. 视觉规格
 
 - 轮廓：宽、低、圆润穹顶体；底部向外摊开的凝胶裙边；不对称双角；破碎轨道环形成横向识别线。
-- 正面识别：白紫色斜眼、胸腹中央奇点、额部菱形符号。
+- 正面识别：白紫色斜眼、胸腹中央纯黑事件视界与白紫吸积盘、额部菱形符号。
 - 背面识别：深色星空穹顶、紫色星云带与环绕碎片。
-- 色彩：近黑紫 `#100A27`、深紫 `#351067`、电光紫 `#A34CFF`、核心白紫 `#F4E9FF`、轨道暗金 `#9A7554`。
-- 材质语言：主体外壳为半透明高光凝胶；内部星云与星点使用独立发光层；金属轨道环保持粗糙暗金边缘。
+- 色彩：近黑深靛紫外壳、深紫星云、电光紫细节、纯黑事件视界、核心白紫 `#F4E9FF`、轨道暗金 `#9A7554`。
+- 材质语言：主体外壳为近黑半透明高光凝胶；内部星云与星点使用独立层；事件视界保持真正黑色，吸积盘以白紫高对比包围；轨道为暗紫金属带与独立暗金边。
 - 禁止：不复制任何现有 IP 的角色、标志、名称、招式或构图；不使用来源不明的模型/贴图。
 
 ## 4. 技术预算
@@ -38,10 +38,10 @@
 - Tripo 原始结果：无；余额为 0，未上传或生成。未来候选才使用 `_ProjectTools/Tripo/jobs/<task-id>/`。
 - Unity FBX：`Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/UR_CosmicSlime.fbx`。
 - Unity 材质/贴图：`Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/Materials/` 与 `Textures/`。
-- 单位与轴：1 Unity unit = 1 m；Y-up；面向 +Z；Pivot 位于主体底部中心；目标高度约 1.55 m、宽度约 1.9 m。
-- LOD0：主体、双角与轨道总计 ≤20,000 triangles；目标 10,000–16,000。
+- 单位与轴：1 Unity unit = 1 m；Y-up；Pivot 位于主体底部中心；当前几何约 `2.435 × 1.945 × 2.199 m`，Unity Prefab 以 0.92 缩放并使用三分之四展示角。
+- LOD0：主体、角、奇点、星云与轨道总计 ≤20,000 triangles；当前为 `19,704`。
 - LOD1：≤8,000 triangles；首轮样板可延期，但在移动端发布前必须完成。
-- 材质：最多 3 个（Shell、Core、Orbit）；最多 1 个透明材质。
+- 材质：当前 6 个（Shell、Nebula、Energy、BlackCore、Orbit、OrbitTrim）；Unity 将 FBX 的 Energy 槽重映射到 `MAT_UR_CosmicSlime_Core`，Shell 是唯一透明主体材质。
 - 贴图：最多 4 张 2048²；Windows 原型 2048，移动端导入覆盖 1024。
 - 骨骼：首版不强制骨架；通过 `CharacterView` 的无 Animator 回退动作驱动整体挤压、冲刺、受击与死亡。
 - Blend Shape：可选 `Squash`、`Stretch`、`Pulse`，不阻塞首轮。
@@ -54,12 +54,16 @@
 CharacterRoot
 ├── ModelRoot
 │   ├── SlimeBody
-│   ├── Horns
-│   ├── SingularityCore
-│   └── OrbitRig
-│       ├── OrbitRing_A
-│       ├── OrbitRing_B
-│       └── OrbitFragments
+│   ├── NebulaInner / StarCloudPoints
+│   ├── Horn_L / Horn_Center / Horn_RightFluid
+│   ├── SingularityAccretionRig
+│   │   ├── SingularityCore
+│   │   ├── SingularityAccretion
+│   │   └── AccretionSpiral_*
+│   ├── OrbitRig_Lower
+│   │   └── OrbitBand_Lower / OrbitTrim_Lower
+│   └── OrbitRig_Upper
+│       └── OrbitBand_Upper / OrbitTrim_Upper
 ├── RightHandSocket
 ├── LeftHandSocket
 ├── SkillVfxSocket
@@ -80,7 +84,8 @@ CharacterRoot
 - Prefab：`Assets/_Game/Prefabs/Characters/PF_UR_CosmicSlime.prefab`。
 - 运行时连接：`CharacterDefinition.characterPrefab` 指向 Prefab；`DemoBattlePresenter` 优先实例化 Prefab，缺失时回退 `ProceduralCharacterBuilder`。
 - 数据：新增稳定 ID `ur_cosmic_slime`；现有 Generator 必须纳入该定义，重复运行不能把它移除。
-- UR 显示：扩展稀有度枚举与 UI 映射，但不在本里程碑实现完整限定池经济。
+- UR 显示：全局稀有度为 `R -> SR -> SSR -> SP -> UR`；本角色显示 `UR / TANK / LIMITED`，进入默认编队但排除标准池。
+- 战斗数据：近战攻击距离与移动速度由 `CharacterDefinition` 配置；进入射程后留在前线，锁定目标死亡后才重新接近最近敌人。
 
 ## 7. 验收与证据
 
@@ -93,7 +98,8 @@ CharacterRoot
 - [x] Prefab、Sockets 与 `CharacterView` 正确
 - [x] 收藏/编队条目与战斗模型均可见
 - [x] URP 材质、黑洞核心与轨道动画正确
-- [x] Blender 几何性能预算通过：4,632 / 20,000 triangles，3 / 3 materials
+- [x] Blender 几何与视觉预算通过：19,704 / 20,000 triangles，6 / 6 materials
+- [x] 纯黑体积事件视界、侧视吸积盘、下轨净空、近黑外壳与接地审计全部通过
 - [x] Meta 文件与 Git LFS 状态正确
 - [x] P0 Play 与 Windows Build 回归通过
 

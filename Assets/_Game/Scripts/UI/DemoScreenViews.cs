@@ -40,29 +40,63 @@ namespace GenericGachaRPG
         {
             switch (rarity)
             {
-                case Rarity.UltraRare:
+                case Rarity.UR:
                     return "UR";
-                case Rarity.Epic:
+                case Rarity.SP:
+                    return "SP";
+                case Rarity.SSR:
                     return "SSR";
-                case Rarity.Rare:
+                case Rarity.SR:
                     return "SR";
-                default:
+                case Rarity.R:
                     return "R";
+                default:
+                    return "?";
             }
+        }
+
+        protected static string FormatRole(CharacterRole role)
+        {
+            switch (role)
+            {
+                case CharacterRole.Guardian:
+                    return "TANK";
+                case CharacterRole.Support:
+                    return "SUPPORT";
+                case CharacterRole.Striker:
+                    return "DAMAGE";
+                default:
+                    return "UNKNOWN";
+            }
+        }
+
+        protected static string FormatCharacterTags(CharacterDefinition character)
+        {
+            if (character == null)
+            {
+                return string.Empty;
+            }
+
+            string tags = $"{FormatRarity(character.Rarity)} • {FormatRole(character.Role)}";
+            return character.IsLimited ? $"{tags} • LIMITED" : tags;
         }
 
         protected static Color RarityColor(Rarity rarity)
         {
             switch (rarity)
             {
-                case Rarity.UltraRare:
+                case Rarity.UR:
                     return new Color(1f, 0.46f, 0.88f, 1f);
-                case Rarity.Epic:
-                    return new Color(0.92f, 0.53f, 1f, 1f);
-                case Rarity.Rare:
-                    return new Color(1f, 0.78f, 0.24f, 1f);
+                case Rarity.SP:
+                    return new Color(1f, 0.37f, 0.28f, 1f);
+                case Rarity.SSR:
+                    return new Color(1f, 0.73f, 0.20f, 1f);
+                case Rarity.SR:
+                    return new Color(0.20f, 0.76f, 1f, 1f);
+                case Rarity.R:
+                    return new Color(0.62f, 0.72f, 0.82f, 1f);
                 default:
-                    return new Color(0.52f, 0.78f, 1f, 1f);
+                    return Color.white;
             }
         }
     }
@@ -204,8 +238,8 @@ namespace GenericGachaRPG
             currencyText.text = $"CRYSTALS  {currency:N0}";
             battleButton.interactable = validFormation;
             statusText.text = validFormation
-                ? "Your three-character team is ready."
-                : "Choose exactly three unlocked characters in Formation.";
+                ? "Your five-character team is ready."
+                : "Choose exactly five unlocked characters in Formation.";
             statusText.color = validFormation ? DemoUiFactory.Positive : DemoUiFactory.Warning;
         }
 
@@ -373,7 +407,8 @@ namespace GenericGachaRPG
             resultColor.color = character.DisplayColor;
             resultText.color = RarityColor(character.Rarity);
             resultText.text =
-                $"{FormatRarity(character.Rarity)}\n{character.DisplayName}\n" +
+                $"{FormatRarity(character.Rarity)}{(character.IsLimited ? " • LIMITED" : string.Empty)}\n" +
+                $"{character.DisplayName}\n" +
                 (result.IsNewCharacter ? "NEW CHARACTER UNLOCKED" : "DUPLICATE SIGNAL REGISTERED");
         }
 
@@ -510,9 +545,12 @@ namespace GenericGachaRPG
                 "Body",
                 card.transform,
                 unlocked
-                    ? $"{character.DisplayName}\n{FormatRarity(character.Rarity)} • {character.Role}\n" +
-                      $"LV 1  |  HP {character.MaxHealth:0}\nATK {character.Attack:0}  DEF {character.Defense:0}"
-                    : "LOCKED SIGNAL\nAcquire from Gacha",
+                    ? $"{character.DisplayName}\n{FormatCharacterTags(character)}\n" +
+                      $"LV 1  |  HP {character.MaxHealth:0}\nATK {character.Attack:0}  DEF {character.Defense:0}\n" +
+                      $"RNG {character.AttackRange:0.0}  •  MOVE {character.MoveSpeed:0.0}"
+                    : character.IsLimited
+                        ? "LIMITED SIGNAL\nNot in Standard Signal"
+                        : "LOCKED SIGNAL\nAcquire from Gacha",
                 21,
                 TextAnchor.MiddleLeft,
                 unlocked ? DemoUiFactory.TextPrimary : DemoUiFactory.TextMuted,
@@ -574,7 +612,7 @@ namespace GenericGachaRPG
     public sealed class FormationScreenView : DemoScreenView
     {
         private readonly Transform grid;
-        private readonly Text slotsText;
+        private readonly List<Text> slotLabels = new List<Text>();
         private readonly Text feedbackText;
         private readonly Button battleButton;
 
@@ -599,7 +637,7 @@ namespace GenericGachaRPG
             Text header = DemoUiFactory.CreateText(
                 "Header",
                 safe,
-                "THREE-UNIT FORMATION",
+                "FIVE-UNIT FORMATION",
                 48,
                 TextAnchor.MiddleCenter,
                 DemoUiFactory.TextPrimary,
@@ -609,18 +647,51 @@ namespace GenericGachaRPG
             header.rectTransform.offsetMin = Vector2.zero;
             header.rectTransform.offsetMax = Vector2.zero;
 
-            slotsText = DemoUiFactory.CreateText(
-                "Slots",
+            RectTransform slotsRow = DemoUiFactory.CreateRect(
+                "FormationSlots",
                 safe,
-                "SLOT 1  —  SLOT 2  —  SLOT 3",
-                30,
-                TextAnchor.MiddleCenter,
-                DemoUiFactory.Accent,
-                FontStyle.Bold);
-            slotsText.rectTransform.anchorMin = new Vector2(0.12f, 0.73f);
-            slotsText.rectTransform.anchorMax = new Vector2(0.88f, 0.84f);
-            slotsText.rectTransform.offsetMin = Vector2.zero;
-            slotsText.rectTransform.offsetMax = Vector2.zero;
+                new Vector2(0.05f, 0.73f),
+                new Vector2(0.95f, 0.84f),
+                Vector2.zero,
+                Vector2.zero);
+            HorizontalLayoutGroup slotsLayout = slotsRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            slotsLayout.spacing = 12f;
+            slotsLayout.padding = new RectOffset(0, 0, 0, 0);
+            slotsLayout.childAlignment = TextAnchor.MiddleCenter;
+            slotsLayout.childControlWidth = true;
+            slotsLayout.childControlHeight = true;
+            slotsLayout.childForceExpandWidth = true;
+            slotsLayout.childForceExpandHeight = true;
+
+            for (int i = 0; i < TeamFormationState.RequiredMemberCount; i++)
+            {
+                Image slot = DemoUiFactory.CreatePanel(
+                    $"Slot_{i + 1}",
+                    slotsRow,
+                    DemoUiFactory.SurfaceLight,
+                    Vector2.zero,
+                    Vector2.one,
+                    Vector2.zero,
+                    Vector2.zero);
+                LayoutElement slotLayout = slot.gameObject.AddComponent<LayoutElement>();
+                slotLayout.flexibleWidth = 1f;
+                slotLayout.minWidth = 0f;
+
+                Text slotLabel = DemoUiFactory.CreateText(
+                    "Label",
+                    slot.transform,
+                    $"SLOT {i + 1}\nEMPTY",
+                    22,
+                    TextAnchor.MiddleCenter,
+                    DemoUiFactory.Accent,
+                    FontStyle.Bold);
+                slotLabel.resizeTextForBestFit = true;
+                slotLabel.resizeTextMinSize = 10;
+                slotLabel.resizeTextMaxSize = 22;
+                slotLabel.rectTransform.offsetMin = new Vector2(8f, 4f);
+                slotLabel.rectTransform.offsetMax = new Vector2(-8f, -4f);
+                slotLabels.Add(slotLabel);
+            }
 
             Image gridPanel = DemoUiFactory.CreatePanel(
                 "GridPanel",
@@ -652,7 +723,7 @@ namespace GenericGachaRPG
             battleButton = DemoUiFactory.CreateButton(
                 "BattleButton",
                 safe,
-                "START 3v3 BATTLE",
+                "START 5v5 BATTLE",
                 new Color(0.78f, 0.24f, 0.23f, 1f),
                 () => battle?.Invoke());
             RectTransform battleRect = battleButton.GetComponent<RectTransform>();
@@ -684,9 +755,14 @@ namespace GenericGachaRPG
                 names.Add("EMPTY");
             }
 
-            slotsText.text = $"SLOT 1  {names[0]}     •     SLOT 2  {names[1]}     •     SLOT 3  {names[2]}";
+            for (int i = 0; i < slotLabels.Count; i++)
+            {
+                string name = i < names.Count ? names[i] : "EMPTY";
+                slotLabels[i].text = $"SLOT {i + 1}\n{name}";
+            }
+
             feedbackText.text = string.IsNullOrEmpty(feedback)
-                ? "Select exactly three unlocked characters. Click again to remove."
+                ? "Select exactly five unlocked characters. Click again to remove."
                 : feedback;
             feedbackText.color = string.IsNullOrEmpty(feedback) ? DemoUiFactory.TextMuted : DemoUiFactory.Warning;
             battleButton.interactable = draftIds != null && draftIds.Count == TeamFormationState.RequiredMemberCount;
@@ -712,8 +788,10 @@ namespace GenericGachaRPG
                         ? DemoUiFactory.Positive
                         : new Color(character.DisplayColor.r * 0.62f, character.DisplayColor.g * 0.62f, character.DisplayColor.b * 0.62f, 1f);
                 string label = unlocked
-                    ? $"{(selected ? "✓ " : string.Empty)}{character.DisplayName}\n{FormatRarity(character.Rarity)} • {character.Role}"
-                    : "LOCKED\nAcquire from Gacha";
+                    ? $"{(selected ? "✓ " : string.Empty)}{character.DisplayName}\n{FormatCharacterTags(character)}"
+                    : character.IsLimited
+                        ? "LIMITED\nNot in Standard Signal"
+                        : "LOCKED\nAcquire from Gacha";
                 string id = character.Id;
                 Button button = DemoUiFactory.CreateButton(
                     $"Character_{id}",

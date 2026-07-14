@@ -17,6 +17,7 @@ MonoBehaviour:
   description: A support unit that restores weakened allies.
   role: 2
   rarity: 1
+  isLimited: 0
   displayColor: {r: 0.2, g: 0.78, b: 0.37, a: 1}
   portrait: {fileID: 0}
   characterPrefab: {fileID: 0}
@@ -24,6 +25,8 @@ MonoBehaviour:
   attack: 122
   defense: 34
   attackInterval: 1.34
+  attackRange: 4.4
+  moveSpeed: 3
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12

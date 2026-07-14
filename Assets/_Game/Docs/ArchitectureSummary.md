@@ -3,7 +3,7 @@
 ## P0 Vertical Slice
 
 ```text
-Home → Gacha → Collection → Formation → 3v3 Battle → Result → Home / Restart
+Home → Gacha → Collection → Formation → 5v5 Battle → Result → Home / Restart
 ```
 
 ## Runtime boundaries
@@ -31,8 +31,10 @@ DemoBattlePresenter
 - 静态内容使用 ScriptableObject；玩家拥有状态、余额和编队使用可序列化运行时数据。
 - UI 只展示状态并发送意图，不拥有 RNG、扣费、编队合法性或伤害规则。
 - `IRandomService`、`ISaveService`、`IGachaService` 和 `IFormationService` 可在未来替换为正式实现。
-- 战斗核心按固定 Tick 运行，同一输入和 Seed 产生相同结果及事件序列。
-- 表现层只重播事件，不反向修改模拟结果。
+- `CharacterDefinition` 数据化保存 `AttackRange`、`MoveSpeed`、`IsLimited` 与 `R -> SR -> SSR -> SP -> UR` 稀有度。
+- 战斗核心按固定 Tick 运行，分别保存出生槽、当前战场位置和持续锁定目标；同一输入和 Seed 产生相同结果、位置及事件序列。
+- 单位每 Tick 先按移动速度接近锁定目标，进入攻击距离后停止；目标存活期间不换锁，死亡后才按当前位置选择最近敌人。
+- 表现层只重播位置、攻击、技能、伤害和死亡事件，不反向修改模拟结果，也不得把世界根节点重置到出生槽。
 - `CharacterView` 提供统一 Socket 和动作接口；无 Animator 或正式模型时自动使用程序化回退。
 
 ## Editor tooling
@@ -45,4 +47,3 @@ DemoBattlePresenter
 ## Production boundary
 
 P0 为离线本地 Demo。正式经济、抽卡、奖励、账号、IAP、PvP 和远程内容应迁移到后端权威服务，不能直接沿用本地 Mock 作为生产安全方案。
-

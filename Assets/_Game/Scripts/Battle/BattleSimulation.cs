@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Headless, fixed-tick 3v3 auto-battle simulation. Run produces a complete
+    /// Headless, fixed-tick 5v5 auto-battle simulation. Run produces a complete
     /// ordered event log that can be replayed by Unity presentation code later.
     /// </summary>
     public sealed class BattleSimulation
@@ -18,12 +19,28 @@ namespace GenericGachaRPG
             public List<BattleUnitState> Targets;
         }
 
+        private sealed class PendingBasicHit
+        {
+            public int DueTick;
+            public long ScheduleOrder;
+            public BattleUnitState Actor;
+            public BattleUnitState Target;
+        }
+
+        private sealed class MovementStep
+        {
+            public BattleUnitState Actor;
+            public BattleUnitState Target;
+            public Vector3 Destination;
+        }
+
         private readonly BattleContext _context;
         private readonly DeterministicRandom _random;
         private readonly List<BattleUnitState> _playerUnits = new List<BattleUnitState>(BattleTeam.RequiredMemberCount);
         private readonly List<BattleUnitState> _enemyUnits = new List<BattleUnitState>(BattleTeam.RequiredMemberCount);
         private readonly List<BattleUnitState> _actionOrder = new List<BattleUnitState>(BattleTeam.RequiredMemberCount * 2);
         private readonly List<BattleEvent> _events = new List<BattleEvent>();
+        private readonly List<PendingBasicHit> _pendingBasicHits = new List<PendingBasicHit>();
         private readonly List<PendingSkillHit> _pendingSkillHits = new List<PendingSkillHit>();
 
         private BattleResult _result;
@@ -65,11 +82,20 @@ namespace GenericGachaRPG
 
             for (_currentTick = 1; _currentTick <= _context.MaxTickCount && !_finished; _currentTick++)
             {
+                ResolvePendingBasicHits();
+                if (_finished)
+                {
+                    break;
+                }
+
                 ResolvePendingSkillHits();
                 if (_finished)
                 {
                     break;
                 }
+
+                UpdateTargetLocks();
+                MoveUnitsTowardLockedTargets();
 
                 for (var index = 0; index < _actionOrder.Count; index++)
                 {
@@ -118,8 +144,15 @@ namespace GenericGachaRPG
 
         private void ExecuteAutomaticAction(BattleUnitState actor)
         {
+            BattleUnitState lockedTarget = FindLockedAliveOpponent(actor);
             if (actor.CanCastSkill)
             {
+                if (actor.Skill.Category == SkillCategory.Damage &&
+                    (lockedTarget == null || !IsWithinAttackRange(actor, lockedTarget)))
+                {
+                    return;
+                }
+
                 var skillTargets = SelectSkillTargets(actor, actor.Skill);
                 if (skillTargets.Count > 0)
                 {
@@ -128,22 +161,67 @@ namespace GenericGachaRPG
                 }
             }
 
-            ExecuteBasicAttack(actor);
-            actor.NextActionTick = AddTicksSafely(_currentTick, TicksForDuration(actor.AttackInterval));
+            if (lockedTarget != null && IsWithinAttackRange(actor, lockedTarget))
+            {
+                BeginBasicAttack(actor, lockedTarget);
+            }
         }
 
-        private void ExecuteBasicAttack(BattleUnitState actor)
+        private void BeginBasicAttack(BattleUnitState actor, BattleUnitState target)
         {
-            var target = FirstAliveOpponent(actor.Side);
-            if (target == null)
+            Emit(BattleEventType.BasicAttackStarted, actor, target);
+
+            int hitDelayTicks = Math.Max(1, TicksForDuration(BattleRules.BasicAttackHitDelay));
+            actor.NextActionTick = AddTicksSafely(
+                _currentTick,
+                Math.Max(TicksForDuration(actor.AttackInterval), AddTicksSafely(hitDelayTicks, 1)));
+            _pendingBasicHits.Add(new PendingBasicHit
             {
-                Finish(actor.Side == BattleTeamSide.Player
-                    ? BattleOutcome.PlayerVictory
-                    : BattleOutcome.EnemyVictory);
+                DueTick = AddTicksSafely(_currentTick, hitDelayTicks),
+                ScheduleOrder = _nextScheduleOrder++,
+                Actor = actor,
+                Target = target
+            });
+        }
+
+        private void ResolvePendingBasicHits()
+        {
+            if (_pendingBasicHits.Count == 0)
+            {
                 return;
             }
 
-            Emit(BattleEventType.BasicAttackStarted, actor, target);
+            var dueHits = new List<PendingBasicHit>();
+            for (int index = _pendingBasicHits.Count - 1; index >= 0; index--)
+            {
+                PendingBasicHit pendingHit = _pendingBasicHits[index];
+                if (pendingHit.DueTick <= _currentTick)
+                {
+                    dueHits.Add(pendingHit);
+                    _pendingBasicHits.RemoveAt(index);
+                }
+            }
+
+            dueHits.Sort((left, right) =>
+            {
+                int tickComparison = left.DueTick.CompareTo(right.DueTick);
+                return tickComparison != 0
+                    ? tickComparison
+                    : left.ScheduleOrder.CompareTo(right.ScheduleOrder);
+            });
+
+            for (int index = 0; index < dueHits.Count && !_finished; index++)
+            {
+                PendingBasicHit pendingHit = dueHits[index];
+                if (pendingHit.Actor.IsAlive && pendingHit.Target.IsAlive)
+                {
+                    ResolveBasicHit(pendingHit.Actor, pendingHit.Target);
+                }
+            }
+        }
+
+        private void ResolveBasicHit(BattleUnitState actor, BattleUnitState target)
+        {
 
             var damage = SkillEffectCalculator.CalculateBasicAttackDamage(actor.Attack, target.Defense);
             var appliedDamage = target.ApplyDamage(damage);
@@ -174,6 +252,14 @@ namespace GenericGachaRPG
             SkillDefinition skill,
             List<BattleUnitState> targets)
         {
+            BattleUnitState eventTarget = skill.Category == SkillCategory.Damage
+                ? FindLockedAliveOpponent(actor)
+                : targets[0];
+            if (eventTarget == null)
+            {
+                return;
+            }
+
             var spentEnergy = actor.SpendSkillEnergy();
             if (spentEnergy > 0)
             {
@@ -190,10 +276,10 @@ namespace GenericGachaRPG
             Emit(
                 BattleEventType.SkillCastStarted,
                 actor,
-                targets[0],
+                eventTarget,
                 0f,
-                targets[0].CurrentHealth,
-                targets[0].CurrentEnergy,
+                eventTarget.CurrentHealth,
+                eventTarget.CurrentEnergy,
                 skill.Id);
 
             var hitDelayTicks = skill.HitTiming <= 0f ? 0 : TicksForDuration(skill.HitTiming);
@@ -370,23 +456,15 @@ namespace GenericGachaRPG
 
                 case SkillTargetMode.SingleEnemy:
                 default:
-                    AddRandomAliveOpponent(opponents, selected);
+                    BattleUnitState lockedTarget = FindLockedAliveOpponent(actor);
+                    if (lockedTarget != null)
+                    {
+                        selected.Add(lockedTarget);
+                    }
                     break;
             }
 
             return selected;
-        }
-
-        private void AddRandomAliveOpponent(
-            List<BattleUnitState> opponents,
-            List<BattleUnitState> destination)
-        {
-            var alive = new List<BattleUnitState>(opponents.Count);
-            AddAliveBySlot(opponents, alive, opponents.Count);
-            if (alive.Count > 0)
-            {
-                destination.Add(alive[_random.NextInt(alive.Count)]);
-            }
         }
 
         private static int EffectiveTargetCount(int configuredCount, int availableSlots)
@@ -428,18 +506,122 @@ namespace GenericGachaRPG
             return selected;
         }
 
-        private BattleUnitState FirstAliveOpponent(BattleTeamSide actorSide)
+        private BattleUnitState FindClosestAliveOpponent(BattleUnitState actor)
         {
-            var opponents = actorSide == BattleTeamSide.Player ? _enemyUnits : _playerUnits;
+            List<BattleUnitState> opponents = actor.Side == BattleTeamSide.Player ? _enemyUnits : _playerUnits;
+            BattleUnitState selected = null;
+            float selectedDistance = float.PositiveInfinity;
             for (var index = 0; index < opponents.Count; index++)
             {
-                if (opponents[index].IsAlive)
+                BattleUnitState candidate = opponents[index];
+                if (!candidate.IsAlive)
                 {
-                    return opponents[index];
+                    continue;
+                }
+
+                float distance = (actor.CurrentPosition - candidate.CurrentPosition).sqrMagnitude;
+                if (selected == null || distance < selectedDistance ||
+                    (Math.Abs(distance - selectedDistance) <= 0.0001f && candidate.SlotIndex < selected.SlotIndex))
+                {
+                    selected = candidate;
+                    selectedDistance = distance;
+                }
+            }
+
+            return selected;
+        }
+
+        private void UpdateTargetLocks()
+        {
+            for (var index = 0; index < _actionOrder.Count; index++)
+            {
+                BattleUnitState actor = _actionOrder[index];
+                if (!actor.IsAlive)
+                {
+                    actor.LockTarget(null);
+                    continue;
+                }
+
+                BattleUnitState target = FindLockedAliveOpponent(actor);
+                if (target == null)
+                {
+                    actor.LockTarget(FindClosestAliveOpponent(actor));
+                }
+            }
+        }
+
+        private void MoveUnitsTowardLockedTargets()
+        {
+            var movementSteps = new List<MovementStep>(_actionOrder.Count);
+            float maximumStep = _context.TickDuration;
+
+            // Calculate every destination before applying any of them so both
+            // teams observe the same start-of-tick position snapshot.
+            for (var index = 0; index < _actionOrder.Count; index++)
+            {
+                BattleUnitState actor = _actionOrder[index];
+                BattleUnitState target = FindLockedAliveOpponent(actor);
+                if (!actor.IsAlive || target == null || IsWithinAttackRange(actor, target))
+                {
+                    continue;
+                }
+
+                Vector3 toTarget = target.CurrentPosition - actor.CurrentPosition;
+                float distance = toTarget.magnitude;
+                float remainingDistance = Math.Max(0f, distance - actor.AttackRange);
+                float step = Math.Min(remainingDistance, actor.MoveSpeed * maximumStep);
+                if (step <= BattleRules.RangeEpsilon || distance <= BattleRules.RangeEpsilon)
+                {
+                    continue;
+                }
+
+                movementSteps.Add(new MovementStep
+                {
+                    Actor = actor,
+                    Target = target,
+                    Destination = Vector3.MoveTowards(actor.CurrentPosition, target.CurrentPosition, step)
+                });
+            }
+
+            for (var index = 0; index < movementSteps.Count; index++)
+            {
+                MovementStep movement = movementSteps[index];
+                movement.Actor.SetCurrentPosition(movement.Destination);
+                Emit(
+                    BattleEventType.UnitMoved,
+                    movement.Actor,
+                    movement.Target,
+                    duration: _context.TickDuration);
+            }
+        }
+
+        private BattleUnitState FindLockedAliveOpponent(BattleUnitState actor)
+        {
+            if (actor == null || string.IsNullOrEmpty(actor.LockedTargetRuntimeId))
+            {
+                return null;
+            }
+
+            List<BattleUnitState> opponents = actor.Side == BattleTeamSide.Player ? _enemyUnits : _playerUnits;
+            for (var index = 0; index < opponents.Count; index++)
+            {
+                BattleUnitState candidate = opponents[index];
+                if (candidate.IsAlive &&
+                    string.Equals(candidate.RuntimeId, actor.LockedTargetRuntimeId, StringComparison.Ordinal))
+                {
+                    return candidate;
                 }
             }
 
             return null;
+        }
+
+        private static bool IsWithinAttackRange(BattleUnitState actor, BattleUnitState target)
+        {
+            return BattleRules.IsWithinAttackRange(
+                actor.CurrentPosition,
+                target.CurrentPosition,
+                actor.AttackRange);
         }
 
         private void ChangeEnergy(
@@ -538,7 +720,8 @@ namespace GenericGachaRPG
             float healthAfter = 0f,
             int energyAfter = 0,
             string skillId = null,
-            BattleOutcome outcome = BattleOutcome.None)
+            BattleOutcome outcome = BattleOutcome.None,
+            float duration = 0f)
         {
             _events.Add(new BattleEvent(
                 _nextEventSequence++,
@@ -551,7 +734,9 @@ namespace GenericGachaRPG
                 healthAfter,
                 energyAfter,
                 skillId,
-                outcome));
+                outcome,
+                actor == null ? Vector3.zero : actor.CurrentPosition,
+                duration));
         }
 
         private int TicksForDuration(float duration)

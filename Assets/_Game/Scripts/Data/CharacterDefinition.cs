@@ -9,7 +9,8 @@ namespace GenericGachaRPG
         [SerializeField] private string displayName = "Character";
         [TextArea, SerializeField] private string description = string.Empty;
         [SerializeField] private CharacterRole role = CharacterRole.Striker;
-        [SerializeField] private Rarity rarity = Rarity.Common;
+        [SerializeField] private Rarity rarity = Rarity.R;
+        [SerializeField] private bool isLimited;
         [SerializeField] private Color displayColor = Color.white;
         [SerializeField] private Sprite portrait;
         [SerializeField] private GameObject characterPrefab;
@@ -19,6 +20,8 @@ namespace GenericGachaRPG
         [Min(0f), SerializeField] private float attack = 100f;
         [Min(0f), SerializeField] private float defense = 30f;
         [Min(0.05f), SerializeField] private float attackInterval = 1.5f;
+        [Min(BattleRules.MinimumAttackRange), SerializeField] private float attackRange = BattleRules.StrikerAttackRange;
+        [Min(0.05f), SerializeField] private float moveSpeed = BattleRules.StrikerMoveSpeed;
         [Min(1), SerializeField] private int maxEnergy = 100;
         [Min(0), SerializeField] private int energyPerAttack = 25;
         [Min(0), SerializeField] private int energyWhenHit = 10;
@@ -29,6 +32,7 @@ namespace GenericGachaRPG
         public string Description => description;
         public CharacterRole Role => role;
         public Rarity Rarity => rarity;
+        public bool IsLimited => isLimited;
         public Color DisplayColor => displayColor;
         public Sprite Portrait => portrait;
         public GameObject CharacterPrefab => characterPrefab;
@@ -36,6 +40,8 @@ namespace GenericGachaRPG
         public float Attack => attack;
         public float Defense => defense;
         public float AttackInterval => attackInterval;
+        public float AttackRange => attackRange;
+        public float MoveSpeed => moveSpeed;
         public int MaxEnergy => maxEnergy;
         public int EnergyPerAttack => energyPerAttack;
         public int EnergyWhenHit => energyWhenHit;
@@ -55,19 +61,23 @@ namespace GenericGachaRPG
             float characterAttack,
             float characterDefense,
             float characterAttackInterval,
+            float characterAttackRange,
+            float characterMoveSpeed,
             int characterMaxEnergy,
             int characterEnergyPerAttack,
             int characterEnergyWhenHit,
             SkillDefinition characterSkill,
             string characterDescription = "",
             Sprite characterPortrait = null,
-            GameObject prefab = null)
+            GameObject prefab = null,
+            bool limited = false)
         {
             id = characterId == null ? string.Empty : characterId.Trim();
             displayName = string.IsNullOrWhiteSpace(characterDisplayName) ? id : characterDisplayName.Trim();
             description = characterDescription ?? string.Empty;
             role = characterRole;
             rarity = characterRarity;
+            isLimited = limited;
             displayColor = characterDisplayColor;
             portrait = characterPortrait;
             characterPrefab = prefab;
@@ -75,6 +85,8 @@ namespace GenericGachaRPG
             attack = Mathf.Max(0f, characterAttack);
             defense = Mathf.Max(0f, characterDefense);
             attackInterval = Mathf.Max(0.05f, characterAttackInterval);
+            attackRange = SanitizePositive(characterAttackRange, BattleRules.GetDefaultAttackRange(characterRole));
+            moveSpeed = SanitizePositive(characterMoveSpeed, BattleRules.GetDefaultMoveSpeed(characterRole));
             maxEnergy = Mathf.Max(1, characterMaxEnergy);
             energyPerAttack = Mathf.Max(0, characterEnergyPerAttack);
             energyWhenHit = Mathf.Max(0, characterEnergyWhenHit);
@@ -89,9 +101,18 @@ namespace GenericGachaRPG
             attack = Mathf.Max(0f, attack);
             defense = Mathf.Max(0f, defense);
             attackInterval = Mathf.Max(0.05f, attackInterval);
+            attackRange = SanitizePositive(attackRange, BattleRules.GetDefaultAttackRange(role));
+            moveSpeed = SanitizePositive(moveSpeed, BattleRules.GetDefaultMoveSpeed(role));
             maxEnergy = Mathf.Max(1, maxEnergy);
             energyPerAttack = Mathf.Max(0, energyPerAttack);
             energyWhenHit = Mathf.Max(0, energyWhenHit);
+        }
+
+        private static float SanitizePositive(float value, float fallback)
+        {
+            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value)
+                ? value
+                : fallback;
         }
     }
 }

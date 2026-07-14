@@ -17,6 +17,7 @@ MonoBehaviour:
   description: A steady frontline defender.
   role: 0
   rarity: 0
+  isLimited: 0
   displayColor: {r: 0.13, g: 0.48, b: 0.95, a: 1}
   portrait: {fileID: 0}
   characterPrefab: {fileID: 0}
@@ -24,6 +25,8 @@ MonoBehaviour:
   attack: 116
   defense: 58
   attackInterval: 1.45
+  attackRange: 1.45
+  moveSpeed: 3.2
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12

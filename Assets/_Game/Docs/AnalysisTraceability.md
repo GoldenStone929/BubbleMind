@@ -3,7 +3,7 @@
 ## High-Level Concepts Used
 
 - Data-driven characters, skills, formations and gacha banners.
-- Fixed-position automated team battle.
+- Deterministic, position-driven 5v5 automated team battle.
 - Separate simulation, presentation, persistence and UI layers.
 - Shared character view and attachment-point contract.
 
@@ -12,6 +12,7 @@
 - All code, names, roles, stats, formulas, probabilities, UI and placeholder visuals are newly authored for this project.
 - Characters use original Unity-primitive geometry and generic color schemes.
 - The demo uses local mock services with interfaces designed for future backend replacement.
+- AI target locking, fixed-tick movement, attack range and target-death retargeting are independent BubbleMind rules; the read-only analysis supplied only high-level system boundaries and no recoverable PvP numbers.
 
 ## Intentionally Not Copied
 
@@ -21,4 +22,3 @@
 ## Deferred
 
 - Production backend, authentication, IAP, remote content, PvP, live operations and final character art.
-
