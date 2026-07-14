@@ -115,11 +115,11 @@ namespace GenericGachaRPG
             yield return WaitForScreen("CollectionScreen", StepTimeoutSeconds);
             AssertOnlyScreenActive("CollectionScreen");
             yield return WaitFor(
-                () => CountDescendantsWithPrefix("CollectionScreen", "Card_") == 6,
-                "six collection cards",
+                () => CountDescendantsWithPrefix("CollectionScreen", "Card_") == 7,
+                "seven collection cards",
                 StepTimeoutSeconds);
-            Require(CountDescendantsWithPrefix("CollectionScreen", "Card_") == 6,
-                "Collection screen does not contain exactly six character cards.");
+            Require(CountDescendantsWithPrefix("CollectionScreen", "Card_") == 7,
+                "Collection screen does not contain exactly seven character cards.");
 
             ClickActiveButton("BackButton");
             yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
@@ -140,6 +140,23 @@ namespace GenericGachaRPG
             ClickActiveButton("BattleButton");
             yield return WaitForScreen("BattleScreen", StepTimeoutSeconds);
             AssertOnlyScreenActive("BattleScreen");
+            yield return WaitFor(
+                () => FindSceneObject("AbyssalObservatory_Backdrop") != null &&
+                      FindSceneObject("P1_Abyssal Slime") != null,
+                "Abyssal Observatory and authored Cosmic Slime",
+                StepTimeoutSeconds);
+            GameObject backdrop = FindSceneObject("AbyssalObservatory_Backdrop");
+            Renderer backdropRenderer = backdrop == null ? null : backdrop.GetComponent<Renderer>();
+            Require(backdropRenderer != null, "Abyssal Observatory backdrop has no Renderer.");
+            Require(backdropRenderer.sharedMaterial != null,
+                "Abyssal Observatory backdrop has no runtime material.");
+            Require(backdropRenderer.sharedMaterial.shader != null,
+                "Abyssal Observatory backdrop material has no runtime shader.");
+            GameObject cosmicSlime = FindSceneObject("P1_Abyssal Slime");
+            Require(cosmicSlime != null && cosmicSlime.GetComponent<CosmicSlimeVisualController>() != null,
+                "Player Cosmic Slime did not instantiate from the authored prefab.");
+            Require(cosmicSlime.GetComponentsInChildren<Renderer>(true).Length > 0,
+                "Player Cosmic Slime prefab has no visible renderer.");
 
             yield return WaitFor(
                 () =>
@@ -220,7 +237,26 @@ namespace GenericGachaRPG
                 () =>
                 {
                     GameObject screen = FindSceneObject(screenName);
-                    return screen != null && screen.activeInHierarchy;
+                    if (screen == null || !screen.activeInHierarchy)
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < ScreenNames.Length; i++)
+                    {
+                        if (string.Equals(ScreenNames[i], screenName, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        GameObject other = FindSceneObject(ScreenNames[i]);
+                        if (other != null && other.activeInHierarchy)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
                 },
                 $"active {screenName}",
                 timeoutSeconds);

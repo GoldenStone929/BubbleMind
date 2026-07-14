@@ -1,7 +1,7 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v1.5-ur-character-prototype<br>
-> 当前状态：P0 垂直切片、Windows 试玩版与长期制作基础设施已完成；首个 UR 限定角色样板正在制作；外部残留与凭据轮换见 `StudioOps/DEFERRED_WORK.md`<br>
+> 计划版本：v1.6-first-demo-map<br>
+> 当前状态：首个 `BubbleMind` 试玩版已完成；星渊吞噬体、星渊观测台、响应式 UI、3v3 战斗与 Windows 独立包均已验证；外部残留与凭据轮换见 `StudioOps/DEFERRED_WORK.md`<br>
 > 最近更新：2026-07-14  
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文  
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
@@ -56,7 +56,7 @@ PROJECT_PLAN.md
 - Unity Editor：`6000.5.3f1`
 - Render Pipeline：URP `17.5.0`
 - 项目起点是新建的 Unity URP 模板；P0 内容现已完整落在 `Assets/_Game`。
-- 已生成自定义游戏脚本、六名角色、三项技能、抽卡池、本地存档、三人编队、3v3 自动战斗、完整 UI、演示场景和编辑器工具。
+- 已生成自定义游戏脚本、七名角色（六名标准池角色与一名 UR 样板）、三项技能、抽卡池、本地存档、三人编队、3v3 自动战斗、完整 UI、演示场景和编辑器工具。
 - 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity` 与 Windows 独立版 `Builds/Windows/GenericGachaRPGDemo.exe`。
 - 当前项目已在 `GenericGachaRPG` 内建立本地 Git/Git LFS 仓库；`main` 初始基线提交为 `27ac1da`。用户已于 2026-07-14 明确授权把该仓库推送到 `https://github.com/GoldenStone929/BubbleMind.git`；其他远端、构建发布或外部服务仍需另行授权。
 - Unity Editor 当前可能处于打开状态。不要强制关闭 Unity，也不要在项目被打开时另启会冲突的第二个 Editor 实例。
@@ -275,7 +275,7 @@ P1 才实现：
 
 ### 6.4 Character Collection 角色收藏
 
-显示全部 6 名角色：
+显示全部 7 名角色：
 
 - 已锁定/已解锁状态
 - 稀有度
@@ -804,15 +804,15 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.5 已保存并同步首个 UR 角色里程碑 | 2026-07-14 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.6 已保存并同步首个地图、UR 角色与试玩版里程碑 | 2026-07-14 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
-| 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 六角色/三技能/一抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-13 |
+| 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 七角色/三技能/一组六角色标准抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-14 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
 | 阶段 3：3v3 战斗核心 | 已完成 | 确定性自动战斗 | 固定 Tick、同 Seed 完整事件序列一致；胜负与超时验证通过 | 2026-07-13 |
 | 阶段 4：表现与场景 | 已完成 | 角色、UI、VFX、Generator、Scene | 程序化角色、运行时 UI、表现层及场景已在 Unity Play Mode 实测 | 2026-07-13 |
 | 阶段 5：P0 验证与试玩 | 已完成 | 可重复试玩的完整流程与 Windows Build | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS`；详见 `VerificationReport.md` | 2026-07-13 |
 | 长期制作基础设施 | 已完成（清理待授权） | 本地 Git/LFS、`AGENTS.md`、StudioOps、项目级 `.codex/config.toml`、嵌入式隔离 Unity MCP、隔离 uv/Python 与 Editor Bootstrap | 48 工具离线协议复测、`UNITY_MCP_SMOKE_PASS`、P0/Play 回归与最终 Windows 构建均通过；项目外残留详见 `VerificationReport.md` | 2026-07-14 |
-| 阶段 6：P1 | 进行中 | 首个 UR 限定角色样板；十连、碎片、升级仍延期 | `StudioOps/CURRENT_MILESTONE.md` 与角色 Asset Spec | 2026-07-14 |
+| 阶段 6：P1 | 进行中 | 首个地图与 UR 角色试玩样板已完成；正式角色动画、十连、碎片、升级仍延期 | `StudioOps/MILESTONES/2026-07-14_FIRST_DEMO.md` | 2026-07-14 |
 
 状态仅使用：`未开始 / 进行中 / 已完成 / 阻塞`。
 
@@ -845,6 +845,8 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-14 | 公开过的 Tripo Key 视为已暴露 | Key 出现在聊天中，且此前流程创建了用户级环境变量/凭据 | 本次只从现有存储读入内存；生成后建议用户轮换；清理用户级状态需另行授权，见 `StudioOps/DEFERRED_WORK.md` |
 | 2026-07-14 | 工作区正式保留名称 `BubbleMind` | 用户明确偏好该名称并同意修正此前文档中的旧路径判断 | 唯一可写工程路径统一为 `C:\Users\yshaw\OneDrive\Desktop\BubbleMind\GenericGachaRPG`；后续任务不得再使用不存在的 `Game-jjk` 路径 |
 | 2026-07-14 | 授权发布到 `GoldenStone929/BubbleMind` | 用户要求把现有空仓库作为项目远端，并同意当前路径判断 | 允许为本地 `main` 配置该唯一远端并推送 Git/Git LFS 内容；不包含构建发布或其他远端授权 |
+| 2026-07-14 | 首张地图采用“先生成概念图、再应用”的星渊观测台方案 | 用户要求先看地图图像，再把地图用于首个试玩版 | 原创 16:9 概念图以全画幅 URP 背板接入首页与战斗；另记录翠空铸园、镜潮陨坑两个后续方向 |
+| 2026-07-14 | Windows 试玩固定 Direct3D 11 与 60 FPS 目标 | 首个试玩更重视广泛兼容、稳定演示和一致帧节奏 | 产品名统一为 `BubbleMind First Demo`；真实窗口完成首页、收藏、编队、战斗和结算检查 |
 
 ---
 

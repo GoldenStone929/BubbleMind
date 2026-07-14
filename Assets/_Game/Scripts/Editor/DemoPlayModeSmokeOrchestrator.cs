@@ -118,6 +118,11 @@ namespace GenericGachaRPG.Editor
             {
                 EditorApplication.isPlaying = false;
             }
+
+            if (Application.isBatchMode)
+            {
+                EditorApplication.delayCall += () => EditorApplication.Exit(success ? 0 : 1);
+            }
         }
 
         private static void OnEditorUpdate()
@@ -150,6 +155,11 @@ namespace GenericGachaRPG.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 EditorApplication.isPlaying = false;
+            }
+
+            if (Application.isBatchMode)
+            {
+                EditorApplication.delayCall += () => EditorApplication.Exit(2);
             }
         }
 

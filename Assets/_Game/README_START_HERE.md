@@ -1,6 +1,6 @@
-# Generic Gacha RPG Demo — 试玩入口
+# BubbleMind First Demo — 试玩入口
 
-P0 垂直切片已经可以在 Unity 中试玩。项目使用 Unity `6000.5.3f1`、URP 和 uGUI，不需要额外下载。
+首个 `BubbleMind` 垂直切片已经可以在 Unity 或 Windows 独立包中试玩。项目使用 Unity `6000.5.3f1`、URP 和 uGUI，不需要额外下载。
 
 ## 最快试玩方法
 
@@ -27,7 +27,7 @@ F8  Tools > Generic Gacha RPG > Open Demo Scene
 F6  Tools > Generic Gacha RPG > Build Windows Demo
 ```
 
-生成器可以重复运行，会校正六名角色、三个技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
+生成器可以重复运行，会校正七名角色、星渊吞噬体 Prefab、星渊观测台材质、三个技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
 
 Windows 独立版已经生成在：
 
@@ -39,9 +39,12 @@ Builds/Windows/GenericGachaRPGDemo.exe
 
 最终验证记录见 `Assets/_Game/Docs/VerificationReport.md`。
 
+独立包窗口名为 `BubbleMind First Demo`，使用 Direct3D 11，并以 60 FPS 为目标。
+
 ## 当前内容
 
-- 六名原创程序化角色，包含 Guardian、Striker 和 Support。
+- 七名角色：六名原创程序化占位角色，以及首个 Blender/URP 正式样板“星渊吞噬体”。
+- 原创 16:9 战斗地图“星渊观测台”，同时作为首页与实战视觉基准。
 - R / SR / SSR 单抽展示、概率明细、余额扣除、解锁和重复记录。
 - 收藏页和严格三人编队。
 - 固定 Tick、Seed 可复现的 3v3 自动战斗。

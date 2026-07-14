@@ -13,7 +13,9 @@ namespace GenericGachaRPG
     /// </summary>
     public sealed class DemoBattlePresenter : MonoBehaviour
     {
-        private const float PlaybackSpeed = 2.4f;
+        private const float PlaybackSpeed = 1.8f;
+        private const string ArenaBackdropResource = "AbyssalObservatory_Concept";
+        private const string ArenaBackdropMaterialResource = "MAT_AbyssalObservatoryBackdrop";
 
         private readonly Dictionary<string, UnitPresentation> units = new Dictionary<string, UnitPresentation>();
         private readonly List<Material> runtimeMaterials = new List<Material>();
@@ -232,6 +234,128 @@ namespace GenericGachaRPG
 
         private void BuildEnvironment()
         {
+            Texture2D backdrop = Resources.Load<Texture2D>(ArenaBackdropResource);
+            Material backdropMaterial = Resources.Load<Material>(ArenaBackdropMaterialResource);
+            if (backdrop != null && backdropMaterial != null)
+            {
+                BuildAbyssalObservatory(backdrop, backdropMaterial);
+                return;
+            }
+
+            Debug.LogWarning(
+                $"[GenericGachaRPG] Arena backdrop resources are unavailable; using the procedural fallback. " +
+                $"Texture={backdrop != null}, Material={backdropMaterial != null}.",
+                this);
+            BuildFallbackEnvironment();
+        }
+
+        private void BuildAbyssalObservatory(Texture2D backdropTexture, Material backdropTemplate)
+        {
+            Material stone = CreateMaterial("ObservatoryStone", new Color(0.055f, 0.065f, 0.085f, 1f), 0.18f, 0.42f);
+            Material trim = CreateMaterial("ObservatoryTrim", new Color(0.33f, 0.23f, 0.11f, 1f), 0.72f, 0.52f);
+            Material energy = CreateMaterial("ObservatoryEnergy", new Color(0.06f, 0.68f, 0.86f, 0.76f), 0.12f, 0.82f, true);
+            Material backdrop = CreateBackdropMaterial(backdropTexture, backdropTemplate);
+
+            GameObject backdropObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            backdropObject.name = "AbyssalObservatory_Backdrop";
+            backdropObject.transform.SetParent(worldRoot, false);
+            if (battleCamera != null)
+            {
+                const float distance = 22f;
+                backdropObject.transform.position =
+                    battleCamera.transform.position + battleCamera.transform.forward * distance;
+                backdropObject.transform.rotation = battleCamera.transform.rotation;
+                float height = 2f * distance * Mathf.Tan(battleCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * 1.08f;
+                backdropObject.transform.localScale = new Vector3(height * battleCamera.aspect, height, 1f);
+            }
+            else
+            {
+                backdropObject.transform.position = new Vector3(0f, 3.2f, 6.6f);
+                backdropObject.transform.localScale = new Vector3(29.6f, 16.65f, 1f);
+            }
+
+            Renderer backdropRenderer = backdropObject.GetComponent<Renderer>();
+            backdropRenderer.sharedMaterial = backdrop;
+            backdropRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            backdropRenderer.receiveShadows = false;
+            RemoveCollider(backdropObject);
+
+            Vector3[] markerPositions =
+            {
+                new Vector3(-4.2f, 0.035f, -1.8f), new Vector3(-3.7f, 0.035f, 0f), new Vector3(-4.2f, 0.035f, 1.8f),
+                new Vector3(4.2f, 0.035f, 1.8f), new Vector3(3.7f, 0.035f, 0f), new Vector3(4.2f, 0.035f, -1.8f)
+            };
+
+            for (int i = 0; i < markerPositions.Length; i++)
+            {
+                GameObject marker = CreateArenaCylinder(
+                    i < 3 ? $"PlayerMarker_{i}" : $"EnemyMarker_{i - 3}",
+                    markerPositions[i],
+                    new Vector3(0.78f, 0.014f, 0.78f),
+                    energy);
+                marker.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            Vector3[] ruinPositions =
+            {
+                new Vector3(-6.15f, 0.72f, 3.25f),
+                new Vector3(-4.85f, 0.48f, 3.72f),
+                new Vector3(4.85f, 0.48f, 3.72f),
+                new Vector3(6.15f, 0.72f, 3.25f)
+            };
+
+            for (int i = 0; i < ruinPositions.Length; i++)
+            {
+                GameObject ruin = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ruin.name = $"RuinMonolith_{i}";
+                ruin.transform.SetParent(worldRoot, false);
+                ruin.transform.position = ruinPositions[i];
+                ruin.transform.localScale = new Vector3(0.52f, i % 2 == 0 ? 1.65f : 1.15f, 0.52f);
+                ruin.transform.rotation = Quaternion.Euler(0f, i < 2 ? -12f : 12f, i % 2 == 0 ? 3f : -3f);
+                ruin.GetComponent<Renderer>().sharedMaterial = i % 2 == 0 ? trim : stone;
+                RemoveCollider(ruin);
+            }
+        }
+
+        private GameObject CreateArenaCylinder(string name, Vector3 position, Vector3 scale, Material material)
+        {
+            GameObject cylinder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            cylinder.name = name;
+            cylinder.transform.SetParent(worldRoot, false);
+            cylinder.transform.position = position;
+            cylinder.transform.localScale = scale;
+            cylinder.GetComponent<Renderer>().sharedMaterial = material;
+            RemoveCollider(cylinder);
+            return cylinder;
+        }
+
+        private static void RemoveCollider(GameObject gameObject)
+        {
+            Collider collider = gameObject.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+        }
+
+        private Material CreateBackdropMaterial(Texture2D texture, Material template)
+        {
+            Material material = new Material(template) { name = "AbyssalObservatoryBackdrop" };
+            if (material.HasProperty("_BaseMap"))
+            {
+                material.SetTexture("_BaseMap", texture);
+            }
+            else
+            {
+                material.mainTexture = texture;
+            }
+
+            runtimeMaterials.Add(material);
+            return material;
+        }
+
+        private void BuildFallbackEnvironment()
+        {
             Material floorMaterial = CreateMaterial("ArenaFloor", new Color(0.07f, 0.11f, 0.17f, 1f), 0.15f, 0.4f);
             Material markerPlayer = CreateMaterial("PlayerMarker", new Color(0.08f, 0.55f, 0.93f, 0.7f), 0f, 0.7f, true);
             Material markerEnemy = CreateMaterial("EnemyMarker", new Color(0.95f, 0.18f, 0.28f, 0.7f), 0f, 0.7f, true);
@@ -242,11 +366,7 @@ namespace GenericGachaRPG
             floor.transform.position = new Vector3(0f, -0.16f, 0f);
             floor.transform.localScale = new Vector3(13.5f, 0.25f, 8f);
             floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
-            Collider floorCollider = floor.GetComponent<Collider>();
-            if (floorCollider != null)
-            {
-                Destroy(floorCollider);
-            }
+            RemoveCollider(floor);
 
             Vector3[] markerPositions =
             {
@@ -262,11 +382,7 @@ namespace GenericGachaRPG
                 marker.transform.position = markerPositions[i];
                 marker.transform.localScale = new Vector3(0.85f, 0.018f, 0.85f);
                 marker.GetComponent<Renderer>().sharedMaterial = i < 3 ? markerPlayer : markerEnemy;
-                Collider collider = marker.GetComponent<Collider>();
-                if (collider != null)
-                {
-                    Destroy(collider);
-                }
+                RemoveCollider(marker);
             }
 
             for (int i = 0; i < 7; i++)
@@ -277,11 +393,7 @@ namespace GenericGachaRPG
                 pillar.transform.position = new Vector3(-6f + i * 2f, 1.25f + (i % 2) * 0.45f, 4.5f);
                 pillar.transform.localScale = new Vector3(1.3f, 2.5f + (i % 2) * 0.9f, 0.45f);
                 pillar.GetComponent<Renderer>().sharedMaterial = floorMaterial;
-                Collider collider = pillar.GetComponent<Collider>();
-                if (collider != null)
-                {
-                    Destroy(collider);
-                }
+                RemoveCollider(pillar);
             }
         }
 
@@ -293,22 +405,26 @@ namespace GenericGachaRPG
             int styleSeed,
             bool enemy)
         {
-            Color primary = enemy
-                ? Color.Lerp(definition.DisplayColor, new Color(0.45f, 0.04f, 0.08f, 1f), 0.34f)
-                : definition.DisplayColor;
-            Color accent = enemy
-                ? new Color(1f, 0.22f, 0.18f, 1f)
-                : Color.Lerp(definition.DisplayColor, Color.white, 0.48f);
-            CharacterView view = ProceduralCharacterBuilder.Create(
-                $"{runtimeId}_{definition.DisplayName}",
-                worldRoot,
-                position,
-                rotation,
-                primary,
-                accent,
-                styleSeed,
-                GetArchetype(definition.Role),
-                definition.Role == CharacterRole.Guardian ? 1.12f : 1f);
+            CharacterView view = CreateAuthoredCharacter(runtimeId, definition, position, rotation);
+            if (view == null)
+            {
+                Color primary = enemy
+                    ? Color.Lerp(definition.DisplayColor, new Color(0.45f, 0.04f, 0.08f, 1f), 0.34f)
+                    : definition.DisplayColor;
+                Color accent = enemy
+                    ? new Color(1f, 0.22f, 0.18f, 1f)
+                    : Color.Lerp(definition.DisplayColor, Color.white, 0.48f);
+                view = ProceduralCharacterBuilder.Create(
+                    $"{runtimeId}_{definition.DisplayName}",
+                    worldRoot,
+                    position,
+                    rotation,
+                    primary,
+                    accent,
+                    styleSeed,
+                    GetArchetype(definition.Role),
+                    definition.Role == CharacterRole.Guardian ? 1.12f : 1f);
+            }
 
             Transform barAnchor = view.HealthBar != null ? view.HealthBar : view.transform;
             GameObject barObject = new GameObject("WorldBars");
@@ -323,6 +439,33 @@ namespace GenericGachaRPG
 
             CreateWorldName(barAnchor, definition.DisplayName, enemy ? DemoUiFactory.Danger : DemoUiFactory.Accent);
             units[runtimeId] = new UnitPresentation(definition, view, bar);
+        }
+
+        private CharacterView CreateAuthoredCharacter(
+            string runtimeId,
+            CharacterDefinition definition,
+            Vector3 position,
+            Quaternion rotation)
+        {
+            if (definition.CharacterPrefab == null)
+            {
+                return null;
+            }
+
+            GameObject instance = Instantiate(definition.CharacterPrefab, position, rotation, worldRoot);
+            instance.name = $"{runtimeId}_{definition.DisplayName}";
+            CharacterView view = instance.GetComponent<CharacterView>();
+            if (view == null)
+            {
+                Debug.LogWarning(
+                    $"[GenericGachaRPG] Character prefab '{definition.CharacterPrefab.name}' has no root CharacterView; using fallback.",
+                    definition.CharacterPrefab);
+                Destroy(instance);
+                return null;
+            }
+
+            view.ResetView();
+            return view;
         }
 
         private void CreateWorldName(Transform parent, string displayName, Color color)

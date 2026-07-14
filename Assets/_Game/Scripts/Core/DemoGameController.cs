@@ -57,7 +57,6 @@ namespace GenericGachaRPG
             EnsureSceneCamera();
             BuildScreens();
             ResetDraftFromSavedFormation();
-            RefreshAll();
             ShowScreen(DemoScreen.Home);
         }
 
@@ -110,7 +109,7 @@ namespace GenericGachaRPG
             collectionScreen?.SetVisible(screen == DemoScreen.Collection);
             formationScreen?.SetVisible(screen == DemoScreen.Formation);
             battleScreen?.SetVisible(screen == DemoScreen.Battle);
-            RefreshAll();
+            RefreshScreen(screen);
             SelectFirstInteractableButton(screen);
         }
 
@@ -177,7 +176,6 @@ namespace GenericGachaRPG
                 ? null
                 : database.GetCharacter(result.CharacterId);
             gachaScreen.ShowResult(result, character);
-            RefreshAll();
         }
 
         private void ToggleFormationCharacter(string characterId)
@@ -264,17 +262,17 @@ namespace GenericGachaRPG
 
         private void OnStateChanged(PlayerState state)
         {
-            RefreshAll();
+            RefreshScreen(currentScreen);
         }
 
         private void OnBattleCompleted(BattleResult result)
         {
             // P0 keeps rewards presentation-only. Production rewards would be
             // committed by a backend-authoritative IBattleRewardService.
-            RefreshAll();
+            RefreshScreen(currentScreen);
         }
 
-        private void RefreshAll()
+        private void RefreshScreen(DemoScreen screen)
         {
             if (gameState == null)
             {
@@ -282,10 +280,21 @@ namespace GenericGachaRPG
             }
 
             PlayerState state = gameState.State;
-            homeScreen?.Refresh(state);
-            gachaScreen?.Refresh(state, database.DefaultBanner, database);
-            collectionScreen?.Refresh(database, state);
-            formationScreen?.Refresh(database, state, draftFormation, formationFeedback);
+            switch (screen)
+            {
+                case DemoScreen.Gacha:
+                    gachaScreen?.Refresh(state, database.DefaultBanner, database);
+                    break;
+                case DemoScreen.Collection:
+                    collectionScreen?.Refresh(database, state);
+                    break;
+                case DemoScreen.Formation:
+                    formationScreen?.Refresh(database, state, draftFormation, formationFeedback);
+                    break;
+                case DemoScreen.Home:
+                    homeScreen?.Refresh(state);
+                    break;
+            }
         }
 
         private void ResetDraftFromSavedFormation()

@@ -15,12 +15,13 @@ MonoBehaviour:
   startingCurrency: 3000
   starterCharacterIds:
   - azure_vanguard
-  - ember_striker
+  - ur_cosmic_slime
   - verdant_medic
   characters:
   - {fileID: 11400000, guid: d252b67e7af2e164a97012b7313d07a6, type: 2}
   - {fileID: 11400000, guid: 991533b0817edf946805777ee84c6ca9, type: 2}
   - {fileID: 11400000, guid: ff73f988dcb742945998fb85cd0fd3c6, type: 2}
+  - {fileID: 11400000, guid: 58183a8ea86561d4d80d3a444a5e194c, type: 2}
   - {fileID: 11400000, guid: ed0c1dd5f8d03c9429a3008102e05298, type: 2}
   - {fileID: 11400000, guid: 942a661b021d8744887403c79d9396d8, type: 2}
   - {fileID: 11400000, guid: c8faca700290b7a45af0dfb7424519ba, type: 2}

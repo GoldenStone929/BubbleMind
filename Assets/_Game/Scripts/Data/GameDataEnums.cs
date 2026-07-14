@@ -11,7 +11,8 @@ namespace GenericGachaRPG
     {
         Common,
         Rare,
-        Epic
+        Epic,
+        UltraRare
     }
 
     public enum SkillCategory

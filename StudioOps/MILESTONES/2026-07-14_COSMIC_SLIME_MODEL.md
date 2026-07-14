@@ -2,7 +2,7 @@
 
 > 日期：2026-07-14  
 > 资产 ID：`ART-CHAR-UR-COSMIC-SLIME-001`  
-> 状态：Blender 建模完成；Unity 集成进行中
+> 状态：Blender 建模完成；Unity 集成已在 `2026-07-14_FIRST_DEMO.md` 闭环
 
 ## 成功更新
 
@@ -37,6 +37,6 @@ Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/UR_CosmicSlime.fbx
 
 Unity 日志含许可客户端在线令牌更新失败提示，但本机许可证最终有效，资源导入和批处理退出均成功；该提示不属于模型或工程编译错误。
 
-## 下一步
+## 后续结果
 
-从 `CURRENT_MILESTONE.md` 阶段 5 继续：创建 URP 材质与轨道/奇点表现、角色 Prefab 和 Socket 绑定，新增 `ur_cosmic_slime` 数据定义并接入 `CharacterView`，随后执行 Play 冒烟与 Windows Build 回归。
+URP 材质、轨道/奇点动画、角色 Prefab、Socket 绑定、`ur_cosmic_slime` 数据定义、`CharacterView`、Play 冒烟与 Windows Build 已全部完成；详见 `2026-07-14_FIRST_DEMO.md`。

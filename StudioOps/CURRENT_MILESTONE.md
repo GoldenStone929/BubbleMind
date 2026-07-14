@@ -1,10 +1,13 @@
 # 当前里程碑：首个 UR 限定角色样板
 
-> 状态：进行中  
+> 状态：已完成
 > 开始日期：2026-07-14  
+> 完成日期：2026-07-14
 > 角色资产 ID：`ART-CHAR-UR-COSMIC-SLIME-001`  
+> 地图资产 ID：`ART-ENV-BATTLE-ABYSSAL-OBSERVATORY-001`
 > 工作名：星渊吞噬体 / Abyssal Singularity Slime  
 > 规格：`Specs/ART-CHAR-UR-COSMIC-SLIME-001.md`  
+> 交付记录：`MILESTONES/2026-07-14_FIRST_DEMO.md`
 > 长期范围权威：`../PROJECT_PLAN.md`
 
 ## 目标
@@ -16,6 +19,7 @@
 - 停止 Claude 路线，由 Codex 独立接管角色制作。
 - 使用用户提供的 Tripo API 额度制作首个候选模型。
 - 使用用户已经安装的 Blender 5.1 进行清理、优化和导出。
+- 先生成原创地图概念图，再将其应用到首个可见、顺滑且界面完整的试玩版。
 - 继续遵守项目隔离、下载预告和中文沟通规则；本项目源码仅获准推送到 `GoldenStone929/BubbleMind`，其他远端与构建发布仍禁止。
 
 ## 已批准的外部动作
@@ -48,8 +52,8 @@ Unity 游戏资产：Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/
 | 2. 角色规格与来源登记 | 已完成 | Asset Spec、Art Bible、资产台账和第三方记录一致 |
 | 3. Tripo 候选 | 跳过（余额 0） | 余额检查为 available 0 / frozen 0；未上传、未建任务、未消费 |
 | 4. Blender 本地建模与清理 | 已完成 | 可重复脚本、`.blend`、FBX、轮廓、法线、拓扑、3 材质槽、Pivot 与 4,632 三角面审计通过 |
-| 5. Unity 集成 | 进行中 | 模型已由 Unity 6000.5.3f1 成功导入；URP 材质、Prefab、Sockets、CharacterView 与战斗数据待接通 |
-| 6. 验证与交付 | 待开始 | 编译、场景显示、Play 冒烟、性能检查和 Windows Build 回归通过 |
+| 5. Unity 集成 | 已完成 | URP 材质、Prefab、Sockets、`CharacterView`、UR 数据、轨道动画及地图资源均已接通 |
+| 6. 验证与交付 | 已完成 | P0 验证、自动 Play 冒烟、Windows Build、真实窗口首页/收藏/编队/战斗/结算检查均通过 |
 
 ## 美术方向
 
@@ -83,4 +87,4 @@ Unity 游戏资产：Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/
 
 ## 当前恢复点
 
-如果任务中断，下一代理应先阅读本文件、角色 Asset Spec、`MILESTONES/2026-07-14_COSMIC_SLIME_MODEL.md` 与 `DEFERRED_WORK.md`，检查 Git/Unity 实际状态，再从阶段 5 Unity 集成继续；不得重新从空项目开始或覆盖已验证的 Blender 基线。
+本里程碑已闭环。下一代理应先阅读本文件、角色与地图 Asset Spec、`MILESTONES/2026-07-14_FIRST_DEMO.md` 与 `DEFERRED_WORK.md`，以当前 Windows 试玩版为基线继续 P1；不得重新从空项目开始或覆盖已验证的 Blender/Unity 资产。

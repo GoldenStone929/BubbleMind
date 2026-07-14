@@ -40,8 +40,8 @@ namespace GenericGachaRPG.Editor
             Require(database.Characters != null, "Database character list is null.");
             Require(database.Skills != null, "Database skill list is null.");
             Require(database.GachaBanners != null, "Database banner list is null.");
-            Require(database.Characters.Count == 6,
-                $"Database must contain exactly 6 characters; found {database.Characters.Count}.");
+            Require(database.Characters.Count == 7,
+                $"Database must contain exactly 7 characters; found {database.Characters.Count}.");
             Require(database.Skills.Count == 3,
                 $"Database must contain exactly 3 skills; found {database.Skills.Count}.");
 
@@ -103,6 +103,18 @@ namespace GenericGachaRPG.Editor
                 $"Default banner TotalWeight mismatch: entries={validWeight}, banner={banner.TotalWeight}.");
             Require(database.StartingCurrency >= banner.SingleDrawCost,
                 "Starting currency must be enough for at least one demo draw.");
+
+            CharacterDefinition cosmicSlime = database.GetCharacter("ur_cosmic_slime");
+            Require(cosmicSlime != null, "Cosmic Slime definition is missing.");
+            Require(cosmicSlime.Rarity == Rarity.UltraRare, "Cosmic Slime must use UltraRare rarity.");
+            Require(cosmicSlime.CharacterPrefab != null, "Cosmic Slime prefab is missing.");
+            Require(cosmicSlime.CharacterPrefab.GetComponent<CharacterView>() != null,
+                "Cosmic Slime prefab must have a root CharacterView.");
+
+            Material backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+                AbyssalObservatoryAssetBuilder.BackdropMaterialPath);
+            Require(backdropMaterial != null, "Abyssal Observatory backdrop material is missing.");
+            Require(backdropMaterial.shader != null, "Abyssal Observatory backdrop material has no shader.");
 
             return banner;
         }

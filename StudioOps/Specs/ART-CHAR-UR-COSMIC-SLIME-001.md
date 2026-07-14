@@ -90,14 +90,14 @@ CharacterRoot
 - [x] Blender 源文件可打开并可重复导出
 - [x] 网格、法线、材质槽、比例与 Pivot 合格；首版仅依赖程序化材质，不需要贴图 UV
 - [x] Unity 6000.5.3f1 导入成功；无模型或编译错误
-- [ ] Prefab、Sockets 与 `CharacterView` 正确
-- [ ] 收藏/编队/战斗中可见
-- [ ] URP 材质、黑洞核心与轨道动画正确
+- [x] Prefab、Sockets 与 `CharacterView` 正确
+- [x] 收藏/编队条目与战斗模型均可见
+- [x] URP 材质、黑洞核心与轨道动画正确
 - [x] Blender 几何性能预算通过：4,632 / 20,000 triangles，3 / 3 materials
 - [x] Meta 文件与 Git LFS 状态正确
-- [ ] P0 Play 与 Windows Build 回归通过
+- [x] P0 Play 与 Windows Build 回归通过
 
-证据目录：`Artifacts/UR_CosmicSlime/`
+证据目录：`Artifacts/UR_CosmicSlime/` 与 `Artifacts/FirstDemo/`
 
 ## 8. 已知限制与交接
 

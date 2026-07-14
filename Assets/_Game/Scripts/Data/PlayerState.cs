@@ -97,7 +97,7 @@ namespace GenericGachaRPG
     [Serializable]
     public sealed class PlayerState
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         [SerializeField] private int schemaVersion = CurrentSchemaVersion;
         [Min(0), SerializeField] private int currency;

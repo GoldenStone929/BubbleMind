@@ -151,13 +151,13 @@ namespace GenericGachaRPG
         public void ResolveSocketsByName()
         {
             modelRoot = modelRoot != null ? modelRoot : FindDescendantByName(transform, "ModelRoot");
-            rightHandSocket = rightHandSocket != null ? rightHandSocket : FindDescendantByName(transform, "RightHand");
-            leftHandSocket = leftHandSocket != null ? leftHandSocket : FindDescendantByName(transform, "LeftHand");
-            skillVfxSocket = skillVfxSocket != null ? skillVfxSocket : FindDescendantByName(transform, "SkillVfx");
-            projectileSocket = projectileSocket != null ? projectileSocket : FindDescendantByName(transform, "Projectile");
-            groundVfxSocket = groundVfxSocket != null ? groundVfxSocket : FindDescendantByName(transform, "GroundVfx");
-            targetSocket = targetSocket != null ? targetSocket : FindDescendantByName(transform, "Target");
-            healthBarSocket = healthBarSocket != null ? healthBarSocket : FindDescendantByName(transform, "HealthBar");
+            rightHandSocket = rightHandSocket != null ? rightHandSocket : FindDescendantByNames(transform, "RightHand", "RightHandSocket");
+            leftHandSocket = leftHandSocket != null ? leftHandSocket : FindDescendantByNames(transform, "LeftHand", "LeftHandSocket");
+            skillVfxSocket = skillVfxSocket != null ? skillVfxSocket : FindDescendantByNames(transform, "SkillVfx", "SkillVfxSocket");
+            projectileSocket = projectileSocket != null ? projectileSocket : FindDescendantByNames(transform, "Projectile", "ProjectileSocket");
+            groundVfxSocket = groundVfxSocket != null ? groundVfxSocket : FindDescendantByNames(transform, "GroundVfx", "GroundVfxSocket");
+            targetSocket = targetSocket != null ? targetSocket : FindDescendantByNames(transform, "Target", "TargetSocket");
+            healthBarSocket = healthBarSocket != null ? healthBarSocket : FindDescendantByNames(transform, "HealthBar", "HealthBarSocket");
         }
 
         public void PlayIdle()
@@ -781,6 +781,20 @@ namespace GenericGachaRPG
                 if (nested != null)
                 {
                     return nested;
+                }
+            }
+
+            return null;
+        }
+
+        private static Transform FindDescendantByNames(Transform root, params string[] childNames)
+        {
+            for (int i = 0; i < childNames.Length; i++)
+            {
+                Transform match = FindDescendantByName(root, childNames[i]);
+                if (match != null)
+                {
+                    return match;
                 }
             }
 

@@ -16,22 +16,32 @@ namespace GenericGachaRPG
 
     public abstract class DemoScreenView
     {
+        private readonly DemoScreenTransition transition;
+
         protected DemoScreenView(GameObject root)
         {
             Root = root;
+            if (Root.GetComponent<CanvasGroup>() == null)
+            {
+                Root.AddComponent<CanvasGroup>();
+            }
+
+            transition = Root.AddComponent<DemoScreenTransition>();
         }
 
         public GameObject Root { get; }
 
         public void SetVisible(bool visible)
         {
-            Root.SetActive(visible);
+            transition.SetVisible(visible);
         }
 
         protected static string FormatRarity(Rarity rarity)
         {
             switch (rarity)
             {
+                case Rarity.UltraRare:
+                    return "UR";
                 case Rarity.Epic:
                     return "SSR";
                 case Rarity.Rare:
@@ -45,6 +55,8 @@ namespace GenericGachaRPG
         {
             switch (rarity)
             {
+                case Rarity.UltraRare:
+                    return new Color(1f, 0.46f, 0.88f, 1f);
                 case Rarity.Epic:
                     return new Color(0.92f, 0.53f, 1f, 1f);
                 case Rarity.Rare:
@@ -76,26 +88,26 @@ namespace GenericGachaRPG
             Text title = DemoUiFactory.CreateText(
                 "Title",
                 safeArea,
-                "GENERIC GACHA RPG",
-                68,
-                TextAnchor.UpperCenter,
+                "BUBBLE MIND",
+                72,
+                TextAnchor.MiddleLeft,
                 DemoUiFactory.TextPrimary,
                 FontStyle.Bold);
-            title.rectTransform.anchorMin = new Vector2(0.12f, 0.72f);
-            title.rectTransform.anchorMax = new Vector2(0.88f, 0.94f);
+            title.rectTransform.anchorMin = new Vector2(0.07f, 0.72f);
+            title.rectTransform.anchorMax = new Vector2(0.62f, 0.93f);
             title.rectTransform.offsetMin = Vector2.zero;
             title.rectTransform.offsetMax = Vector2.zero;
 
             Text subtitle = DemoUiFactory.CreateText(
                 "Subtitle",
                 safeArea,
-                "ORIGINAL CLEAN-ROOM VERTICAL SLICE",
+                "ABYSSAL OBSERVATORY  //  FIRST PLAYABLE DEMO",
                 24,
-                TextAnchor.UpperCenter,
+                TextAnchor.MiddleLeft,
                 DemoUiFactory.Accent,
                 FontStyle.Bold);
-            subtitle.rectTransform.anchorMin = new Vector2(0.12f, 0.67f);
-            subtitle.rectTransform.anchorMax = new Vector2(0.88f, 0.75f);
+            subtitle.rectTransform.anchorMin = new Vector2(0.07f, 0.64f);
+            subtitle.rectTransform.anchorMax = new Vector2(0.62f, 0.72f);
             subtitle.rectTransform.offsetMin = Vector2.zero;
             subtitle.rectTransform.offsetMax = Vector2.zero;
 
@@ -103,8 +115,8 @@ namespace GenericGachaRPG
                 "CurrencyCard",
                 safeArea,
                 DemoUiFactory.Surface,
-                new Vector2(0.73f, 0.87f),
-                new Vector2(0.97f, 0.97f),
+                new Vector2(0.76f, 0.87f),
+                new Vector2(0.95f, 0.95f),
                 Vector2.zero,
                 Vector2.zero);
             currencyText = DemoUiFactory.CreateText(
@@ -119,46 +131,46 @@ namespace GenericGachaRPG
             RectTransform buttonRow = DemoUiFactory.CreateRect(
                 "MainActions",
                 safeArea,
-                new Vector2(0.12f, 0.34f),
-                new Vector2(0.88f, 0.62f),
+                new Vector2(0.07f, 0.13f),
+                new Vector2(0.93f, 0.35f),
                 Vector2.zero,
                 Vector2.zero);
             DemoUiFactory.AddHorizontalLayout(
                 buttonRow.gameObject,
-                28f,
-                new RectOffset(18, 18, 18, 18));
+                18f,
+                new RectOffset(0, 0, 0, 0));
 
             Button gachaButton = DemoUiFactory.CreateButton(
                 "GachaButton",
                 buttonRow,
-                "GACHA\nSUMMON",
-                new Color(0.44f, 0.24f, 0.72f, 1f),
+                "SUMMON",
+                new Color(0.30f, 0.18f, 0.48f, 1f),
                 () => openGacha?.Invoke());
-            DemoUiFactory.SetLayout(gachaButton.gameObject, 300f, 180f, 1f, 1f);
+            DemoUiFactory.SetLayout(gachaButton.gameObject, 280f, 150f, 1f, 1f);
 
             Button collectionButton = DemoUiFactory.CreateButton(
                 "CollectionButton",
                 buttonRow,
-                "CHARACTER\nCOLLECTION",
-                new Color(0.12f, 0.46f, 0.64f, 1f),
+                "COLLECTION",
+                new Color(0.08f, 0.34f, 0.43f, 1f),
                 () => openCollection?.Invoke());
-            DemoUiFactory.SetLayout(collectionButton.gameObject, 300f, 180f, 1f, 1f);
+            DemoUiFactory.SetLayout(collectionButton.gameObject, 280f, 150f, 1f, 1f);
 
             Button formationButton = DemoUiFactory.CreateButton(
                 "FormationButton",
                 buttonRow,
-                "TEAM\nFORMATION",
-                new Color(0.11f, 0.55f, 0.39f, 1f),
+                "FORMATION",
+                new Color(0.12f, 0.38f, 0.30f, 1f),
                 () => openFormation?.Invoke());
-            DemoUiFactory.SetLayout(formationButton.gameObject, 300f, 180f, 1f, 1f);
+            DemoUiFactory.SetLayout(formationButton.gameObject, 280f, 150f, 1f, 1f);
 
             battleButton = DemoUiFactory.CreateButton(
                 "BattleButton",
                 buttonRow,
-                "START\nBATTLE",
-                new Color(0.78f, 0.24f, 0.23f, 1f),
+                "DEPLOY",
+                new Color(0.58f, 0.33f, 0.12f, 1f),
                 () => startBattle?.Invoke());
-            DemoUiFactory.SetLayout(battleButton.gameObject, 300f, 180f, 1f, 1f);
+            DemoUiFactory.SetLayout(battleButton.gameObject, 280f, 150f, 1f, 1f);
 
             statusText = DemoUiFactory.CreateText(
                 "Status",
@@ -167,8 +179,8 @@ namespace GenericGachaRPG
                 25,
                 TextAnchor.MiddleCenter,
                 DemoUiFactory.TextMuted);
-            statusText.rectTransform.anchorMin = new Vector2(0.18f, 0.22f);
-            statusText.rectTransform.anchorMax = new Vector2(0.82f, 0.32f);
+            statusText.rectTransform.anchorMin = new Vector2(0.07f, 0.37f);
+            statusText.rectTransform.anchorMax = new Vector2(0.64f, 0.45f);
             statusText.rectTransform.offsetMin = Vector2.zero;
             statusText.rectTransform.offsetMax = Vector2.zero;
 
@@ -179,8 +191,8 @@ namespace GenericGachaRPG
                 DemoUiFactory.SurfaceLight,
                 () => resetData?.Invoke());
             RectTransform resetRect = resetButton.GetComponent<RectTransform>();
-            resetRect.anchorMin = new Vector2(0.38f, 0.07f);
-            resetRect.anchorMax = new Vector2(0.62f, 0.16f);
+            resetRect.anchorMin = new Vector2(0.77f, 0.035f);
+            resetRect.anchorMax = new Vector2(0.93f, 0.10f);
             resetRect.offsetMin = Vector2.zero;
             resetRect.offsetMax = Vector2.zero;
         }
@@ -199,14 +211,7 @@ namespace GenericGachaRPG
 
         private static GameObject CreateRoot(Transform parent)
         {
-            return DemoUiFactory.CreatePanel(
-                "HomeScreen",
-                parent,
-                DemoUiFactory.Background,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero).gameObject;
+            return DemoUiFactory.CreateScreenRoot("HomeScreen", parent, 0.70f);
         }
     }
 
@@ -381,14 +386,7 @@ namespace GenericGachaRPG
 
         private static GameObject CreateRoot(Transform parent)
         {
-            return DemoUiFactory.CreatePanel(
-                "GachaScreen",
-                parent,
-                DemoUiFactory.Background,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero).gameObject;
+            return DemoUiFactory.CreateScreenRoot("GachaScreen", parent, 0.28f);
         }
 
         private static void BuildHeader(Transform parent, string title, Action back, out Text rightText)
@@ -455,12 +453,10 @@ namespace GenericGachaRPG
                 Vector2.zero);
             grid = DemoUiFactory.CreateStretchRect("CharacterGrid", gridPanel.transform, 28f);
             GridLayoutGroup layout = grid.gameObject.AddComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(490f, 270f);
-            layout.spacing = new Vector2(24f, 24f);
-            layout.padding = new RectOffset(30, 30, 24, 24);
-            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            layout.constraintCount = 3;
+            layout.spacing = new Vector2(18f, 18f);
+            layout.padding = new RectOffset(20, 20, 20, 20);
             layout.childAlignment = TextAnchor.MiddleCenter;
+            grid.gameObject.AddComponent<ResponsiveGridLayout>().Configure(300f, 1.50f, 2, 4);
         }
 
         public void Refresh(GameDatabase database, PlayerState state)
@@ -517,7 +513,7 @@ namespace GenericGachaRPG
                     ? $"{character.DisplayName}\n{FormatRarity(character.Rarity)} • {character.Role}\n" +
                       $"LV 1  |  HP {character.MaxHealth:0}\nATK {character.Attack:0}  DEF {character.Defense:0}"
                     : "LOCKED SIGNAL\nAcquire from Gacha",
-                24,
+                21,
                 TextAnchor.MiddleLeft,
                 unlocked ? DemoUiFactory.TextPrimary : DemoUiFactory.TextMuted,
                 unlocked ? FontStyle.Bold : FontStyle.Italic);
@@ -530,14 +526,7 @@ namespace GenericGachaRPG
 
         private static GameObject CreateRoot(Transform parent)
         {
-            return DemoUiFactory.CreatePanel(
-                "CollectionScreen",
-                parent,
-                DemoUiFactory.Background,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero).gameObject;
+            return DemoUiFactory.CreateScreenRoot("CollectionScreen", parent, 0.20f);
         }
 
         private static void BuildSimpleHeader(Transform parent, string title, Action back, out Text rightText)
@@ -643,12 +632,10 @@ namespace GenericGachaRPG
                 Vector2.zero);
             grid = DemoUiFactory.CreateStretchRect("FormationGrid", gridPanel.transform, 24f);
             GridLayoutGroup layout = grid.gameObject.AddComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(420f, 180f);
-            layout.spacing = new Vector2(24f, 22f);
-            layout.padding = new RectOffset(26, 26, 24, 24);
-            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            layout.constraintCount = 3;
+            layout.spacing = new Vector2(18f, 18f);
+            layout.padding = new RectOffset(20, 20, 18, 18);
             layout.childAlignment = TextAnchor.MiddleCenter;
+            grid.gameObject.AddComponent<ResponsiveGridLayout>().Configure(270f, 2.15f, 2, 4);
 
             feedbackText = DemoUiFactory.CreateText(
                 "Feedback",
@@ -753,14 +740,7 @@ namespace GenericGachaRPG
 
         private static GameObject CreateRoot(Transform parent)
         {
-            return DemoUiFactory.CreatePanel(
-                "FormationScreen",
-                parent,
-                DemoUiFactory.Background,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero).gameObject;
+            return DemoUiFactory.CreateScreenRoot("FormationScreen", parent, 0.20f);
         }
     }
 
@@ -771,12 +751,49 @@ namespace GenericGachaRPG
         private readonly GameObject resultPanel;
         private readonly Text resultTitle;
         private readonly Text resultSummary;
+        private int lastDisplayedSecond = -1;
+        private string lastStatus = string.Empty;
 
         public BattleScreenView(Transform parent, Action restart, Action home)
             : base(CreateRoot(parent))
         {
             RectTransform safe = DemoUiFactory.CreateStretchRect("SafeArea", Root.transform, 24f);
             safe.gameObject.AddComponent<SafeAreaFitter>();
+
+            Image hud = DemoUiFactory.CreatePanel(
+                "BattleHud",
+                safe,
+                new Color(0.02f, 0.025f, 0.035f, 0.86f),
+                new Vector2(0.34f, 0.83f),
+                new Vector2(0.66f, 0.98f),
+                Vector2.zero,
+                Vector2.zero);
+            hud.raycastTarget = false;
+
+            Button exitButton = DemoUiFactory.CreateButton(
+                "ExitBattleButton",
+                safe,
+                "← EXIT",
+                new Color(0.06f, 0.075f, 0.10f, 0.94f),
+                () => home?.Invoke());
+            RectTransform exitRect = exitButton.GetComponent<RectTransform>();
+            exitRect.anchorMin = new Vector2(0.02f, 0.88f);
+            exitRect.anchorMax = new Vector2(0.13f, 0.97f);
+            exitRect.offsetMin = Vector2.zero;
+            exitRect.offsetMax = Vector2.zero;
+
+            Text mapName = DemoUiFactory.CreateText(
+                "MapName",
+                safe,
+                "ABYSSAL OBSERVATORY",
+                20,
+                TextAnchor.MiddleRight,
+                DemoUiFactory.Warning,
+                FontStyle.Bold);
+            mapName.rectTransform.anchorMin = new Vector2(0.70f, 0.89f);
+            mapName.rectTransform.anchorMax = new Vector2(0.97f, 0.97f);
+            mapName.rectTransform.offsetMin = Vector2.zero;
+            mapName.rectTransform.offsetMax = Vector2.zero;
 
             timerText = DemoUiFactory.CreateText(
                 "Timer",
@@ -808,8 +825,8 @@ namespace GenericGachaRPG
                 "ResultPanel",
                 safe,
                 new Color(0.035f, 0.055f, 0.10f, 0.96f),
-                new Vector2(0.29f, 0.20f),
-                new Vector2(0.71f, 0.80f),
+                new Vector2(0.33f, 0.24f),
+                new Vector2(0.67f, 0.76f),
                 Vector2.zero,
                 Vector2.zero);
             resultPanel = panel.gameObject;
@@ -867,13 +884,25 @@ namespace GenericGachaRPG
         public void SetBattleStatus(float elapsed, string status)
         {
             int totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsed));
-            timerText.text = $"{totalSeconds / 60:00}:{totalSeconds % 60:00}";
-            statusText.text = string.IsNullOrEmpty(status) ? "AUTO BATTLE" : status;
+            if (totalSeconds != lastDisplayedSecond)
+            {
+                lastDisplayedSecond = totalSeconds;
+                timerText.text = $"{totalSeconds / 60:00}:{totalSeconds % 60:00}";
+            }
+
+            string nextStatus = string.IsNullOrEmpty(status) ? "AUTO BATTLE" : status;
+            if (!string.Equals(nextStatus, lastStatus, StringComparison.Ordinal))
+            {
+                lastStatus = nextStatus;
+                statusText.text = nextStatus;
+            }
         }
 
         public void HideResult()
         {
             resultPanel.SetActive(false);
+            lastDisplayedSecond = -1;
+            lastStatus = string.Empty;
         }
 
         public void ShowResult(bool playerWon, bool timedOut, float duration)

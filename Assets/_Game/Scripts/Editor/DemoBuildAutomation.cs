@@ -37,7 +37,9 @@ namespace GenericGachaRPG.Editor
                 scenes = new[] { DemoSceneGenerator.ScenePath },
                 locationPathName = absoluteOutput,
                 target = BuildTarget.StandaloneWindows64,
-                options = BuildOptions.None
+                // The workspace was renamed from Game-jjk to BubbleMind. Let Unity
+                // rebuild Bee's path-sensitive cache through the supported API.
+                options = BuildOptions.CleanBuildCache
             };
 
             BuildReport report = BuildPipeline.BuildPlayer(options);

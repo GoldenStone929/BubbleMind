@@ -8,10 +8,14 @@ namespace GenericGachaRPG
         private RectTransform rectTransform;
         private Rect previousSafeArea;
         private Vector2Int previousScreenSize;
+        private Vector2 paddingMin;
+        private Vector2 paddingMax;
 
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
+            paddingMin = rectTransform.offsetMin;
+            paddingMax = rectTransform.offsetMax;
             ApplySafeArea();
         }
 
@@ -46,8 +50,8 @@ namespace GenericGachaRPG
             max.y /= Screen.height;
             rectTransform.anchorMin = min;
             rectTransform.anchorMax = max;
-            rectTransform.offsetMin = Vector2.zero;
-            rectTransform.offsetMax = Vector2.zero;
+            rectTransform.offsetMin = paddingMin;
+            rectTransform.offsetMax = paddingMax;
         }
     }
 }

@@ -15,12 +15,12 @@ namespace GenericGachaRPG
     {
         private static Font cachedFont;
 
-        public static readonly Color Background = new Color(0.035f, 0.055f, 0.10f, 1f);
-        public static readonly Color Surface = new Color(0.075f, 0.105f, 0.17f, 0.97f);
-        public static readonly Color SurfaceLight = new Color(0.12f, 0.17f, 0.26f, 1f);
-        public static readonly Color Accent = new Color(0.19f, 0.72f, 0.93f, 1f);
+        public static readonly Color Background = new Color(0.018f, 0.020f, 0.030f, 1f);
+        public static readonly Color Surface = new Color(0.055f, 0.065f, 0.085f, 0.96f);
+        public static readonly Color SurfaceLight = new Color(0.095f, 0.11f, 0.14f, 0.98f);
+        public static readonly Color Accent = new Color(0.12f, 0.76f, 0.88f, 1f);
         public static readonly Color Positive = new Color(0.27f, 0.83f, 0.50f, 1f);
-        public static readonly Color Warning = new Color(1f, 0.67f, 0.18f, 1f);
+        public static readonly Color Warning = new Color(0.88f, 0.70f, 0.30f, 1f);
         public static readonly Color Danger = new Color(0.96f, 0.28f, 0.35f, 1f);
         public static readonly Color TextPrimary = new Color(0.94f, 0.97f, 1f, 1f);
         public static readonly Color TextMuted = new Color(0.67f, 0.73f, 0.82f, 1f);
@@ -69,6 +69,42 @@ namespace GenericGachaRPG
 
             EnsureEventSystem(parent);
             return canvas;
+        }
+
+        public static GameObject CreateScreenRoot(string name, Transform parent, float artworkAlpha)
+        {
+            Image background = CreatePanel(
+                name,
+                parent,
+                Background,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero);
+            Texture2D texture = Resources.Load<Texture2D>("AbyssalObservatory_Concept");
+            if (texture != null && artworkAlpha > 0f)
+            {
+                RectTransform imageRect = CreateStretchRect("EnvironmentBackdrop", background.transform);
+                RawImage image = imageRect.gameObject.AddComponent<RawImage>();
+                image.texture = texture;
+                image.color = new Color(1f, 1f, 1f, Mathf.Clamp01(artworkAlpha));
+                image.raycastTarget = false;
+                AspectRatioFitter fitter = imageRect.gameObject.AddComponent<AspectRatioFitter>();
+                fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+                fitter.aspectRatio = texture.width / (float)Mathf.Max(1, texture.height);
+
+                Image veil = CreatePanel(
+                    "BackdropVeil",
+                    background.transform,
+                    new Color(0.01f, 0.014f, 0.022f, 0.56f),
+                    Vector2.zero,
+                    Vector2.one,
+                    Vector2.zero,
+                    Vector2.zero);
+                veil.raycastTarget = false;
+            }
+
+            return background.gameObject;
         }
 
         public static void EnsureEventSystem(Transform parent)
@@ -174,7 +210,11 @@ namespace GenericGachaRPG
             colors.pressedColor = new Color(0.78f, 0.82f, 0.9f, 1f);
             colors.disabledColor = new Color(0.45f, 0.48f, 0.54f, 0.55f);
             colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.12f;
             button.colors = colors;
+            Outline outline = rect.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.55f, 0.78f, 0.92f, 0.20f);
+            outline.effectDistance = new Vector2(1f, -1f);
             if (onClick != null)
             {
                 button.onClick.AddListener(onClick);
@@ -276,4 +316,3 @@ namespace GenericGachaRPG
         }
     }
 }
-

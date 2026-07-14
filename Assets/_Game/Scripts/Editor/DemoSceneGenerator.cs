@@ -35,6 +35,7 @@ namespace GenericGachaRPG.Editor
             }
 
             EnsureFolders();
+            AbyssalObservatoryAssetBuilder.EnsureAssets();
             GameDatabase database = GenerateContentIfNeeded();
             bool sceneCreated = GenerateSceneIfNeeded(database);
             ApplySafeProjectSettings();
@@ -94,7 +95,7 @@ namespace GenericGachaRPG.Editor
 
         private static bool HasCompleteGeneratedContent(GameDatabase database)
         {
-            if (database == null || database.Characters.Count != 6 || database.Skills.Count != 3)
+            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 3)
             {
                 return false;
             }
@@ -105,13 +106,19 @@ namespace GenericGachaRPG.Editor
                 return false;
             }
 
-            return database.GetSkill("pulse_strike") != null &&
+            CharacterDefinition cosmicSlime = database.GetCharacter("ur_cosmic_slime");
+            return cosmicSlime != null &&
+                   cosmicSlime.Rarity == Rarity.UltraRare &&
+                   cosmicSlime.CharacterPrefab != null &&
+                   AssetDatabase.LoadAssetAtPath<Material>(AbyssalObservatoryAssetBuilder.BackdropMaterialPath) != null &&
+                   database.GetSkill("pulse_strike") != null &&
                    database.GetSkill("spectrum_nova") != null &&
                    database.GetSkill("restore_wave") != null;
         }
 
         private static GameDatabase GenerateContentIfNeeded()
         {
+            GameObject cosmicSlimePrefab = CosmicSlimeAssetBuilder.EnsureAssets();
             SkillDefinition strikeSkill = GetOrCreateAsset<SkillDefinition>(
                 $"{SkillFolder}/Skill_PulseStrike.asset",
                 out _);
@@ -200,6 +207,19 @@ namespace GenericGachaRPG.Editor
                     healSkill,
                     "A support unit that restores weakened allies."),
                 CreateCharacter(
+                    "ur_cosmic_slime",
+                    "Abyssal Slime",
+                    CharacterRole.Striker,
+                    Rarity.UltraRare,
+                    new Color(0.52f, 0.16f, 0.96f, 1f),
+                    1380f,
+                    186f,
+                    38f,
+                    1.24f,
+                    novaSkill,
+                    "A singularity-born caster that bends the battlefield.",
+                    cosmicSlimePrefab),
+                CreateCharacter(
                     "violet_arcanist",
                     "Violet Arcanist",
                     CharacterRole.Striker,
@@ -259,7 +279,7 @@ namespace GenericGachaRPG.Editor
             GameDatabase database = GetOrCreateAsset<GameDatabase>(DatabasePath, out _);
             database.Configure(
                 3000,
-                new[] { "azure_vanguard", "ember_striker", "verdant_medic" },
+                new[] { "azure_vanguard", "ur_cosmic_slime", "verdant_medic" },
                 characters,
                 skills,
                 new[] { banner });
@@ -279,7 +299,8 @@ namespace GenericGachaRPG.Editor
             float defense,
             float attackInterval,
             SkillDefinition skill,
-            string description)
+            string description,
+            GameObject prefab = null)
         {
             string path = $"{CharacterFolder}/Character_{id}.asset";
             CharacterDefinition character = GetOrCreateAsset<CharacterDefinition>(path, out _);
@@ -297,7 +318,9 @@ namespace GenericGachaRPG.Editor
                 24,
                 12,
                 skill,
-                description);
+                description,
+                null,
+                prefab);
             EditorUtility.SetDirty(character);
 
             return character;
@@ -356,7 +379,7 @@ namespace GenericGachaRPG.Editor
         private static void ApplySafeProjectSettings()
         {
             PlayerSettings.companyName = "Independent Demo Lab";
-            PlayerSettings.productName = "Generic Gacha RPG Demo";
+            PlayerSettings.productName = "BubbleMind First Demo";
             PlayerSettings.defaultScreenWidth = 1920;
             PlayerSettings.defaultScreenHeight = 1080;
             PlayerSettings.resizableWindow = true;
@@ -366,6 +389,10 @@ namespace GenericGachaRPG.Editor
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
+            PlayerSettings.SetGraphicsAPIs(
+                BuildTarget.StandaloneWindows64,
+                new[] { GraphicsDeviceType.Direct3D11 });
         }
 
         private static void AddSceneToBuildSettings()
