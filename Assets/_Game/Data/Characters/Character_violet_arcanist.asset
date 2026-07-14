@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3b506be934ebd34c9432bccdf3c5fc5, type: 3}
+  m_Name: Character_violet_arcanist
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterDefinition
+  id: violet_arcanist
+  displayName: Violet Arcanist
+  description: A ranged caster with a team-wide burst.
+  role: 1
+  rarity: 1
+  displayColor: {r: 0.62, g: 0.25, b: 0.91, a: 1}
+  portrait: {fileID: 0}
+  characterPrefab: {fileID: 0}
+  maxHealth: 1110
+  attack: 158
+  defense: 26
+  attackInterval: 1.28
+  maxEnergy: 100
+  energyPerAttack: 24
+  energyWhenHit: 12
+  skill: {fileID: 11400000, guid: 365dd5f3fffec934798fd7cb7de20e3e, type: 2}

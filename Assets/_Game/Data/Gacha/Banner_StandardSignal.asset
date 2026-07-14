@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a01952abf6ba6c44ba043544e55e268, type: 3}
+  m_Name: Banner_StandardSignal
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.GachaBannerDefinition
+  id: standard_signal
+  displayName: Standard Signal
+  description: "Six original signals. R 60% \u2022 SR 34% \u2022 SSR 6%"
+  singleDrawCost: 100
+  entries:
+  - characterId: azure_vanguard
+    weight: 30
+  - characterId: ember_striker
+    weight: 30
+  - characterId: verdant_medic
+    weight: 17
+  - characterId: violet_arcanist
+    weight: 17
+  - characterId: gold_ranger
+    weight: 3
+  - characterId: cyan_warden
+    weight: 3

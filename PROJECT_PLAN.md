@@ -1,0 +1,834 @@
+# GenericGachaRPG 项目主计划（自包含执行 Prompt）
+
+> 计划版本：v1.2-p0-complete  
+> 当前状态：P0 垂直切片已完成、验证并生成 Windows 试玩版；等待用户试玩反馈与 P1 指导  
+> 最近更新：2026-07-13  
+> 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文  
+> 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
+
+---
+
+## 1. 本文件的用途与优先级
+
+本文件同时是：
+
+1. 项目的长期执行计划；
+2. 可以直接交给后续 Codex/开发 Agent 的主提示词；
+3. 后续记录阶段进度、验证证据和用户决策的唯一主文档。
+
+执行 Agent 必须先完整阅读本文件，再检查项目实际文件。
+
+- 不得假设能够访问以前的 ChatGPT 对话、共享链接、XAPK 或外部分析目录。
+- 本文件已内嵌完成当前 Demo 所需的关键架构结论。即使外部 `analysis` 目录不可访问，也不得因此停止、要求用户搬运资料或放弃实施。
+- 用户最新指令始终高于本计划。范围发生变化时，先更新本文件的“决策记录”，再实施。
+- 用户已于 2026-07-13 明确授权开始开发。P0 已完成；后续 Agent 应把当前项目作为已验证基线，不得重新从空项目开始。
+
+---
+
+## 2. 已确认的环境与当前状态
+
+### 真实路径
+
+```text
+工作区：
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk
+
+真实 Unity 项目根目录：
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG
+
+可选的只读研究目录：
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis
+```
+
+执行前必须确认当前根目录直接包含：
+
+```text
+Assets
+Packages
+ProjectSettings
+PROJECT_PLAN.md
+```
+
+如果当前工作目录是上一级 `Game-jjk`，应将 Unity 工作目标明确切换到其子目录 `GenericGachaRPG`，不得误把文件创建在上一级或 `analysis` 内。
+
+### 已核实的项目环境
+
+- Unity Editor：`6000.5.3f1`
+- Render Pipeline：URP `17.5.0`
+- 项目起点是新建的 Unity URP 模板；P0 内容现已完整落在 `Assets/_Game`。
+- 已生成自定义游戏脚本、六名角色、三项技能、抽卡池、本地存档、三人编队、3v3 自动战斗、完整 UI、演示场景和编辑器工具。
+- 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity` 与 Windows 独立版 `Builds/Windows/GenericGachaRPGDemo.exe`。
+- 当前项目未使用 Git；不得假设存在 Git 回滚能力，也不得未经用户要求创建远程仓库或发布代码。
+- Unity Editor 当前可能处于打开状态。不要强制关闭 Unity，也不要在项目被打开时另启会冲突的第二个 Editor 实例。
+- 项目位于 OneDrive。实施时只操作真正需要的源文件，避免修改 `Library`、`Temp`、`Logs` 等生成目录，并留意同步与导入延迟。
+
+### 已确认的工具能力
+
+- Unity `6000.5.3f1` 已安装并可用。
+- 项目已包含 URP、uGUI 和 Unity Test Framework。
+- Unity 已安装 Windows Standalone 与 WebGL Build Support。
+- Git 与 Python 在系统中可用，但当前 P0 不依赖它们；未经用户后续要求，不初始化仓库、不运行与 Demo 无关的 Python 流程。
+- Blender 当前未安装，且 P0 不需要 Blender。程序化角色全部由 Unity Primitive 创建。
+- 当前 Unity 组件已经足够创建、编译、测试并试玩 P0 Demo；本轮实际没有下载、安装或引入任何额外工具与第三方资产。
+
+### 用户授予的工具下载权限与强制隔离规则
+
+用户允许为本项目下载确实必要的工具或依赖，但此授权受以下边界约束：
+
+1. 最小依赖优先：Unity 或项目现有包能完成的工作，不得引入额外工具。
+2. 只允许下载与当前已批准里程碑直接相关的工具。
+3. 优先选择官方来源、许可证清晰、可校验版本和哈希的便携版或项目本地依赖。
+4. 所有下载、便携工具、临时安装包、生成物和验证证据必须位于 Unity 项目根目录内的明确子目录：
+
+```text
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG\_ProjectTools\
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG\Builds\
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG\Artifacts\
+```
+
+5. 禁止系统级安装、修改系统 PATH、写入其他项目、用户桌面、Downloads、Documents、其他 OneDrive 目录或无关文件夹。
+6. 不得扫描、读取或修改本项目范围之外的无关用户数据。调用已经安装的 Unity 可执行文件属于允许范围，但不得修改 Unity 安装目录。
+7. 如果某个必要工具无法在项目目录内便携使用，或安装器必然写入 `Program Files`、`AppData`、注册表或系统服务，必须先暂停并用中文向用户说明具体工具、原因、写入位置和替代方案；即使已有宽泛下载授权，也不能静默扩大范围。
+8. 每个第三方依赖必须记录名称、版本、来源、许可证、用途、目标路径和校验信息；记录文件放在：
+
+```text
+Assets/_Game/Docs/ThirdPartyInventory.md
+```
+
+9. 不执行来源不明的二进制文件、脚本或安装器。
+10. 不允许任何工具访问或联系原 APK/XAPK 中发现的服务器、接口或域名。
+
+---
+
+## 3. 产品目标
+
+构建一套原创、干净、可扩展的移动端 3D 抽卡 RPG 框架，并先交付一个可在 Unity Editor 与 Windows 独立版中直接试玩的垂直切片。
+
+### 当前 Demo 的完整玩家流程
+
+```text
+Home 主页
+  → Gacha 抽卡
+  → Character Collection 角色收藏
+  → Formation 三人编队
+  → 3v3 Automated Battle 自动战斗
+  → Result 战斗结果
+  → Return Home 或 Restart
+```
+
+### 长期方向
+
+- iOS 与 Android；横屏显示。
+- 固定站位的队伍战斗。
+- 自动普通攻击与角色专属技能、动作和 VFX。
+- 抽卡、角色收藏、编队和基础养成。
+- 角色、技能、关卡和卡池全部数据驱动。
+- 将来支持 AI 辅助生成的 3D 角色。
+- 通过统一骨架、动画接口和 Socket 契约量产角色。
+- 新增角色主要依靠数据与资产导入，不修改战斗核心源码。
+
+### 本轮不追求
+
+- 不做完整商业手游。
+- 不做真实登录、联网后端、数据库、PvP、公会、邮件、排行榜或活动系统。
+- 不做真钱充值、IAP 或商店支付。
+- P0 默认不下载第三方角色、插件或模板；如后续确有必要，只能依照“项目内隔离、官方来源、最小依赖”的规则处理。
+- 不等待 Blender、正式模型、配音或最终商业美术。
+- 不在 Windows 上尝试最终 iOS 构建。
+
+---
+
+## 4. 外部研究的自包含摘要
+
+以下内容仅解释为什么采用当前架构，不是待还原的实现：
+
+- 被研究的公开安装包使用 Unity `2022.3.62f2`、IL2CPP ARM64、SLua/Lua 5.3 桥接和 AssetBundle 管线。
+- 离线分析识别出启动、资源更新、登录、主页、角色、技能、编队、抽卡、背包、关卡、战斗、任务、活动、商店、公会等约 36 个高层模块。
+- 找到 761 个 Lua 路径字符串，但脚本与主要 AssetBundle 加密且不可读。
+- 战斗、抽卡和角色管线只能恢复到“高层系统边界/中等可信度”，无法恢复原始公式、数值、AI、技能时间线、抽卡概率、保底、后端协议或源代码。
+- 指纹更接近一个私有白标产品家族；没有找到可信、合法、可购买的公开原始模板。
+- 结论是：研究资料足够指导独立架构设计，但不能把原包变成合法、可编译的 Unity 模板。
+
+因此，本项目必须独立设计和实现。不要声称正在“恢复”“移植”或“复刻”原游戏。
+
+### 可选只读资料
+
+如果执行环境允许，可只读参考：
+
+```text
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\module_inventory.csv
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\game_flow.md
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\data_model.md
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\battle_system.md
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\gacha_system.md
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\character_pipeline.md
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\clean_room_unity_architecture.md
+C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\missing_information.md
+```
+
+规则：
+
+- 只读，不得修改 `analysis`。
+- 若无法访问，记录事实后立即继续；不是阻塞条件。
+- 不需要读取 XAPK 或大型提取目录来完成 Demo。
+
+---
+
+## 5. 强制 Clean-room、版权与安全边界
+
+Demo 中所有内容必须新创并保持通用。
+
+### 严禁使用或复制
+
+- Jujutsu Kaisen、Pokémon 或其他现有 IP 的角色、名称、世界观和品牌。
+- 原包中的模型、贴图、动画、UI 布局、图标、字体、美术、音频、配音、VFX 或 Shader。
+- 原始 C#、Lua、配置表、数据、数值、公式、AI、技能表现、抽卡概率或保底规则。
+- 原始包名、内部 ID、服务器地址、协议、消息 ID、密钥、凭证、产品 SKU 或反作弊逻辑。
+- 未经授权的源码、反编译资产或来源不清的模板。
+
+### 严禁执行
+
+- 不解密 Lua 或 AssetBundle。
+- 不搜索密钥、不暴力破解、不绕过 DRM/认证/反作弊。
+- 不运行原 APK/XAPK，不连接研究中发现的服务器。
+- 用户已原则性批准为本项目下载必要工具，但只能依照本计划的项目隔离规则执行；不得静默进行系统级安装或引入与当前里程碑无关的依赖。
+
+所有角色、技能、名称、数值、公式、抽卡规则和界面都必须独立创作。
+
+---
+
+## 6. Demo 内容规格
+
+### 6.1 原创占位角色
+
+创建至少 6 名原创通用角色，使用 Unity Primitive 程序化组装的统一 3D 彩色火柴人/低多边形角色：
+
+- Sphere：头部
+- Capsule/Cube：躯干
+- Cylinder/Capsule：手臂和腿
+- 可选 Primitive：武器或饰件
+- 圆形 Ground Marker：脚下标记
+
+建议通用角色定位：
+
+1. Vanguard（先锋）
+2. Guardian（守卫）
+3. Striker（斗士）
+4. Arcanist（术士）
+5. Ranger（游侠）
+6. Medic（医师）
+
+要求：
+
+- 使用原创通用名称。
+- 通过蓝、青、绿、黄、橙、红、紫等不同配色和简单形体/武器差异区分。
+- 保持统一身体比例和视觉体系。
+- 使用 URP 兼容材质。
+- 初始解锁 3 名角色；其余可通过 Demo 抽卡获得。
+- 不搜索或下载免费角色模型。
+
+### 6.2 Home 主页
+
+包含：
+
+- 游戏标题：`Generic Gacha RPG Demo`
+- 当前 Demo 货币
+- Gacha 按钮
+- Characters 按钮
+- Formation 按钮
+- Battle 按钮
+- Reset Demo Data 按钮
+
+使用 Unity 内置 uGUI。适配 `1920×1080` 横屏和安全区域，鼠标点击与触摸式点击都可用，不依赖键盘。
+
+### 6.3 Gacha 抽卡
+
+P0 必须实现：
+
+- 一个可配置本地卡池。
+- 单抽。
+- 可配置 R / SR / SSR 权重。
+- 扣除 Demo 货币。
+- 首次获取解锁角色。
+- 结果展示与返回。
+- 概率详情入口。
+- 明确显示：`DEMO / NOT SERVER AUTHORITATIVE`。
+- 抽卡结果先由服务生成并写入玩家状态，揭示动画只负责展示。
+
+P1 才实现：
+
+- 十连抽。
+- 十连最低稀有度保证。
+- 重复角色转换为通用碎片。
+- 更完整的保底与结果摘要。
+
+所有权重、保底阈值和重复转换数量均为新创、可配置的 Demo 数值。
+
+### 6.4 Character Collection 角色收藏
+
+显示全部 6 名角色：
+
+- 已锁定/已解锁状态
+- 稀有度
+- 等级（Demo 可固定为 1）
+- 基础属性
+- 角色颜色/简单预览
+- P1 可显示碎片与基础升级按钮
+
+抽卡完成后，收藏状态必须立即更新。
+
+### 6.5 Formation 编队
+
+- 三个玩家编队槽位。
+- 只能选择已经拥有的角色。
+- 必须正好选择 3 名角色才能开始战斗。
+- 禁止重复角色。
+- 提供合法默认编队。
+- 保存选定编队。
+- 数据结构未来可扩展到 5 人，但当前战斗固定 3v3。
+
+### 6.6 3v3 自动战斗
+
+场景要求：
+
+- 玩家 3 人在左，敌方 3 人在右。
+- 固定逻辑站位、侧向移动游戏镜头。
+- 简单地面、背景、灯光和 Ground Marker。
+- 角色名、HP Bar、Energy Bar、Damage Number。
+- 自动普通攻击、能量、技能、受击、死亡、胜负结果。
+- Restart 和 Return Home。
+- 最大战斗时长保护，绝不允许无限战斗。
+
+每个单位必须：
+
+1. 在固定 Formation Slot 生成；
+2. 选择仍然存活的合法目标；
+3. 按配置间隔自动普通攻击；
+4. 攻击或受击时获得能量；
+5. 能量满后自动释放技能并消耗能量；
+6. 技能拥有清晰不同于普攻的动作和 VFX；
+7. 演出结束后回到原始逻辑站位；
+8. 受击时有视觉反馈；
+9. HP 为零时死亡并停止行动；
+10. 死亡单位不可再被选为目标；
+11. 全灭或超时时生成稳定结果。
+
+P0 至少支持三类通用技能效果：
+
+- 单体伤害
+- 多目标伤害
+- 治疗
+
+---
+
+## 7. 核心技术架构
+
+### 7.1 分层原则
+
+必须分离：
+
+1. 静态数据定义
+2. 玩家运行时状态
+3. 服务与存档
+4. 战斗模拟/计算
+5. 角色表现与程序化动画
+6. UI 表现
+7. 编辑器生成和验证工具
+8. 未来后端接口
+
+UI 只展示状态和发出意图，不直接承担权威 RNG、货币扣除、奖励生成或伤害公式。
+
+### 7.2 数据类型
+
+至少定义：
+
+```text
+CharacterDefinition
+CharacterInstance / OwnedCharacter
+SkillDefinition
+SkillTimeline / SkillEvent
+TeamFormation
+StageDefinition / EnemyDefinition
+GachaBannerDefinition
+GachaPoolEntry
+GachaResult / DrawResult
+PlayerState / CurrencyState
+BattleContext
+BattleResult
+```
+
+`CharacterDefinition` 与玩家拥有/等级状态必须分开；静态定义使用 ScriptableObject，玩家状态使用可序列化运行时数据。
+
+### 7.3 服务接口
+
+至少保留以下可替换边界：
+
+```text
+ISaveService
+IGachaService
+IRandomService
+ICollectionService
+IFormationService
+IBattleRewardService
+```
+
+Demo 使用本地离线实现。正式产品中的账号、货币、抽卡、购买、奖励和 PvP 必须由后端权威处理，但本轮不建设生产后端。
+
+### 7.4 本地存档
+
+可使用 PlayerPrefs + JSON 或 `Application.persistentDataPath` JSON，但必须隐藏在 `ISaveService` 后。
+
+至少保存：
+
+- Demo 货币
+- 已拥有角色
+- 角色等级（P0 可全部为 1）
+- 当前三人编队
+- P1 的碎片数据
+- `schemaVersion`
+
+要求：
+
+- 缺失或损坏存档时安全恢复默认状态。
+- Reset Demo Data 可恢复初始货币、初始角色和默认编队。
+
+### 7.5 战斗模拟
+
+- 使用固定逻辑 Tick 和项目拥有的 Seeded RNG。
+- 相同 BattleContext、内容数据和随机种子应产生相同的模拟结果。
+- 战斗逻辑站位与演出 Transform 分离；冲刺、跳跃和旋转只是表现，不改变 Formation Slot。
+- 目标选择、伤害、治疗和技能效果由通用规则/数据驱动，不写角色专属条件分支。
+- 技能时间线决定命中时刻；模拟逻辑不得等待动画播放完成回调。
+- 新角色或技能不得要求修改 `BattleUnit`/战斗核心源码。
+- P0 无需实现完整服务器回放系统，但架构不得阻止未来替换为服务器权威模拟。
+
+### 7.6 角色表现契约
+
+程序化角色与未来 FBX/正式 Prefab 都通过 `CharacterView` 接入。
+
+统一层级/Socket 契约：
+
+```text
+CharacterRoot
+├── ModelRoot
+├── RightHandSocket
+├── LeftHandSocket
+├── SkillVfxSocket
+├── ProjectileSocket
+├── GroundVfxSocket
+├── TargetSocket
+└── HealthBarSocket
+```
+
+`CharacterView` 支持：
+
+- 可选 Animator
+- Idle / Attack / Skill / Hit / Death 通用接口
+- 武器、投射物、VFX、地面和目标挂点
+- 无模型或无 Animator 时的程序化回退动画
+
+程序化动画至少包括：
+
+- Idle：轻微呼吸/摆动
+- Normal Attack：短距离前冲并返回
+- Skill：更明显的缩放、跳跃、旋转或蓄力效果
+- Hit：短暂后退和材质闪烁
+- Death：倒下、旋转、缩小或淡出
+
+不要引入 DOTween 或其他外部 Tween 包。
+
+### 7.7 资源策略
+
+- P0 只使用现有 Unity/URP/uGUI 与本地直接引用。
+- 当前项目没有 Addressables；不要为 Demo 擅自安装。
+- 通过清晰的内容键和数据边界保留未来迁移到 Addressables/远程内容的可能性。
+
+---
+
+## 8. 项目目录与命名
+
+根命名空间：
+
+```text
+GenericGachaRPG
+```
+
+所有新游戏文件默认只创建在：
+
+```text
+Assets/_Game/
+```
+
+必要例外：
+
+- 横屏/移动设置所需的 `ProjectSettings`
+- 将 Demo Scene 加入 Build Settings 的 `EditorBuildSettings`
+- 经隔离规则批准的项目本地工具目录 `_ProjectTools/`
+- 本项目构建输出目录 `Builds/`
+- 本项目验证证据目录 `Artifacts/`
+
+建议结构：
+
+```text
+Assets/_Game/
+├── Art/
+│   ├── Materials/
+│   └── Generated/
+├── Data/
+│   ├── Characters/
+│   ├── Skills/
+│   ├── Gacha/
+│   └── Stages/
+├── Prefabs/
+│   ├── Characters/
+│   ├── UI/
+│   └── VFX/
+├── Scenes/
+├── Scripts/
+│   ├── Core/
+│   ├── Data/
+│   ├── Services/
+│   ├── Gacha/
+│   ├── Collection/
+│   ├── Formation/
+│   ├── Battle/
+│   ├── Characters/
+│   ├── Skills/
+│   ├── UI/
+│   └── Editor/
+├── Docs/
+└── Tests/
+```
+
+主场景与菜单的唯一权威名称：
+
+```text
+Scene:
+Assets/_Game/Scenes/GachaRPGDemo.unity
+
+Menu:
+Tools > Generic Gacha RPG > Generate or Repair Demo
+```
+
+旧对话中出现的 `BattleDemo.unity` 与 `Tools > Gacha RPG > Generate Battle Demo` 已废弃，不再使用。
+
+---
+
+## 9. Editor 生成工具
+
+创建一个安全、幂等的 Editor Generator：
+
+```text
+Tools > Generic Gacha RPG > Generate or Repair Demo
+```
+
+负责生成或修复：
+
+- 6 个示例 CharacterDefinition
+- P0 所需 SkillDefinition
+- Demo Gacha Banner
+- 原创 URP 材质
+- 程序化角色配置/Prefab
+- Home、Gacha、Collection、Formation、Battle、Result UI
+- Camera、Light、Floor、Background、Formation Slots
+- Managers、EventSystem
+- 完整 `GachaRPGDemo.unity`
+- Build Settings 场景项
+
+要求：
+
+- 可重复运行，不产生重复对象或重复资产。
+- 使用版本标记。
+- 首次生成后不得静默覆盖用户手工修改的资产。
+- 不手写 Unity Scene YAML；通过 Unity Editor API 创建。
+- 脚本首次成功编译且场景不存在时，可尝试安全的一次性自动生成。
+- 如果自动生成不可行，菜单命令必须作为可靠后备。
+- Unity 已打开时，不要为了生成场景启动第二个冲突的 Editor 进程。
+
+---
+
+## 10. 分阶段执行计划
+
+每一阶段都必须满足：有实际文件、Unity 编译通过、保存证据，再进入下一阶段。不得一次创建大量未编译代码后才检查。
+
+### 阶段 0 — 基线与安全检查
+
+交付：
+
+- 确认真正项目根目录和 Unity 版本。
+- 检查并保留用户已有修改。
+- 确认 `analysis` 只读且非依赖。
+- 建立 `Assets/_Game` 基础目录和最小文档。
+
+完成条件：
+
+- 未修改 `analysis`、XAPK、`Library`、`Temp`、`Logs`。
+- Unity 项目仍可正常打开且无新增编译错误。
+
+### 阶段 1 — 数据、服务与本地状态
+
+交付：
+
+- 核心数据定义。
+- 6 名原创角色和 P0 技能数据。
+- 本地 `ISaveService`、默认状态、加载/保存/重置。
+- 本地随机数、抽卡和编队服务接口。
+
+完成条件：
+
+- 存档往返、损坏恢复和重置通过验证。
+- Unity 编译错误为 0。
+
+### 阶段 2 — Home、抽卡、收藏、编队
+
+交付：
+
+- Home Screen。
+- 单抽与结果展示。
+- 收藏状态实时更新。
+- 三人编队与合法性检查。
+
+完成条件：
+
+- 页面可前进和返回。
+- 货币不足不会改变状态。
+- 抽卡会扣费、解锁角色并保存。
+- 只有 3 名已拥有且不重复的角色才能进入战斗。
+- Unity 编译错误为 0。
+
+### 阶段 3 — 3v3 战斗模拟
+
+交付：
+
+- 两支 3 人队伍。
+- 固定 Tick、Seeded RNG、目标选择、普攻、能量、技能、治疗、死亡、结果和超时。
+- 与表现层分离的纯逻辑战斗核心。
+
+完成条件：
+
+- 相同 Seed 产生相同核心结果。
+- 死亡单位不会继续行动或被选为目标。
+- 战斗必定以胜/负/超时结束。
+- Unity 编译错误为 0。
+
+### 阶段 4 — 角色表现、UI 和完整场景
+
+交付：
+
+- 彩色程序化角色。
+- HP/Energy Bar、Damage Number。
+- Idle/Attack/Skill/Hit/Death 程序化动作。
+- 简单 VFX。
+- Result、Restart、Return Home。
+- 幂等 Editor Generator 与 `GachaRPGDemo.unity`。
+
+完成条件：
+
+- 从 Home 到 Result 的完整流程可以在 Play Mode 走通。
+- 场景引用无缺失，Console 无运行时错误。
+
+### 阶段 5 — P0 验证与用户试玩交付
+
+交付：
+
+- 所有 P0 功能修复完成。
+- `README_START_HERE.md`。
+- 架构摘要、Clean-room 可追溯说明和 Demo 限制。
+- 编译、Play Mode、自动化全流程与 Windows Build 验证记录。
+- `Builds/Windows/GenericGachaRPGDemo.exe` 及其 Unity 运行支持文件。
+
+完成条件：
+
+- 用户只需打开 `Assets/_Game/Scenes/GachaRPGDemo.unity` 并点击 Play。
+- 或直接运行 `Builds/Windows/GenericGachaRPGDemo.exe`。
+- 完整流程可重复试玩。
+- 不得用“代码已写但未编译”或“场景未生成”宣称完成。
+
+### 阶段 6 — P1（仅在 P0 稳定后）
+
+候选：
+
+- 十连和最低稀有度保证。
+- 重复角色碎片。
+- 更丰富技能类型。
+- 角色详情和基础升级。
+- 视觉与音效润色。
+- 更完整的 Windows/WebGL/移动平台发布与输入适配。
+
+---
+
+## 11. P0 强制验收标准
+
+只有全部满足才能声明 P0 Demo 完成：
+
+- Unity 项目编译错误为 0。
+- `Assets/_Game/Scenes/GachaRPGDemo.unity` 确实存在并可打开。
+- Home → Gacha → Collection → Formation → Battle → Result → Home/Restart 全流程可完成。
+- 新存档有足够 Demo 货币，至少可以多次单抽。
+- 单抽正确扣费并更新收藏；重新进入页面状态仍正确。
+- 编队只能保存 3 名已拥有且不重复的角色。
+- 玩家与敌方各生成 3 个单位。
+- 普攻、能量、至少一种伤害技能和一种治疗技能可见且有效。
+- 单位能够死亡，死亡后不行动、不被选为目标。
+- 战斗能够稳定产生结果，超时保护有效。
+- Restart 和 Return Home 有实际行为。
+- 存档可重新加载；Reset Demo Data 能恢复默认状态。
+- Generator 连续运行两次不会复制内容或破坏场景。
+- 无未处理异常、持续 NullReference 或 MissingReference。
+- 没有任何原应用专有代码、资产、品牌、数据或服务器依赖。
+
+---
+
+## 12. 验证与证据规则
+
+执行 Agent 必须区分：
+
+```text
+静态检查完成
+Unity 实际编译完成
+Editor Play Mode 已验证
+用户仍需手工试玩
+```
+
+不得在没有证据时声称编译或运行成功。
+
+至少验证：
+
+- 文件名与 MonoBehaviour/ScriptableObject 类名匹配。
+- Runtime 不引用 UnityEditor。
+- 无重复类、缺失 Namespace 或循环程序集引用。
+- 缺少 Animator/正式模型时程序化回退正常。
+- 货币不足不会产生抽卡结果或负余额。
+- 编队无重复且只允许已拥有角色。
+- 同 Seed 的抽卡/战斗核心结果可复现。
+- 技能消耗能量且命中时序稳定。
+- 战斗胜负、全灭和超时均正确。
+- 存档保存/加载/损坏恢复/重置正确。
+- Scene Generator 可重复运行。
+
+如果执行环境不能直接控制 Play Mode，应完成所有可验证项目，并明确告知用户唯一剩余动作；不能假装已运行。
+
+---
+
+## 13. 文档交付
+
+实施时创建：
+
+```text
+Assets/_Game/README_START_HERE.md
+Assets/_Game/Docs/ArchitectureSummary.md
+Assets/_Game/Docs/AnalysisTraceability.md
+Assets/_Game/Docs/DemoLimitations.md
+```
+
+`README_START_HERE.md` 必须简短说明：
+
+1. Demo 场景路径；
+2. 如何生成/修复场景；
+3. 如何按 Play；
+4. Demo 当前包含什么；
+5. 在哪里编辑角色、技能和卡池数据；
+6. 将来如何用正式 3D 模型替换程序化角色。
+
+`AnalysisTraceability.md` 仅记录：
+
+- 使用了哪些高层通用概念；
+- 采用了什么独立 Clean-room 实现；
+- 哪些原始内容明确没有复制；
+- 哪些系统被推迟。
+
+不要复制外部分析文档的长段落。
+
+---
+
+## 14. 执行 Agent 的工作规则
+
+1. 所有用户沟通用中文。
+2. 先检查实际文件与现有改动，不覆盖用户工作。
+3. 先建立最小可编译纵切，再增量实现。
+4. 每完成一组脚本就让 Unity 导入并检查编译；错误未清零前不扩展新功能。
+5. 不只写计划，用户授权执行后必须直接实施并验证。
+6. 不要求用户手工创建文件夹、脚本、数据资产或场景对象。
+7. 只在真正需要用户权限、选择或无法自动解决的 Unity 阻塞时提问。
+8. 不因为外部 `analysis` 无法访问而停工。
+9. 不因缺少最终美术而停工，使用原创程序化占位内容。
+10. P0 默认不增加依赖；用户已允许下载必要工具，但必须限定在项目目录、使用可信官方来源、记录版本/许可证/哈希，并遵守本计划的隔离规则。
+11. 不修改 `analysis`、XAPK 或 Unity 生成缓存。
+12. 不强制关闭 Unity，不启动冲突的第二个 Editor。
+13. 不牺牲可编译、可试玩的 P0 去追求 P1 润色。
+14. 每阶段完成后更新本文件的进度表和验证证据。
+
+---
+
+## 15. 最终实施报告格式
+
+实施完成后用中文返回：
+
+```text
+项目根目录：
+计划版本：
+实际读取的可选研究文件：
+P0 Demo 完成：是 / 否
+Unity 实际编译验证：是 / 否
+编译错误数量：
+Agent 实际 Play Mode 验证：是 / 否
+主场景：
+已实现系统：
+延期到 P1 的系统：
+已知问题：
+验证证据：
+用户下一步唯一需要做的操作：
+```
+
+理想情况下，用户唯一需要做的是：
+
+```text
+打开 Assets/_Game/Scenes/GachaRPGDemo.unity，然后点击 Play。
+```
+
+---
+
+## 16. 阶段进度表
+
+| 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
+|---|---|---|---|---|
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.2 已保存并同步实际交付状态 | 2026-07-13 |
+| 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
+| 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 六角色/三技能/一抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-13 |
+| 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
+| 阶段 3：3v3 战斗核心 | 已完成 | 确定性自动战斗 | 固定 Tick、同 Seed 完整事件序列一致；胜负与超时验证通过 | 2026-07-13 |
+| 阶段 4：表现与场景 | 已完成 | 角色、UI、VFX、Generator、Scene | 程序化角色、运行时 UI、表现层及场景已在 Unity Play Mode 实测 | 2026-07-13 |
+| 阶段 5：P0 验证与试玩 | 已完成 | 可重复试玩的完整流程与 Windows Build | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS`；详见 `VerificationReport.md` | 2026-07-13 |
+| 阶段 6：P1 | 未开始 | 十连、碎片、升级、润色等 | — | — |
+
+状态仅使用：`未开始 / 进行中 / 已完成 / 阻塞`。
+
+---
+
+## 17. 决策记录
+
+| 日期 | 决定 | 原因 | 影响 |
+|---|---|---|---|
+| 2026-07-13 | 本计划存入真实 Unity 项目根目录 | 后续 Agent 可能无法访问上级 `analysis` | 计划必须自包含，外部分析仅为可选只读资料 |
+| 2026-07-13 | 使用 Unity `6000.5.3f1` 的现有 URP 项目 | 这是本机实际项目版本 | 不沿用旧提示词中的错误版本号 |
+| 2026-07-13 | P0 采用完整垂直切片，而非仅战斗 Demo | 用户希望亲自试玩“游戏 Demo” | 必须包含主页、单抽、收藏、编队、3v3 战斗和结果 |
+| 2026-07-13 | 使用原创程序化彩色角色 | 快速、无版权依赖、无需外部资产 | 正式 3D 角色管线延期，但保留统一 CharacterView 契约 |
+| 2026-07-13 | P0 使用本地 Mock 服务与存档 | 优先得到离线可玩 Demo | 正式抽卡、货币和奖励未来改为后端权威 |
+| 2026-07-13 | P1 才做十连、碎片和扩展养成 | 保护 P0 的编译与可玩性 | 单抽与收藏更新仍为 P0 强制功能 |
+| 2026-07-13 | 允许下载必要工具，但必须项目内隔离 | 用户授权补充工具，同时要求不得越界到其他目录 | P0 先只用现有 Unity；未来依赖优先放入 `_ProjectTools`，系统级写入必须再次说明 |
+| 2026-07-13 | 用户授权启动长期开发任务 | 用户明确说“shall we start”并允许长期运行 | 计划由讨论状态切换到实施；P0 已完成 |
+| 2026-07-13 | P0 不增加任何下载或第三方依赖 | 现有 Unity、URP、uGUI 与 Input System 已足够 | 所有实现和程序化表现均保留在项目内；详见 `ThirdPartyInventory.md` |
+| 2026-07-13 | 同时交付 Windows 独立试玩版 | 用户希望能够亲自体验 Demo | 已生成 `Builds/Windows/GenericGachaRPGDemo.exe`，并通过 Unity BuildPipeline |
+| 2026-07-13 | P0 以三组自动验证作为完成门槛 | 防止只写代码但未编译或未实际走流程 | 核心验证、Play Mode UI 冒烟和 Windows Build 全部留下 PASS 标记 |
+
+---
+
+## 18. 待用户讨论的 P1 方向
+
+P0 已完成。以下选项不会阻塞当前试玩版，可在用户试玩后决定：
+
+1. P1 优先级：十连/保底/碎片，或角色升级与养成。
+2. 美术方向：继续明亮科技风，或转为深色奇幻/其他原创风格。
+3. 战斗方向：更快节奏、更多技能机制，或优先打磨动作与事件同步。
+4. 下一目标平台：继续 Windows，或优先 WebGL/Android 适配。
+5. 是否在玩法扩展前先加入音效、正式模型或更完整的输入/无障碍设置。

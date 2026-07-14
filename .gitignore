@@ -1,0 +1,47 @@
+# Unity-generated directories
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Recordings/
+/Captures/
+/Artifacts/
+
+# Project-local downloaded tools and caches
+/_ProjectTools/
+
+# IDE/editor-generated files
+/.vs/
+/.vscode/
+/.idea/
+/*.csproj
+/*.sln
+/*.slnx
+/*.user
+/*.userprefs
+/*.pidb
+/*.booproj
+/*.svd
+/*.opendb
+/*.VC.db
+/*.DotSettings.user
+
+# Unity diagnostics
+sysinfo.txt
+crashlytics-build.properties
+mono_crash.*
+debug.log
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary editor files
+*.tmp
+*.bak
+~$*

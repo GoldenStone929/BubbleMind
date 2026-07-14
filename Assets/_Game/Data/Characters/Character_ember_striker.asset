@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3b506be934ebd34c9432bccdf3c5fc5, type: 3}
+  m_Name: Character_ember_striker
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterDefinition
+  id: ember_striker
+  displayName: Ember Striker
+  description: A fast close-range attacker.
+  role: 1
+  rarity: 0
+  displayColor: {r: 0.96, g: 0.28, b: 0.14, a: 1}
+  portrait: {fileID: 0}
+  characterPrefab: {fileID: 0}
+  maxHealth: 1180
+  attack: 172
+  defense: 29
+  attackInterval: 1.12
+  maxEnergy: 100
+  energyPerAttack: 24
+  energyWhenHit: 12
+  skill: {fileID: 11400000, guid: d843ee4797671fe40b8d12b770d35bea, type: 2}

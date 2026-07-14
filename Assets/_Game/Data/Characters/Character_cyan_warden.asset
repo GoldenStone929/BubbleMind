@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3b506be934ebd34c9432bccdf3c5fc5, type: 3}
+  m_Name: Character_cyan_warden
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterDefinition
+  id: cyan_warden
+  displayName: Cyan Warden
+  description: A durable guardian with an area disruption skill.
+  role: 0
+  rarity: 2
+  displayColor: {r: 0.1, g: 0.77, b: 0.82, a: 1}
+  portrait: {fileID: 0}
+  characterPrefab: {fileID: 0}
+  maxHealth: 1780
+  attack: 132
+  defense: 64
+  attackInterval: 1.5
+  maxEnergy: 100
+  energyPerAttack: 24
+  energyWhenHit: 12
+  skill: {fileID: 11400000, guid: 365dd5f3fffec934798fd7cb7de20e3e, type: 2}

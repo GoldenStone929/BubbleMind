@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b4e8a204c946544aa93808e975b5029, type: 3}
+  m_Name: Skill_RestoreWave
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.SkillDefinition
+  id: restore_wave
+  displayName: Restore Wave
+  description: Restores the ally with the lowest health ratio.
+  category: 1
+  targetMode: 2
+  damageMultiplier: 0
+  healingMultiplier: 1.45
+  energyCost: 100
+  hitTiming: 0.42
+  targetCount: 1
