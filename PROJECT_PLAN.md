@@ -1,8 +1,8 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v1.2-p0-complete  
-> 当前状态：P0 垂直切片已完成、验证并生成 Windows 试玩版；等待用户试玩反馈与 P1 指导  
-> 最近更新：2026-07-13  
+> 计划版本：v1.3-studioops  
+> 当前状态：P0 垂直切片已完成并生成 Windows 试玩版；本地版本基线已建立，长期制作基础设施正在接入  
+> 最近更新：2026-07-14  
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文  
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
 
@@ -58,7 +58,7 @@ PROJECT_PLAN.md
 - 项目起点是新建的 Unity URP 模板；P0 内容现已完整落在 `Assets/_Game`。
 - 已生成自定义游戏脚本、六名角色、三项技能、抽卡池、本地存档、三人编队、3v3 自动战斗、完整 UI、演示场景和编辑器工具。
 - 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity` 与 Windows 独立版 `Builds/Windows/GenericGachaRPGDemo.exe`。
-- 当前项目未使用 Git；不得假设存在 Git 回滚能力，也不得未经用户要求创建远程仓库或发布代码。
+- 当前项目已在 `GenericGachaRPG` 内建立本地 Git/Git LFS 仓库；`main` 初始基线提交为 `27ac1da`。尚未配置远程仓库，也未发布代码；未经用户明确授权不得创建远程或推送。
 - Unity Editor 当前可能处于打开状态。不要强制关闭 Unity，也不要在项目被打开时另启会冲突的第二个 Editor 实例。
 - 项目位于 OneDrive。实施时只操作真正需要的源文件，避免修改 `Library`、`Temp`、`Logs` 等生成目录，并留意同步与导入延迟。
 
@@ -67,7 +67,7 @@ PROJECT_PLAN.md
 - Unity `6000.5.3f1` 已安装并可用。
 - 项目已包含 URP、uGUI 和 Unity Test Framework。
 - Unity 已安装 Windows Standalone 与 WebGL Build Support。
-- Git 与 Python 在系统中可用，但当前 P0 不依赖它们；未经用户后续要求，不初始化仓库、不运行与 Demo 无关的 Python 流程。
+- Git 与 Git LFS 已在本项目本地启用。Python 仅可用于已批准、项目内隔离的工具流程；不得写入系统环境或其他项目。
 - Blender 当前未安装，且 P0 不需要 Blender。程序化角色全部由 Unity Primitive 创建。
 - 当前 Unity 组件已经足够创建、编译、测试并试玩 P0 Demo；本轮实际没有下载、安装或引入任何额外工具与第三方资产。
 
@@ -463,6 +463,8 @@ Assets/_Game/
 
 - 横屏/移动设置所需的 `ProjectSettings`
 - 将 Demo Scene 加入 Build Settings 的 `EditorBuildSettings`
+- Codex 持久入口 `AGENTS.md`、项目级 `.codex/config.toml` 与制作管理目录 `StudioOps/`
+- 版本控制文件 `.gitignore`、`.gitattributes` 与本地 `.git/`
 - 经隔离规则批准的项目本地工具目录 `_ProjectTools/`
 - 本项目构建输出目录 `Builds/`
 - 本项目验证证据目录 `Artifacts/`
@@ -820,6 +822,9 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-13 | P0 不增加任何下载或第三方依赖 | 现有 Unity、URP、uGUI 与 Input System 已足够 | 所有实现和程序化表现均保留在项目内；详见 `ThirdPartyInventory.md` |
 | 2026-07-13 | 同时交付 Windows 独立试玩版 | 用户希望能够亲自体验 Demo | 已生成 `Builds/Windows/GenericGachaRPGDemo.exe`，并通过 Unity BuildPipeline |
 | 2026-07-13 | P0 以三组自动验证作为完成门槛 | 防止只写代码但未编译或未实际走流程 | 核心验证、Play Mode UI 冒烟和 Windows Build 全部留下 PASS 标记 |
+| 2026-07-14 | 仅在 `GenericGachaRPG` 内建立 Git/Git LFS 基线 | 长期项目必须先具备可靠回滚，同时隔离同级分析与 XAPK | 已创建 `main` 基线提交 `27ac1da`；没有远程仓库，生成目录和本地工具被忽略 |
+| 2026-07-14 | 采用精简的 Codex 原生 `StudioOps`，不安装 Claude-Code-Game-Studios/BMAD | 现有主计划已经完整，项目真正缺少当前工作包、美术契约和资产台账 | 以 `AGENTS.md`、五个 StudioOps 文件和八类按需职责替代重型虚拟工作室框架 |
+| 2026-07-14 | 固定接入 `CoplayDev/unity-mcp v10.1.0` | 为长期任务补齐 Codex 直接查看和操作 Unity Editor 的桥梁 | 仅使用项目内便携 uv 与 stdio；禁用遥测/远程访问，写操作保持审批，安装后必须验证 Unity 6000.5 兼容性 |
 
 ---
 

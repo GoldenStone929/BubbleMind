@@ -1,0 +1,4 @@
+asset_id,type,name,target_path,source_or_provenance,license,status,spec,evidence,last_updated
+ART-PLACEHOLDER-CHARSET-001,procedural_3d_placeholder,P0 procedural character set,Assets/_Game/Scripts/Characters/ProceduralCharacterBuilder.cs,Original implementation created inside this project,Project-owned,verified_placeholder,PROJECT_PLAN.md section 6.1,Assets/_Game/Docs/VerificationReport.md,2026-07-13
+ART-PLACEHOLDER-UI-001,runtime_ui_placeholder,P0 runtime UI,Assets/_Game/Scripts/UI,Original implementation created inside this project,Project-owned,verified_placeholder,PROJECT_PLAN.md sections 6.2-6.5,Assets/_Game/Docs/VerificationReport.md,2026-07-13
+ART-PLACEHOLDER-VFX-001,procedural_vfx_placeholder,P0 combat presentation,Assets/_Game/Scripts/Core/DemoBattlePresenter.cs,Original implementation created inside this project,Project-owned,verified_placeholder,PROJECT_PLAN.md section 6.6,Assets/_Game/Docs/VerificationReport.md,2026-07-13
