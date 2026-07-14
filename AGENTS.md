@@ -29,7 +29,9 @@
 - Unity 采用 Visible Meta Files 与 Force Text；新增、移动或删除 `Assets/` 内容时必须保持 `.meta` 一致。
 - 工程已经打开时，不启动会冲突的第二个 Editor 实例，也不强制关闭用户的 Unity。
 - Package 变更必须固定版本，并同步提交 `Packages/manifest.json` 与 `Packages/packages-lock.json`。
-- Codex 侧仅使用项目内 stdio MCP Server；Unity 内部桥接只允许 `127.0.0.1:6400` 回环通信，状态写入 `_ProjectTools/runtime/UnityMCPStatus`；禁止 LAN、远程 HTTP、遥测、全局配置写入、外部资产服务和 API Key。
+- Codex 侧仅使用项目内 stdio MCP Server；Unity 内部桥接只允许 `127.0.0.1:6400` 回环通信，状态写入 `_ProjectTools/runtime/UnityMCPStatus`；禁止 LAN、远程 MCP HTTP、遥测和全局配置写入。
+- 外部资产服务默认禁止。当前唯一窄幅例外是 `ART-CHAR-UR-COSMIC-SLIME-001`：用户于 2026-07-14 明确授权将登记后的参考图上传至 Tripo 官方 API、消耗免费额度并把模型下载回本项目。不得扩展到其他资产、服务或公开图床。
+- Tripo Key 只能从既有安全存储/用户级 `MCPFORUNITY_TRIPO_API_KEY` 在单次子进程内读取；严禁显示、记录、传入命令行参数、写入项目文件、日志或 Git。现有用户级凭据属于项目外状态，删除或更改仍需用户另行授权。
 - Unity MCP 使用项目内嵌入包 `Packages/com.coplaydev.unity-mcp`；上游设置窗口、自动更新和客户端配置器在隔离模式中被禁用。不得绕过隔离补丁或把包改回全局配置流程。
 - 通过 Unity MCP 创建、加载或保存场景时只使用 `Assets/_Game/` 下的项目相对路径；不得传入绝对路径或 `..`。
 
@@ -37,6 +39,7 @@
 
 - 下载前必须先用中文告知用户具体组件、版本、来源、目标路径和原因。
 - 所有便携工具、缓存和临时运行环境必须位于 `_ProjectTools/`；禁止系统级安装或修改系统 PATH。
+- 用户已安装的 Blender 5.1 可以作为只读外部可执行文件调用；其 HOME、AppData、配置、缓存、临时文件和输出必须重定向到本项目 `_ProjectTools/` 或 `Assets/_Game/`，不得修改 Blender 安装目录。
 - 第三方工具与包必须记录到 `Assets/_Game/Docs/ThirdPartyInventory.md`，包括版本、来源、许可证、用途、路径与校验信息。
 - 内容资产及权属记录在 `StudioOps/ASSET_LEDGER.csv`；不要把工具依赖混入资产台账。
 

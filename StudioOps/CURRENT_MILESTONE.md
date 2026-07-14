@@ -1,78 +1,86 @@
-# 当前里程碑：长期制作基础设施
+# 当前里程碑：首个 UR 限定角色样板
 
-> 状态：项目内交付已完成；1 个外部残留待用户授权清理<br>
+> 状态：进行中  
 > 开始日期：2026-07-14  
-> 完成日期：2026-07-14<br>
-> 用户授权：用户在审阅方案后回复“go ahead”  
+> 角色资产 ID：`ART-CHAR-UR-COSMIC-SLIME-001`  
+> 工作名：星渊吞噬体 / Abyssal Singularity Slime  
+> 规格：`Specs/ART-CHAR-UR-COSMIC-SLIME-001.md`  
 > 长期范围权威：`../PROJECT_PLAN.md`
 
 ## 目标
 
-在不改变 P0 玩法与场景的前提下，为长期 Unity 制作建立可靠的本地版本基线、Codex 原生管理入口和受隔离的 Unity MCP 操作桥梁。
+把用户提供的紫色星空/黑洞史莱姆参考图制作成首个可在现有 3v3 战斗中显示、可试玩、可验证的 UR 限定角色样板。它用于建立正式 3D 角色管线，不代表全项目美术风格已经锁定。
 
-## 已批准范围
+## 用户最新授权
 
-- 仅在 `GenericGachaRPG` 内初始化本地 Git 与 Git LFS。
-- 建立 `AGENTS.md` 与最小 `StudioOps` 文档层。
-- 下载便携 `uv 0.11.28` 到 `_ProjectTools/`。
-- 固定安装 `CoplayDev/unity-mcp v10.1.0`。
-- Codex 侧使用项目内 stdio，Unity 内部桥接仅绑定 `127.0.0.1`，关闭遥测，保持写操作审批。
-- 验证包解析、Unity 编译、MCP 连接及既有 Demo 完整性。
+- 停止 Claude 路线，由 Codex 独立接管角色制作。
+- 使用用户提供的 Tripo API 额度制作首个候选模型。
+- 使用用户已经安装的 Blender 5.1 进行清理、优化和导出。
+- 继续遵守项目隔离、下载预告和中文沟通规则；本项目源码仅获准推送到 `GoldenStone929/BubbleMind`，其他远端与构建发布仍禁止。
 
-## 非目标
+## 已批准的外部动作
 
-- 不安装 Blender、Blender MCP、ComfyUI、BMAD 或 Claude-Code-Game-Studios。
-- 不接入 Meshy、Tripo、Sketchfab、FAL 或其他外部资产服务。
-- 不创建远程 GitHub 仓库、不推送代码、不发布构建。
-- 不开始 P1 玩法、美术重制或正式 3D 资产制作。
-- 不修改系统 PATH，不进行系统级安装。
+仅限本角色：
 
-## 交付物与状态
+1. 将项目内登记的参考 PNG 上传到 Tripo 官方 API。
+2. 查询 API 钱包余额并消耗免费额度生成少量候选。
+3. 将生成结果下载到项目内受控目录。
 
-| 交付物 | 状态 | 证据 |
+任何新软件、SDK、插件、模型服务、付费额度或额外第三方上传仍须先通知用户。API Key 不得写入项目、Markdown、Unity 资产、命令历史、日志或 Git；生成进程只从现有用户级 `MCPFORUNITY_TRIPO_API_KEY` 读取值，不输出值。该变量由此前流程写入用户配置，属于项目外状态；本轮不会更改或删除。由于 Key 已出现在聊天中，本次生成后必须建议轮换。
+
+## 路径
+
+```text
+参考源：Assets/_Game/Art/Source/Characters/UR_CosmicSlime/
+Tripo 原始输出：_ProjectTools/Tripo/jobs/<task-id>/
+Blender 源文件：Assets/_Game/Art/Generated/UR_CosmicSlime/Source/Blender/
+Unity 游戏资产：Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/
+角色 Prefab：Assets/_Game/Prefabs/Characters/
+验证证据：Artifacts/UR_CosmicSlime/
+本地工具/缓存：_ProjectTools/
+```
+
+## 执行阶段
+
+| 阶段 | 状态 | 完成门槛 |
 |---|---|---|
-| 工程审计与 Unity 版本控制设置核验 | 已完成 | Force Text、Visible Meta Files、`.meta` 完整 |
-| 本地 Git/LFS 基线 | 已完成 | `main` 根提交 `27ac1da` |
-| Codex 原生入口与 StudioOps | 已完成 | 提交 `83ce206`；`AGENTS.md`、本目录 |
-| 便携 uv 隔离环境 | 已完成 | `uv 0.11.28`、CPython `3.12.13` 与缓存全部位于 `_ProjectTools/` |
-| Unity MCP 固定包 | 已完成 | 上游 v10.1.0 / commit `c14de1e6dc01ab42d2bb358730cff954bce0ce6b`；嵌入式项目补丁版 `10.1.0-project.1`；lock 为 `source: embedded` |
-| Unity/MCP 验证 | 已完成 | 48 个工具；活动场景读取；临时场景对象创建/读取/删除；P0、Play 与最终 Windows Build 回归通过 |
-| 项目外残留清理 | 待用户授权 | 隔离加固前意外创建 `C:\Users\yshaw\AppData\Local\UnityMCP`；未读取或删除，未来写入已封堵 |
+| 1. 审计与交接 | 进行中 | Claude 日志、Git、Unity、参考图和安全边界均已核实；延期事项写入 Markdown |
+| 2. 角色规格与来源登记 | 进行中 | Asset Spec、Art Bible、资产台账和第三方记录一致 |
+| 3. Tripo 候选 | 跳过（余额 0） | 余额检查为 available 0 / frozen 0；未上传、未建任务、未消费 |
+| 4. Blender 本地建模与清理 | 待开始 | 轮廓、比例、法线、拓扑、UV、材质槽、Pivot 与导出符合规格 |
+| 5. Unity 集成 | 待开始 | URP 材质、Prefabs、Sockets、CharacterView 与战斗数据接通 |
+| 6. 验证与交付 | 待开始 | 编译、场景显示、Play 冒烟、性能检查和 Windows Build 回归通过 |
 
-## 下载许可与限制
+## 美术方向
 
-已批准下载：
+- 主体：半透明深紫色凝胶体，圆润但具有压迫感。
+- 识别点：不对称双角、发光斜眼、胸腹部黑洞核心、破碎轨道环。
+- 内部：紫黑星云、星点与吸积盘；这些主要由 Unity Shader/VFX 实现，而不是强行烘进网格。
+- 战斗轮廓：宽、低、重心稳定；即使关闭透明与 VFX 仍能认出角色。
+- 禁止复制任何现有 IP 的角色、符号或招牌表现。
 
-1. `uv 0.11.28` Windows x64 官方 ZIP；必须校验 SHA-256。
-2. `CoplayDev/unity-mcp v10.1.0`，固定到发布标签/提交。
-3. Unity MCP Python 服务 `mcpforunityserver==10.1.0`，其缓存与 Python 环境必须在 `_ProjectTools/`。
+## 技术策略
 
-除此以外的下载必须重新通知用户。
+- 首版由 Blender 5.1 完全本地程序化生成主体、双角、黑洞核心、轨道环和液滴，并完成法线、比例与 FBX 导出。
+- Tripo 官方余额为 0，本轮没有上传参考图、创建任务或产生费用；未来有额度时只作为 A/B 候选，不覆盖已验证模型。
+- Unity 使用程序化 `CharacterView` 回退动作；首版不因缺少骨架而阻塞。
+- 黑洞核心、星空、透明壳与轨道动画由 URP Shader、材质和轻量脚本完成。
+- LOD0 总三角面目标不超过 20,000；材质不超过 3 个；单张贴图最大 2048，移动端可降至 1024。
 
-## 验收门槛
+## 权利与发布限制
 
-- Git 工作区可明确解释，生成目录未被跟踪。
-- Unity MCP 版本固定，依赖来源与许可证已登记。
-- Unity `6000.5.3f1` Console 无编译错误。
-- Codex/Python Server 使用项目内 stdio；Unity 的 MCP 桥接端口仅绑定 `127.0.0.1:6400` 回环，遥测关闭，不写入其他项目目录或机器级 Unity 偏好。
-- 能读取项目/Unity 状态；在专用测试场景创建、读取并删除临时对象。
-- 场景创建、加载与保存路径必须经规范化并限制在本项目 `Assets/` 内，拒绝绝对路径与 `..` 越界。
-- 既有 P0 验证仍通过；任何兼容性限制必须明确记录。
+- 参考图由用户提供，但原始创作工具与商用权属尚未确认，当前只作为内部原型输入。
+- Tripo 免费层产物按当前官方条款不得作为商业发布资产；本样板标记为 `prototype_noncommercial`。
+- 未来商业发布前必须取得明确权利，或用项目自有/合适付费许可重新制作。
 
-## 验证结论
+## 本里程碑不包含
 
-- Unity `6000.5.3f1` 无 MCP 包编译错误；MCP Server 初始化后列出 48 个工具。
-- `UNITY_MCP_SMOKE_PASS`、`P0_VERIFY_PASS_20260713`、`P0_PLAY_SMOKE_PASS_20260713` 与最终 `WINDOWS_BUILD_PASS_20260713` 均已确认。
-- 遥测状态为 `false`；MCP 桥接仅监听 `127.0.0.1:6400`，未启用 MCP HTTP `8080` 或 LAN 绑定。
+- 不安装 Blender MCP、ComfyUI、Meshy 或新的 Unity 包。
+- 不制作整套角色阵容。
+- 不实现十连、保底、碎片或完整养成。
+- 不发布商业构建；除已批准的 `GoldenStone929/BubbleMind` 源码仓库外，不发布其他远端。
+- 不清理 `StudioOps/DEFERRED_WORK.md` 中需要额外授权的项目外目录。
 
-## 已知兼容性说明
+## 当前恢复点
 
-- Unity MCP 在 Unity 6000.5 下曾把 Play Smoke 的普通 `Debug.Log` PASS 记录归类为 `Exception`；调用栈确认日志来自 `Debug.Log`，测试没有抛出异常。
-- EditMode Runner 任务状态为 `succeeded / Passed`，但正式 NUnit 测试数为 0；项目自定义 P0 验证器仍是当前主要自动化门槛。
-- 当前 Codex 任务不会热加载新建的 `.codex/config.toml`；在新任务或重启应用并信任本项目后使用原生 MCP 入口。
-- OneDrive 曾短暂锁定 `Temp/BurstOutput`；只清理该项目内生成目录后，最终 Windows 增量构建成功。该历史失败不属于代码或 MCP 包编译错误。
-- 上游 MCP 设置窗口在项目隔离版中只显示隔离提示，自动更新检查、用户客户端配置扫描/改写、HTTP 自动启动和机器级 `EditorPrefs` 写入均默认禁用。
-
-## 下一交接
-
-本里程碑完成后，等待用户试玩 P0 并选择 P1 的玩法、美术和目标平台优先级。
+如果任务中断，下一代理应先阅读本文件、角色 Asset Spec 与 `DEFERRED_WORK.md`，检查 Git/Unity 实际状态，再从表格中第一个未完成阶段继续；不得重新从空项目开始。

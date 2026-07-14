@@ -1,0 +1,107 @@
+# Asset Spec：`ART-CHAR-UR-COSMIC-SLIME-001 星渊吞噬体`
+
+> 状态：已批准用于内部原型  
+> 稀有度/定位：UR 限定样板 / 非人形术士型角色  
+> 英文工作名：Abyssal Singularity Slime  
+> 负责人：Codex  
+> 最后更新：2026-07-14
+
+## 1. 用途与玩家视角
+
+- 游戏内用途：首个正式 3D 角色样板；进入收藏预览、编队和现有 3v3 战斗。
+- 出现场景与典型屏幕占比：战斗中高度约占画面 12%–20%；收藏页允许近景旋转预览。
+- 必须传达的信息：UR 稀有度、宇宙/黑洞主题、沉重引力感、非人形凝胶生命、危险但可读。
+- 不在本资产范围内：完整限定池经济规则、商业发布权、整套角色阵容、付费皮肤、最终移动端优化。
+
+## 2. 原创与权属
+
+- 来源/创作方式：用户提供三视角概念 PNG；Blender 5.1 在本地程序化生成并清理全部网格；Unity 制作最终 Shader、VFX、Prefab 与运行时表现。Tripo 仅完成零费用余额检查，未上传或生成。
+- 参考资料：`Assets/_Game/Art/Source/Characters/UR_CosmicSlime/BlackHoleSlime_Reference.png`。
+- 原始参考哈希：SHA-256 `BB6CAF3698C4DFADFA20B21EF470ECBB21D385519D0CE226C422CB034736AF6E`；1122×1402；1,790,122 bytes。
+- 参考权利：由用户提供；原始生成/创作工具与商业权属尚未确认，因此只用于内部原型。
+- 生成式工具：本轮未使用 3D 生成服务；Tripo API 余额为 0，未创建任务；API Key 永不记录。
+- 商用权利：Blender 程序化网格和 Unity 实现由本项目创建；但用户参考图的来源/商业权利仍待确认，因此整个样板继续限定为内部原型。
+- `ASSET_LEDGER.csv` 条目：`ART-SOURCE-UR-COSMIC-SLIME-001` 与 `ART-CHAR-UR-COSMIC-SLIME-001`。
+
+## 3. 视觉规格
+
+- 轮廓：宽、低、圆润穹顶体；底部向外摊开的凝胶裙边；不对称双角；破碎轨道环形成横向识别线。
+- 正面识别：白紫色斜眼、胸腹中央奇点、额部菱形符号。
+- 背面识别：深色星空穹顶、紫色星云带与环绕碎片。
+- 色彩：近黑紫 `#100A27`、深紫 `#351067`、电光紫 `#A34CFF`、核心白紫 `#F4E9FF`、轨道暗金 `#9A7554`。
+- 材质语言：主体外壳为半透明高光凝胶；内部星云与星点使用独立发光层；金属轨道环保持粗糙暗金边缘。
+- 禁止：不复制任何现有 IP 的角色、标志、名称、招式或构图；不使用来源不明的模型/贴图。
+
+## 4. 技术预算
+
+- Blender 源：`Assets/_Game/Art/Generated/UR_CosmicSlime/Source/Blender/UR_CosmicSlime.blend`。
+- Tripo 原始结果：无；余额为 0，未上传或生成。未来候选才使用 `_ProjectTools/Tripo/jobs/<task-id>/`。
+- Unity FBX：`Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/UR_CosmicSlime.fbx`。
+- Unity 材质/贴图：`Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/Materials/` 与 `Textures/`。
+- 单位与轴：1 Unity unit = 1 m；Y-up；面向 +Z；Pivot 位于主体底部中心；目标高度约 1.55 m、宽度约 1.9 m。
+- LOD0：主体、双角与轨道总计 ≤20,000 triangles；目标 10,000–16,000。
+- LOD1：≤8,000 triangles；首轮样板可延期，但在移动端发布前必须完成。
+- 材质：最多 3 个（Shell、Core、Orbit）；最多 1 个透明材质。
+- 贴图：最多 4 张 2048²；Windows 原型 2048，移动端导入覆盖 1024。
+- 骨骼：首版不强制骨架；通过 `CharacterView` 的无 Animator 回退动作驱动整体挤压、冲刺、受击与死亡。
+- Blend Shape：可选 `Squash`、`Stretch`、`Pulse`，不阻塞首轮。
+- 碰撞：单 Capsule/Sphere Collider 近似主体；轨道与液滴无独立碰撞。
+- 性能：战斗中透明层、粒子和过度绘制必须受控；关闭 VFX 时仍保持清晰轮廓。
+
+## 5. 组件拆分
+
+```text
+CharacterRoot
+├── ModelRoot
+│   ├── SlimeBody
+│   ├── Horns
+│   ├── SingularityCore
+│   └── OrbitRig
+│       ├── OrbitRing_A
+│       ├── OrbitRing_B
+│       └── OrbitFragments
+├── RightHandSocket
+├── LeftHandSocket
+├── SkillVfxSocket
+├── ProjectileSocket
+├── GroundVfxSocket
+├── TargetSocket
+└── HealthBarSocket
+```
+
+- `SlimeBody/Horns` 首版全部由项目内 Blender 脚本生成。
+- 黑洞奇点、内部星空与透明外壳主要在 Unity 中重建。
+- 轨道环优先独立网格，允许由 Blender 程序化重建，不依赖 Tripo 生成质量。
+
+## 6. Unity 导入契约
+
+- Model Importer：scale 1；Read/Write 默认关闭；Generate Colliders 关闭；Normals 从文件导入；Tangents 自动。
+- Rig：None；无 Animator 时必须正常工作。
+- Prefab：`Assets/_Game/Prefabs/Characters/PF_UR_CosmicSlime.prefab`。
+- 运行时连接：`CharacterDefinition.characterPrefab` 指向 Prefab；`DemoBattlePresenter` 优先实例化 Prefab，缺失时回退 `ProceduralCharacterBuilder`。
+- 数据：新增稳定 ID `ur_cosmic_slime`；现有 Generator 必须纳入该定义，重复运行不能把它移除。
+- UR 显示：扩展稀有度枚举与 UI 映射，但不在本里程碑实现完整限定池经济。
+
+## 7. 验收与证据
+
+- [x] 角色身份、参考图与工作范围锁定
+- [ ] 参考源复制到项目并有 `.meta`
+- [x] Tripo 余额检查已记录；0 额度，未上传/未建任务/未消费，且无密钥落盘
+- [ ] Blender 源文件可打开并可重复导出
+- [ ] 网格、法线、UV、材质槽、比例与 Pivot 合格
+- [ ] Unity 导入无错误/警告
+- [ ] Prefab、Sockets 与 `CharacterView` 正确
+- [ ] 收藏/编队/战斗中可见
+- [ ] URP 材质、黑洞核心与轨道动画正确
+- [ ] 性能预算通过
+- [ ] Meta 文件与 Git LFS 状态正确
+- [ ] P0 Play 与 Windows Build 回归通过
+
+证据目录：`Artifacts/UR_CosmicSlime/`
+
+## 8. 已知限制与交接
+
+- 正式中英文商品名、技能名称、限定池概率/期限/保底尚未锁定。
+- 免费 Tripo 输出不得被描述为商业发布资产。
+- API Key 已在聊天中暴露且存在用户级环境变量；完成本次生成后需轮换，并在用户单独授权后清理该变量。
+- 当前没有 Tripo 候选；未来有额度时只做一次受控 A/B 测试，不覆盖本地 Blender 基线。

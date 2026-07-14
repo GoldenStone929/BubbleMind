@@ -1,7 +1,7 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v1.4-infrastructure<br>
-> 当前状态：P0 垂直切片、Windows 试玩版与项目内长期制作基础设施已完成；1 个项目外残留待用户授权清理<br>
+> 计划版本：v1.5-ur-character-prototype<br>
+> 当前状态：P0 垂直切片、Windows 试玩版与长期制作基础设施已完成；首个 UR 限定角色样板正在制作；外部残留与凭据轮换见 `StudioOps/DEFERRED_WORK.md`<br>
 > 最近更新：2026-07-14  
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文  
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
@@ -31,13 +31,13 @@
 
 ```text
 工作区：
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind
 
 真实 Unity 项目根目录：
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\GenericGachaRPG
 
 可选的只读研究目录：
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis
 ```
 
 执行前必须确认当前根目录直接包含：
@@ -49,7 +49,7 @@ ProjectSettings
 PROJECT_PLAN.md
 ```
 
-如果当前工作目录是上一级 `Game-jjk`，应将 Unity 工作目标明确切换到其子目录 `GenericGachaRPG`，不得误把文件创建在上一级或 `analysis` 内。
+如果当前工作目录是上一级 `BubbleMind`，应将 Unity 工作目标明确切换到其子目录 `GenericGachaRPG`，不得误把文件创建在上一级或 `analysis` 内。
 
 ### 已核实的项目环境
 
@@ -58,7 +58,7 @@ PROJECT_PLAN.md
 - 项目起点是新建的 Unity URP 模板；P0 内容现已完整落在 `Assets/_Game`。
 - 已生成自定义游戏脚本、六名角色、三项技能、抽卡池、本地存档、三人编队、3v3 自动战斗、完整 UI、演示场景和编辑器工具。
 - 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity` 与 Windows 独立版 `Builds/Windows/GenericGachaRPGDemo.exe`。
-- 当前项目已在 `GenericGachaRPG` 内建立本地 Git/Git LFS 仓库；`main` 初始基线提交为 `27ac1da`。尚未配置远程仓库，也未发布代码；未经用户明确授权不得创建远程或推送。
+- 当前项目已在 `GenericGachaRPG` 内建立本地 Git/Git LFS 仓库；`main` 初始基线提交为 `27ac1da`。用户已于 2026-07-14 明确授权把该仓库推送到 `https://github.com/GoldenStone929/BubbleMind.git`；其他远端、构建发布或外部服务仍需另行授权。
 - Unity Editor 当前可能处于打开状态。不要强制关闭 Unity，也不要在项目被打开时另启会冲突的第二个 Editor 实例。
 - 项目位于 OneDrive。实施时只操作真正需要的源文件，避免修改 `Library`、`Temp`、`Logs` 等生成目录，并留意同步与导入延迟。
 
@@ -68,12 +68,12 @@ PROJECT_PLAN.md
 - 项目已包含 URP、uGUI 和 Unity Test Framework。
 - Unity 已安装 Windows Standalone 与 WebGL Build Support。
 - Git 与 Git LFS 已在本项目本地启用。Python 仅可用于已批准、项目内隔离的工具流程；不得写入系统环境或其他项目。
-- Blender 当前未安装，且 P0 不需要 Blender。程序化角色全部由 Unity Primitive 创建。
+- Blender `5.1` 已由用户安装在 `C:\Program Files\Blender Foundation\Blender 5.1\`；Codex 已核对启动器、`blender.exe` 和自带 Python 存在。Blender 只作为只读外部可执行文件调用，所有用户配置、缓存、临时文件和输出必须重定向到本项目。
 - 长期制作基础设施已固定使用便携 `uv 0.11.28`、uv 管理的 CPython `3.12.13`、`mcpforunityserver==10.1.0` 与嵌入式 `CoplayDev/unity-mcp 10.1.0-project.1`；上游基线固定到 v10.1.0 / 提交 `c14de1e6dc01ab42d2bb358730cff954bce0ce6b`。
-- 所有下载、缓存、Python、临时运行状态与 MCP 状态均位于 `_ProjectTools/`；没有修改系统 PATH，没有创建远程仓库，也没有安装 Blender 或接入外部资产服务。
+- 所有由 Codex 下载的工具、缓存、Python、临时运行状态与 MCP 状态均位于 `_ProjectTools/`；没有修改系统 PATH 或下载 Blender。当前唯一批准的 Git 远端是 `GoldenStone929/BubbleMind`，唯一外部资产服务例外是用户明确批准的首个 UR 角色 Tripo 官方 API 作业。
 - Codex 与 Python MCP Server 使用项目内 stdio；Python Server 与 Unity Editor 之间的 MCP 桥接仅使用 `127.0.0.1:6400` 回环端口。未启用 MCP HTTP `8080`、LAN/远程 HTTP 或遥测；用户客户端配置和机器级 Unity 偏好写入默认禁用。
 
-### 用户授予的工具下载权限与强制隔离规则
+### 用户授予的工具/外部服务权限与强制隔离规则
 
 用户允许为本项目下载确实必要的工具或依赖，但此授权受以下边界约束：
 
@@ -83,9 +83,9 @@ PROJECT_PLAN.md
 4. 所有下载、便携工具、临时安装包、生成物和验证证据必须位于 Unity 项目根目录内的明确子目录：
 
 ```text
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG\_ProjectTools\
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG\Builds\
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\GenericGachaRPG\Artifacts\
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\GenericGachaRPG\_ProjectTools\
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\GenericGachaRPG\Builds\
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\GenericGachaRPG\Artifacts\
 ```
 
 5. 禁止系统级安装、修改系统 PATH、写入其他项目、用户桌面、Downloads、Documents、其他 OneDrive 目录或无关文件夹。
@@ -99,6 +99,13 @@ Assets/_Game/Docs/ThirdPartyInventory.md
 
 9. 不执行来源不明的二进制文件、脚本或安装器。
 10. 不允许任何工具访问或联系原 APK/XAPK 中发现的服务器、接口或域名。
+
+当前窄幅外部服务授权：
+
+- 仅为 `ART-CHAR-UR-COSMIC-SLIME-001`，允许把已登记的参考 PNG 上传到 Tripo 官方 API、查询余额、消耗用户免费 API 额度并把模型下载到 `_ProjectTools/Tripo/jobs/`。
+- 不使用第三方公共图床，不安装 Tripo SDK，不把 API Key 写入命令行、项目、Markdown、日志或 Git。
+- 免费 Tripo 输出标记为内部、非商用原型；商业发布前必须重制或取得适当许可。
+- 任何付费、其他服务、其他资产或新增下载仍需先通知用户。
 
 ---
 
@@ -135,7 +142,7 @@ Home 主页
 - 不做真实登录、联网后端、数据库、PvP、公会、邮件、排行榜或活动系统。
 - 不做真钱充值、IAP 或商店支付。
 - P0 默认不下载第三方角色、插件或模板；如后续确有必要，只能依照“项目内隔离、官方来源、最小依赖”的规则处理。
-- 不等待 Blender、正式模型、配音或最终商业美术。
+- P0 已不依赖 Blender、正式模型、配音或最终商业美术；当前后继里程碑只制作一个正式 3D 角色样板，不扩展整套阵容。
 - 不在 Windows 上尝试最终 iOS 构建。
 
 ---
@@ -158,14 +165,14 @@ Home 主页
 如果执行环境允许，可只读参考：
 
 ```text
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\module_inventory.csv
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\game_flow.md
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\data_model.md
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\battle_system.md
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\gacha_system.md
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\character_pipeline.md
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\clean_room_unity_architecture.md
-C:\Users\yshaw\OneDrive\Desktop\Game-jjk\analysis\architecture\missing_information.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\module_inventory.csv
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\game_flow.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\data_model.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\battle_system.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\gacha_system.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\character_pipeline.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\clean_room_unity_architecture.md
+C:\Users\yshaw\OneDrive\Desktop\BubbleMind\analysis\architecture\missing_information.md
 ```
 
 规则：
@@ -652,6 +659,7 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 
 候选：
 
+- 首个正式 3D 角色样板、Prefab/CharacterView 接入与 URP 表现。
 - 十连和最低稀有度保证。
 - 重复角色碎片。
 - 更丰富技能类型。
@@ -796,7 +804,7 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.4 已保存并同步实际交付状态 | 2026-07-14 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v1.5 已保存并同步首个 UR 角色里程碑 | 2026-07-14 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
 | 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 六角色/三技能/一抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-13 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
@@ -804,7 +812,7 @@ Agent 实际 Play Mode 验证：是 / 否
 | 阶段 4：表现与场景 | 已完成 | 角色、UI、VFX、Generator、Scene | 程序化角色、运行时 UI、表现层及场景已在 Unity Play Mode 实测 | 2026-07-13 |
 | 阶段 5：P0 验证与试玩 | 已完成 | 可重复试玩的完整流程与 Windows Build | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS`；详见 `VerificationReport.md` | 2026-07-13 |
 | 长期制作基础设施 | 已完成（清理待授权） | 本地 Git/LFS、`AGENTS.md`、StudioOps、项目级 `.codex/config.toml`、嵌入式隔离 Unity MCP、隔离 uv/Python 与 Editor Bootstrap | 48 工具离线协议复测、`UNITY_MCP_SMOKE_PASS`、P0/Play 回归与最终 Windows 构建均通过；项目外残留详见 `VerificationReport.md` | 2026-07-14 |
-| 阶段 6：P1 | 未开始 | 十连、碎片、升级、润色等 | — | — |
+| 阶段 6：P1 | 进行中 | 首个 UR 限定角色样板；十连、碎片、升级仍延期 | `StudioOps/CURRENT_MILESTONE.md` 与角色 Asset Spec | 2026-07-14 |
 
 状态仅使用：`未开始 / 进行中 / 已完成 / 阻塞`。
 
@@ -830,6 +838,13 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-14 | 以 `10.1.0-project.1` 嵌入并隔离 `CoplayDev/unity-mcp v10.1.0` | 上游自动设置、更新、HTTP 与用户级偏好路径不满足严格项目边界 | 保留上游提交和 MIT 许可证；在 Unity 6000.5.3f1 完成 48 工具离线连接、P0 与 Windows Build 回归；仅保留项目 stdio + `127.0.0.1:6400` MCP 回环，遥测和全局配置写入默认禁用 |
 | 2026-07-14 | 不擅自清理项目外残留 | 隔离加固前的验证意外创建 `C:\Users\yshaw\AppData\Local\UnityMCP`，用户要求不得越界操作 | 已封堵未来外部写入；未读取或删除该目录，等待用户明确授权后只清理这一精确路径 |
 | 2026-07-14 | 项目级 Codex MCP 配置作为后续任务入口 | 当前任务不会热加载新建的 `.codex/config.toml` | 新 Codex 任务或应用重启并信任项目后加载；当前 Unity Bridge 与手动 MCP 协议验证已通过 |
+| 2026-07-14 | 首个正式 3D 样板锁定为紫色星空/黑洞史莱姆 | 用户提供了唯一三视角参考图并明确要求制作首个 UR 限定角色 | 资产 ID 为 `ART-CHAR-UR-COSMIC-SLIME-001`；先建立样板管线，不自动锁定全项目风格 |
+| 2026-07-14 | 停止 Claude 角色生成路线，由 Codex 独立接管 | Claude 使用了未加载本项目隔离配置的多套 MCP Server，未产生模型或消耗 Tripo 额度 | 所有后续证据以项目文件、官方 API 响应、Blender 和 Unity 验证为准 |
+| 2026-07-14 | 使用用户已安装的 Blender 5.1 | 安装已存在，无需下载；适合清理 AI 网格、重建轨道环并导出 Unity 原生 FBX | 运行时把 HOME、AppData、配置、缓存和 TEMP 重定向到 `_ProjectTools/`；不修改安装目录 |
+| 2026-07-14 | 仅为首个角色评估 Tripo 官方上传/生成接口 | 当前 Unity Tripo 适配器未实现本地文件上传；官方 API 支持 multipart 上传后使用 `image_token` | 余额检查为 available 0 / frozen 0，因此未上传、未建任务、未消费；首版改为本地 Blender 程序化建模，未来有额度才做 A/B 候选 |
+| 2026-07-14 | 公开过的 Tripo Key 视为已暴露 | Key 出现在聊天中，且此前流程创建了用户级环境变量/凭据 | 本次只从现有存储读入内存；生成后建议用户轮换；清理用户级状态需另行授权，见 `StudioOps/DEFERRED_WORK.md` |
+| 2026-07-14 | 工作区正式保留名称 `BubbleMind` | 用户明确偏好该名称并同意修正此前文档中的旧路径判断 | 唯一可写工程路径统一为 `C:\Users\yshaw\OneDrive\Desktop\BubbleMind\GenericGachaRPG`；后续任务不得再使用不存在的 `Game-jjk` 路径 |
+| 2026-07-14 | 授权发布到 `GoldenStone929/BubbleMind` | 用户要求把现有空仓库作为项目远端，并同意当前路径判断 | 允许为本地 `main` 配置该唯一远端并推送 Git/Git LFS 内容；不包含构建发布或其他远端授权 |
 
 ---
 
@@ -837,8 +852,8 @@ Agent 实际 Play Mode 验证：是 / 否
 
 P0 已完成。以下选项不会阻塞当前试玩版，可在用户试玩后决定：
 
-1. P1 优先级：十连/保底/碎片，或角色升级与养成。
-2. 美术方向：继续明亮科技风，或转为深色奇幻/其他原创风格。
+1. P1 玩法优先级：首个 UR 样板完成后，再决定十连/保底/碎片或角色升级与养成。
+2. 美术方向：先用星空/黑洞史莱姆验证深色宇宙奇幻样板，再决定是否扩展到全项目。
 3. 战斗方向：更快节奏、更多技能机制，或优先打磨动作与事件同步。
 4. 下一目标平台：继续 Windows，或优先 WebGL/Android 适配。
 5. 是否在玩法扩展前先加入音效、正式模型或更完整的输入/无障碍设置。
