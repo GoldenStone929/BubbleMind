@@ -208,6 +208,26 @@ Demo Scene         C64F5B293EEBBFFD34DAA6EFA45DEA8A759E13BA653938C6F183BB0D08322
 
 完整制作记录：`StudioOps/MILESTONES/2026-07-15_REFERENCE_ATLAS_AND_CONTENT_TEMPLATE.md`。
 
+## 2026-07-15 腾讯混元 3D 模型候选评估
+
+用户明确要求尝试腾讯混元 3D 后，项目使用腾讯官方账号发布、托管于 Hugging Face 的 `tencent/Hunyuan3D-2` 与 `tencent/Hunyuan3D-2mv` Spaces，对已登记的 Catherine 正面图和确定性三视图裁剪执行三组无纹理、零费用候选生成。没有登录腾讯账户、提供 API Key、下载 SDK/权重/依赖或消费 credits。
+
+| 门槛 | 状态 | 证据 |
+|---|---|---|
+| 输入可追溯 | 通过 | 正面输入 SHA-256 `FC50F8D8E40F53925C7715F9B70E6452E4900420D9D4AF0BBDA7CE5736333437`；三视图裁剪及源图哈希记录在 `_ProjectTools/Hunyuan3D/inputs/CatherineMultiView/crop_manifest.json` |
+| 单视图生成 | 通过 | 30 steps / guidance 5 / seed 929；原始 GLB SHA-256 `58BCB18098171A2BD5C9A24F37C1E5968F72F1179062EC9F061B82F1B68400FA`；服务端显示 737,060 faces，Blender 识别 442,980 triangles / 221,492 vertices |
+| 多视图模型前视图生成 | 通过 | 5 steps / seed 929；原始 GLB SHA-256 `A5C8C1E40205DB51DF489C6A27B9E0FCF57EBDB5585E6CBB62694F58D7A3E6AE`；474,768 triangles |
+| front/left/back 三视图生成 | 通过 | 5 steps / seed 929；原始 GLB SHA-256 `E21805D34B1C7CA5C1C1FB2F24E03D8B985D1B049712928B626FE1905FC3B536`；489,312 triangles |
+| Blender 四视图审计 | 通过 | 三组均包含非空网格和体积，并输出 front/side/back/three-quarter 渲染；均判定需要游戏级重拓扑 |
+| 9,000 面自动减面预览 | 通过 | 单视图原始网格减少 97.97%；输出 SHA-256 `F305B7A77CE04C1B58DDA91CE772D25B6CC9E02EBAA8736195F60B60629594BA`；面数、接地和非空体积检查通过；不是生产重拓扑 |
+| Git / Unity / Build 隔离 | 通过 | `_ProjectTools/Hunyuan3D/` 命中项目 `.gitignore`；没有混元 GLB、渲染、请求或工具进入已跟踪文件、Unity `Assets/` 或 Windows Build |
+
+视觉结论：混元候选的主体穹顶、凝胶裙边和有机体积明显优于简单程序化球体，但几何阶段无法可靠表达纯黑事件视界，中央黑洞被解释为凹陷/表面结构；轨道和液滴出现断裂或漂浮碎片。现有项目自有黑洞、轨道、Socket、Shader、VFX 与四个 Blend Shapes 必须保留，并在正式候选上通过 Blender 清理和重拓扑重建。
+
+本轮只新增制作记录，没有修改 C#、场景、Prefab、FBX、材质、包清单或 Build，因此没有重复运行 Unity 编译、PlayMode 或 Windows Build；上一节已通过的运行基线仍是权威。正式资产接入需先获得腾讯云 HY-3D 3.1 服务、条款、受限凭据和 credits 授权，并确认其输出可覆盖计划发行地域。
+
+完整制作记录：`StudioOps/MILESTONES/2026-07-15_HUNYUAN3D_MODEL_EVALUATION.md`。
+
 ## 已知 P1 打磨项
 
 固定 Tick 直线接近已经满足坦克驻留与换敌规则，但尚无碰撞分离、分道或 NavMesh；多人围攻及黑洞吸附时可能发生模型与姓名牌相交。正式 Animator、表现队列、收藏页 3D 角色预览及其余角色正式模型留待后续里程碑。

@@ -30,8 +30,10 @@
 - 工程已经打开时，不启动会冲突的第二个 Editor 实例，也不强制关闭用户的 Unity。
 - Package 变更必须固定版本，并同步提交 `Packages/manifest.json` 与 `Packages/packages-lock.json`。
 - Codex 侧仅使用项目内 stdio MCP Server；Unity 内部桥接只允许 `127.0.0.1:6400` 回环通信，状态写入 `_ProjectTools/runtime/UnityMCPStatus`；禁止 LAN、远程 MCP HTTP、遥测和全局配置写入。
-- 外部资产服务默认禁止。当前唯一窄幅例外是 `ART-CHAR-UR-COSMIC-SLIME-001`：用户于 2026-07-14 明确授权将登记后的参考图上传至 Tripo 官方 API、消耗免费额度并把模型下载回本项目。不得扩展到其他资产、服务或公开图床。
+- 外部资产服务默认禁止。`ART-CHAR-UR-COSMIC-SLIME-001` 当前有两个窄幅例外：用户于 2026-07-14 明确授权 Tripo 官方 API 评估；用户于 2026-07-15 明确要求使用腾讯混元 3D，并授权把该资产已登记的项目内参考图上传至腾讯官方 `tencent/Hunyuan3D-2` 与 `tencent/Hunyuan3D-2mv` Hugging Face Spaces 进行零费用、无账号的几何候选评估。不得扩展到其他资产、服务或公开图床。
+- 混元原始输入副本、请求、GLB、渲染、低模预览和日志只能位于 `_ProjectTools/Hunyuan3D/`，必须保持 Git 忽略且不得进入 `Assets/` 或 Build。开源模型输出仅作内部质量评估；在许可证地域限制和正式服务条款未审查前，不得把它表述或使用为全球发行资产。腾讯云 HY-3D 3.1 的开通、登录、条款接受、SecretId/SecretKey、TokenHub Key 或额度消费均需要用户另行明确授权。
 - Tripo Key 只能从既有安全存储/用户级 `MCPFORUNITY_TRIPO_API_KEY` 在单次子进程内读取；严禁显示、记录、传入命令行参数、写入项目文件、日志或 Git。现有用户级凭据属于项目外状态，删除或更改仍需用户另行授权。
+- 未来如获准使用腾讯云凭据，凭据同样只能通过安全环境变量注入单次进程；严禁写入项目、命令行参数、日志、文档、截图或 Git。
 - Unity MCP 使用项目内嵌入包 `Packages/com.coplaydev.unity-mcp`；上游设置窗口、自动更新和客户端配置器在隔离模式中被禁用。不得绕过隔离补丁或把包改回全局配置流程。
 - 通过 Unity MCP 创建、加载或保存场景时只使用 `Assets/_Game/` 下的项目相对路径；不得传入绝对路径或 `..`。
 

@@ -1,7 +1,7 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v2.5-reference-atlas-and-content-template<br>
-> 当前状态：阶段 6.7 已完成；清洁室系统图谱、七角色内容 Profile、角色页 Combat/Archive/Growth、角色级战斗参数消费、连续生成幂等、最终 PlayMode、Windows 构建与 1600x900 真实窗口检查全部通过<br>
+> 计划版本：v2.6-hunyuan3d-evaluation<br>
+> 当前状态：阶段 6.8 已完成；腾讯官方 Hunyuan3D-2/2mv 三组几何候选、Blender 四视图审计与 9,000 面自动减面预览已完成；现有 Unity UR 资产保持不变，正式替换等待腾讯云 HY-3D 3.1 授权与服务条款审查<br>
 > 最近更新：2026-07-15
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
@@ -70,7 +70,7 @@ PROJECT_PLAN.md
 - Git 与 Git LFS 已在本项目本地启用。Python 仅可用于已批准、项目内隔离的工具流程；不得写入系统环境或其他项目。
 - Blender `5.1` 已由用户安装在 `C:\Program Files\Blender Foundation\Blender 5.1\`；Codex 已核对启动器、`blender.exe` 和自带 Python 存在。Blender 只作为只读外部可执行文件调用，所有用户配置、缓存、临时文件和输出必须重定向到本项目。
 - 长期制作基础设施已固定使用便携 `uv 0.11.28`、uv 管理的 CPython `3.12.13`、`mcpforunityserver==10.1.0` 与嵌入式 `CoplayDev/unity-mcp 10.1.0-project.1`；上游基线固定到 v10.1.0 / 提交 `c14de1e6dc01ab42d2bb358730cff954bce0ce6b`。
-- 所有由 Codex 下载的工具、缓存、Python、临时运行状态与 MCP 状态均位于 `_ProjectTools/`；没有修改系统 PATH 或下载 Blender。当前唯一批准的 Git 远端是 `GoldenStone929/BubbleMind`，唯一外部资产服务例外是用户明确批准的首个 UR 角色 Tripo 官方 API 作业。
+- 所有由 Codex 下载的工具、缓存、Python、临时运行状态与 MCP 状态均位于 `_ProjectTools/`；没有修改系统 PATH 或下载 Blender。当前唯一批准的 Git 远端是 `GoldenStone929/BubbleMind`；外部资产服务仅限首个 UR 角色的 Tripo 评估与 2026-07-15 用户明确要求的腾讯官方 Hunyuan3D-2/2mv 零费用几何候选评估。
 - Codex 与 Python MCP Server 使用项目内 stdio；Python Server 与 Unity Editor 之间的 MCP 桥接仅使用 `127.0.0.1:6400` 回环端口。未启用 MCP HTTP `8080`、LAN/远程 HTTP 或遥测；用户客户端配置和机器级 Unity 偏好写入默认禁用。
 
 ### 用户授予的工具/外部服务权限与强制隔离规则
@@ -105,6 +105,9 @@ Assets/_Game/Docs/ThirdPartyInventory.md
 - 仅为 `ART-CHAR-UR-COSMIC-SLIME-001`，允许把已登记的参考 PNG 上传到 Tripo 官方 API、查询余额、消耗用户免费 API 额度并把模型下载到 `_ProjectTools/Tripo/jobs/`。
 - 不使用第三方公共图床，不安装 Tripo SDK，不把 API Key 写入命令行、项目、Markdown、日志或 Git。
 - 免费 Tripo 输出标记为内部、非商用原型；商业发布前必须重制或取得适当许可。
+- 用户于 2026-07-15 明确要求改用腾讯混元 3D。仅允许把同一资产已登记的项目内参考图上传到腾讯官方 `tencent/Hunyuan3D-2` / `tencent/Hunyuan3D-2mv` Hugging Face Spaces，执行无账号、零费用、无纹理的内部几何候选评估。
+- 混元输入副本、请求、原始 GLB、渲染和低模预览只保存在被 Git 忽略的 `_ProjectTools/Hunyuan3D/`；不得放入 `Assets/`、Build 或远程仓库。腾讯混元社区许可证的授权地域排除欧盟、英国和韩国，并覆盖输出/结果，因此当前候选不得作为全球发行资产。
+- 腾讯云 HY-3D 3.1、PBR 与智能拓扑是下一条正式候选路线；开通服务、接受账户条款、提供受限凭据或消费 credits 前必须重新获得用户明确授权。
 - 任何付费、其他服务、其他资产或新增下载仍需先通知用户。
 
 ---
@@ -828,7 +831,7 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.5 已同步清洁室系统图谱、原创角色内容模板及分阶段验证门槛 | 2026-07-15 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.6 已同步混元 3D 评估结论、许可证边界与正式模型授权门槛 | 2026-07-15 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
 | 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 七角色/三技能/一组六角色标准抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-14 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
@@ -844,6 +847,7 @@ Agent 实际 Play Mode 验证：是 / 否
 | 阶段 6.5：20 格 3v5 职业测试与刺客切后排 | 已完成 | 五槽存档保留；20 格战场、射程 2 / 10、Catherine 击退 5、固定坦克/射手/刺客对五敌、Ember 5 / 15 秒同后排目标瞬移与持续锁定 | `Artifacts/ThreeVsFiveRange/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 均通过；D3D11 构建 114,042,024 bytes / 58.6s，1922×1112 捕获窗口完成首页、Formation、战斗、结算检查 | 2026-07-14 |
 | 阶段 6.6：角色档案、2D 卡面与 UI 重制 | 已完成 | 角色主从详情页、七张原创竖版卡面、抽卡结果揭示、五槽卡面编队、Noto Sans CJK SC 与清洁室 UI 知识库 | `Artifacts/CharacterPage/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 全部通过；最终 Windows 窗口确认 3,000 初始水晶、真实单抽 2D 卡面与重置 | 2026-07-15 |
 | 阶段 6.7：参考系统图谱与角色内容模板 | 已完成 | 三层清洁室知识库、36 系统/25 页面/27 实体/89 关系、七角色 `CharacterContentProfile`、角色页 Combat/Archive/Growth、Profile 归属/连续逐级参数/来源/战斗参数验证 | 终审后的 `GenerateTriggerCompile.log`、`PlaySmokeOwnershipFinal.log`、`WindowsBuildOwnershipFinal.log` 全部通过；四文件连续生成哈希一致，1600x900 独立窗口完成首页、角色三模式与 Recruitment 检查，最终包重新打开在首页 | 2026-07-15 |
+| 阶段 6.8：腾讯混元 3D 模型候选评估 | 已完成（正式接入待授权） | 腾讯官方 Hunyuan3D-2 单视图、Hunyuan3D-2mv 前视图与三视图共三组无纹理几何候选；Blender 归一化四视图审计；单视图 442,980 triangles 原始网格的 9,000 triangles 自动减面预览 | 三组均通过非空网格/体积审计，但中央黑洞被误读为凹陷且轨道/液滴含破碎漂浮件；预览通过面数与接地检查；原始候选、渲染和请求均留在 Git 忽略的 `_ProjectTools/Hunyuan3D/`，Unity 与 Build 未更改 | 2026-07-15 |
 
 状态仅使用：`未开始 / 进行中 / 修复中 / 已完成 / 阻塞`。
 
@@ -906,6 +910,8 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-15 | 大招消耗以 `SkillDefinition.RageCost` 为权威，并按实际成本扣除 | 角色级怒气上限需要支持非满额大招，不能把“释放大招”等同于无条件清空怒气 | 验证器要求大招成本为正且不超过角色 `MaxRage`；当前常用 1000/1000 会归零，模板同时覆盖非满额消费 |
 | 2026-07-15 | 生成器采用稳定 ID 合并并保护人工档案 | 长期内容生产不能把当前七角色/十技能当成永久上限，也不能在重生成时抹去作者修改 | 必需资产同 ID 更新，数据库额外角色、技能与卡池保留；已有非空 Profile 不被默认模板覆盖 |
 | 2026-07-15 | Profile 保存防误挂归属外键，逐级表必须连续 | 共享技能的角色可能误换 Profile；只校验首末等级会让缺级表伪装成完整数据 | `ownerCharacterId` 必须匹配 `CharacterDefinition.Id`，但不成为第二身份权威；等级记录必须从 Lv.1 连续到 MaxLevel |
+| 2026-07-15 | 腾讯官方 Hunyuan3D-2/2mv 仅用于首个 UR 的内部几何候选评估 | 用户明确要求尝试腾讯混元 3D；本机 RTX 4060 8GB、16GB RAM 与 13GB 级磁盘余量不适合完整本地 Hunyuan3D-2.1 纹理管线 | 三组零费用官方 Space 作业与 9,000 面预览已完成；所有产物保持 `_ProjectTools/` 隔离，未替换现有 Unity 模型 |
+| 2026-07-15 | 不把开源混元候选提交或用于正式全球发行 | Hunyuan3D-2/2.1 社区许可证的授权地域排除欧盟、英国和韩国，并将输出/结果纳入限制；当前几何还把黑洞误读为凹陷且含漂浮碎片 | Git 只记录参数、哈希和审计结论；正式候选转向腾讯云 HY-3D 3.1 + PBR + 智能拓扑，并等待账户、条款、凭据和 credits 授权 |
 
 ---
 
@@ -914,7 +920,7 @@ Agent 实际 Play Mode 验证：是 / 否
 P0 已完成。以下选项不会阻塞当前试玩版，可在用户试玩后决定：
 
 1. P1 玩法优先级：首个 UR 样板、怒气与三技能轮转已经完成；下一步决定十连/保底/碎片或角色升级与养成。
-2. 美术方向：星空/黑洞史莱姆的真实凝胶与三点布光样板已经通过内部原型门槛；下一步决定是否扩展到全项目。
+2. 美术方向：星空/黑洞史莱姆的真实凝胶与三点布光样板已经通过内部原型门槛；腾讯混元几何候选已证明可改善主体有机轮廓，但正式替换需先完成腾讯云 HY-3D 3.1 授权、许可审查和 Blender 重拓扑。
 3. 战斗方向：优先加入碰撞/分道与正式动作，或扩展更多技能机制和目标策略。
 4. 下一目标平台：继续 Windows，或优先 WebGL/Android 适配。
 5. 是否在玩法扩展前先加入音效、正式模型或更完整的输入/无障碍设置。

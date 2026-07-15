@@ -1,59 +1,66 @@
-# 当前里程碑：参考系统图谱与角色内容模板
+# 当前里程碑：腾讯混元 3D 模型候选评估
 
-> 状态：已完成
+> 状态：评估已完成；正式接入待授权
 > 开始日期：2026-07-15
 > 长期范围权威：`../PROJECT_PLAN.md`
 
 ## 目标
 
-- 在不关闭或修改参考游戏账号状态的前提下，系统整理可观察页面、角色/技能结构、系统边界和数据连接。
-- 将 `analysis/architecture/` 的只读资料与实机/用户截图观察分层记录，明确事实、推断、未知和置信度。
-- 建立不复制外部专有内容的 BubbleMind 原创角色模板，并接入角色页、生成器、验证器和战斗数据链。
+- 按用户要求，实际使用腾讯官方混元 3D 为 `ART-CHAR-UR-COSMIC-SLIME-001` 生成可比较的几何候选。
+- 在不安装本地大模型、不产生费用、不暴露凭据的前提下，验证单视图与多视图结果、面数、体积、方向和低模可行性。
+- 明确许可证、分发和 Unity 接入边界，避免候选未经审查进入公开仓库或正式游戏资产。
 
-## 已完成实现
+## 已完成
 
-- 新增 `CharacterContentProfile`，支持元素、阵营、称号、关键词、Basic/Active/Passive/Domain/Awakening、技能等级参数、解锁、养成阶段、获取来源、关系标签和来源证明。
-- 七名现有角色全部生成独立且已批准的 Profile；`ownerCharacterId` 阻止档案误挂，运行时仍以 `CharacterDefinition.Id` 为唯一身份键。
-- Catherine 档案完整记录九级大招、五级 Break、四级 Dance、九级 Star Rage、两段觉醒及 11/41/61 级解锁语义；当前战斗仍按满级测试夹具执行。
-- 角色页增加 `Combat / Archive / Growth` 三段控件，分别展示运行时三技能、完整能力档案、养成与获取信息；Archive 与 Growth 均支持分页浏览。
-- `SkillDefinition` 增加技能标签和可选图标挂点。
-- 修复角色级 `AttackRange / MaxRage / RagePerAttack / RageWhenHit` 在配置和战斗快照中被全局常量覆盖的问题；Demo 默认值保持不变。
-- 验证器新增 Profile 唯一性/归属、运行时槽位、连续逐级参数、来源证明、Catherine 领域/觉醒和自定义战斗参数消费测试。
-- PlayMode 冒烟新增三个角色页模式的实际点击与内容断言。
-- 建立三层清洁室知识库和角色模板规范，参考观察不进入运行时资产。
-- 生成器按稳定 ID 合并当前必需内容，保留数据库中的额外角色、技能和卡池，也不覆盖已有人工作者档案。
+- 使用腾讯官方账号发布、托管于 Hugging Face 的 `tencent/Hunyuan3D-2` Space 完成单视图无纹理候选。
+- 使用腾讯官方账号发布、托管于 Hugging Face 的 `tencent/Hunyuan3D-2mv` Space 完成前视图模型候选和 front/left/back 三视图候选。
+- 三组作业均固定 seed `929`，请求、事件 ID、输入/输出 SHA-256 和原始 GLB 全部记录在 `_ProjectTools/Hunyuan3D/jobs/`。
+- Blender 5.1 完成三组归一化、front/side/back/three-quarter 渲染和非空体积审计。
+- 单视图原始网格从 442,980 triangles 生成 9,000 triangles 的自动减面预览，面数、接地和非空体积检查通过；它不是生产重拓扑。
+- 核对 Hunyuan3D-2.1 官方显存需求、本机硬件限制、社区许可证地域限制，以及腾讯云 HY-3D 3.1 的正式候选路线。
 
-## 参考游戏只读状态
+## 结果
 
-- 参考游戏窗口保持开启，没有退出、重启、登录、购买、抽卡、养成、改队、保存设置或进入战斗。
-- 此前已只读观察首页、角色库、角色详情、技能说明、招募和概率页。
-- 2026-07-15 再次连接时游戏处于自身省电模式；普通点击、双击、轻微拖动、回车和返回均未恢复画面。为避免登录风险，没有关闭或重启。
-- 未实机复核的页面在知识库中继续标记为 `analysis_only` 或 `unknown`，不以推测冒充事实。
+| 候选 | 输入 | Blender 结果 | 结论 |
+|---|---|---|---|
+| Hunyuan3D-2 单视图 | 登记正面 PNG | 服务端 737,060 faces；Blender 442,980 triangles；归一化约 `3.000 × 2.950 × 2.177 m` | 三组中最适合作为主体形体 A/B 基线；需要重拓扑与结构重建 |
+| Hunyuan3D-2mv 前视图 | 同一正面 PNG | 474,768 triangles；归一化约 `3.000 × 2.994 × 2.128 m` | 漂浮碎片更多，未改善中央黑洞表达 |
+| Hunyuan3D-2mv 三视图 | front/left/back | 489,312 triangles；归一化约 `3.000 × 2.860 × 2.212 m` | 软体体积和角方向可读，但轨道/液滴碎片仍多 |
+| 单视图低模预览 | 单视图原始 GLB | 9,000 triangles；减少 97.97%；约 `3.001 × 2.949 × 2.178 m` | 可供 Blender 结构讨论，不能直接替换运行时 FBX |
 
-## 清洁室边界
+## 视觉与接入判断
 
-- `analysis/` 保持只读；未读取、运行、解包或提交 XAPK/APK。
-- 仓库不保存外部截图、角色立绘、模型、图标、音频、字体、逐字技能文案、外部概率/倍率、布局坐标、代码或协议。
-- 参考层只保存匿名化结构事实；通用规律经过原创性检查后，才能映射为 BubbleMind 原创数据与 UI。
-- 本轮没有下载、安装或购买任何新依赖。
+- 优点：主体穹顶、底部凝胶裙边、角和整体有机体积比当前程序化主体更自然。
+- 缺点：无纹理几何生成无法可靠理解纯黑事件视界；中央黑洞被解释为凹陷或表面细节。轨道环、液滴和碎片会粘连、断裂或悬浮。
+- 接入策略：未来只把混元候选当作 `SlimeBody` 的形体起点；继续使用项目已有的黑洞事件视界、吸积盘、轨道、Socket、Slime Toon Shader、VFX 和四个 Blend Shapes。
+- 当前权威资产保持 `Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/UR_CosmicSlime.fbx`，Prefab 与战斗运行时均未更改。
 
-## 当前验证证据
+## 权利与隔离
+
+- 本次只调用腾讯官方账号发布、托管于 Hugging Face 的 Spaces；没有账号登录、API Key、SDK、模型权重、Python 包、付费或 credits 消费。
+- 实际候选适用 Hunyuan 3D 2.0 社区许可证；仅研究本地部署门槛的 Hunyuan3D-2.1 适用独立的 2.1 社区许可证。两版均说明腾讯不主张用户生成 Output 的权利，但许可仍将 Output/结果纳入使用限制，并将授权地域排除欧盟、英国和韩国。当前候选因此只作内部评估，不进入 Git、Unity `Assets/`、Build 或全球发行包。
+- `_ProjectTools/Hunyuan3D/` 被项目 `.gitignore` 忽略；远程仓库只保存输入/输出哈希、参数、质量结论与许可证边界。
+- 腾讯云 HY-3D 3.1 的实际账户服务条款尚未取得，不能用开源许可证或其他地区条款代替。
+
+## 验证证据
 
 | 门槛 | 状态 | 证据 |
 |---|---|---|
-| 清洁室知识库 | 通过 | 21 条证据、36 个系统、25 个页面、27 个实体、89 条关系；所有系统/页面/实体至少有一条关系，坏外键与重复边均为 0 |
-| Generate / C# / 核心验证 | 通过 | 终审后 `Artifacts/ContentTemplate/GenerateTriggerCompile.log` 再次编译并出现 `[GenericGachaRPG][P0_VERIFY_PASS_20260713]` |
-| 生成器二次幂等 | 通过 | 连续生成前后 `GameDatabase`、Catherine Profile、Dance Skill 和 Demo Scene 的四个 SHA-256 完全一致 |
-| PlayMode 完整流程 | 通过 | `Artifacts/ContentTemplate/PlaySmokeOwnershipFinal.log` 出现 `[P0_PLAY_SMOKE_PASS_20260713]`；角色页首尾回绕、普通角色切换、抽卡、五槽和 3v5 全流程通过 |
-| Windows x64 / D3D11 | 通过 | `Artifacts/ContentTemplate/WindowsBuildOwnershipFinal.log` 出现 `[GenericGachaRPG][WINDOWS_BUILD_PASS_20260713]`；BuildReport `142,747,278` bytes / `76.6s` |
-| Windows 构建产物 | 通过 | BubbleMind 分发集合 190 个文件、`142,956,016` bytes；`BubbleMind.exe` 为 `667,648` bytes，SHA-256 `5AE0C84993C6BFF7D0F03166CAFD148CDEC61F67EC85B5D97600E04B2ABB26E4` |
-| Windows 真实窗口视觉 | 通过 | 1600x900 独立窗口检查首页、Combat、Archive、Growth、Recruitment；Star Rage 5/6、Awakening 6/6、分页箭头、长文本和七张 2D 卡面均正常 |
-| Git 提交与远程推送 | 由版本控制记录 | 本里程碑与实现同批提交；提交号和远程状态以仓库 `main` / `origin/main` 为权威，避免文档自引用未来哈希 |
+| 三组官方生成 | 通过 | 单视图、前视图模型和三视图作业均完成并下载 GLB；输出哈希见归档里程碑 |
+| Blender 网格审计 | 通过 | 三组 `blender_candidate_audit.json` 均确认非空网格与体积，并输出四视图渲染 |
+| 低模预览 | 通过 | `retopology_preview_audit.json`：9,000 triangles、grounded、nonzero volume |
+| 隔离 | 通过 | 客户端、请求、GLB、渲染与预览均位于 `_ProjectTools/Hunyuan3D/` 并命中 `.gitignore` |
+| Unity 回归 | 不适用 | 没有修改运行时、资产或包；沿用阶段 6.7 已通过的 Generate、PlayMode 与 Windows Build 基线 |
+| 参考游戏 | 保持只读 | 进程保持开启；没有关闭、重启、登录、购买、抽卡、养成、改队或进入战斗 |
 
-## 完成确认
+## 下一授权门槛
 
-1. 知识库、角色内容契约、角色页分页、生成器保留策略与验证器均已落地。
-2. 最终 Generate、连续生成幂等、PlayMode、Windows Build 与真实独立窗口检查均已通过。
-3. 最终 BubbleMind 试玩窗口已用最新构建重新打开在首页；旧基线和参考游戏进程保持开启，参考游戏未被关闭、重启或修改。
-4. 参考游戏省电模式造成的未观察内容继续保留为 `unknown`，没有以推断补齐。
-5. 本次 Git 提交号与远端状态由提交操作完成后回填，不属于运行时实现缺口。
+正式尝试腾讯云 HY-3D 3.1 前，需要用户明确确认：
+
+1. 腾讯云国际站账户已开通 Tencent HY，并接受账户中实际显示的服务条款。
+2. 通过安全环境变量提供最小权限的 SecretId/SecretKey 或 TokenHub Key；不得发到聊天或写入项目。
+3. 确认项目对输入参考图拥有足够使用权。
+4. 授权首轮最多约 85–95 credits，用于 3.1 参考图生成、PBR 和智能拓扑。
+5. 确认计划发行地域，并审查云端输出的全球商业分发权。
+
+在上述门槛完成前，本里程碑停在“评估已完成；正式接入待授权”，不会创建付费云任务或替换 Unity 资产。
