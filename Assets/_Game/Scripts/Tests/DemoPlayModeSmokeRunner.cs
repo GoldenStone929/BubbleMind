@@ -103,6 +103,9 @@ namespace GenericGachaRPG
                     && (gachaResult.text.IndexOf("NEW CHARACTER UNLOCKED", StringComparison.Ordinal) >= 0
                         || gachaResult.text.IndexOf("DUPLICATE SIGNAL REGISTERED", StringComparison.Ordinal) >= 0),
                 $"Single summon did not show a success result. Text='{gachaResult?.text ?? "<missing>"}'.");
+            Image gachaPortrait = FindDescendantComponent<Image>("GachaScreen", "ResultPortrait");
+            Require(gachaPortrait != null && gachaPortrait.enabled && gachaPortrait.sprite != null,
+                "Single summon did not bind a recognizable 2D character portrait.");
 
             int currencyAfterDraw = ReadIntegerText("GachaScreen", "RightHeader");
             int expectedCost = controller.Database.DefaultBanner.SingleDrawCost;
@@ -134,6 +137,22 @@ namespace GenericGachaRPG
                     cosmicCardBody.text.IndexOf("RNG 2.0", StringComparison.Ordinal) >= 0 &&
                     cosmicCardBody.text.IndexOf("MOVE 3.3", StringComparison.Ordinal) >= 0,
                 $"Cosmic Slime collection tags are incomplete. Text='{cosmicCardBody?.text ?? "<missing>"}'.");
+            Image cosmicCardPortrait = cosmicCard == null
+                ? null
+                : FindComponentInChildrenByName<Image>(cosmicCard, "Portrait");
+            Require(cosmicCardPortrait != null && cosmicCardPortrait.sprite != null,
+                "Catherine collection card has no 2D portrait.");
+            ClickActiveButton("Card_ur_cosmic_slime");
+            yield return null;
+            Text detailName = FindDescendantComponent<Text>("CollectionScreen", "CharacterDetailName");
+            Image detailPortrait = FindDescendantComponent<Image>("CollectionScreen", "CharacterDetailPortrait");
+            Require(detailName != null &&
+                    detailName.text.IndexOf("Catherine Yuki", StringComparison.Ordinal) >= 0,
+                "Character page did not select Catherine Yuki.");
+            Require(detailPortrait != null && detailPortrait.sprite != null,
+                "Character detail page has no selected portrait.");
+            Require(CountDescendantsWithPrefix("CollectionScreen", "SkillCard_") == 3,
+                "Character detail page does not expose exactly three skill cards.");
 
             ClickActiveButton("BackButton");
             yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);

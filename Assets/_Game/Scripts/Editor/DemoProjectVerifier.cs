@@ -14,6 +14,8 @@ namespace GenericGachaRPG.Editor
         private const string ScenePath = "Assets/_Game/Scenes/GachaRPGDemo.unity";
         private const string BackdropTexturePath =
             "Assets/_Game/Art/Generated/Environments/AbyssalObservatory/Textures/Resources/AbyssalObservatory_Concept.png";
+        private const string UiFontPath =
+            "Assets/_Game/Resources/Fonts/NotoSansCJKsc-Regular.otf";
         private const int VerificationSeed = 731925;
 
         [MenuItem(MenuPath, priority = 12)]
@@ -88,6 +90,24 @@ namespace GenericGachaRPG.Editor
                     $"Character '{character.Id}' has an undefined rarity value {(int)character.Rarity}.");
                 Require(Enum.IsDefined(typeof(CharacterRole), character.Role),
                     $"Character '{character.Id}' has an undefined role value {(int)character.Role}.");
+                Require(character.Portrait != null,
+                    $"Character '{character.Id}' is missing its 2D portrait sprite.");
+                string portraitPath = AssetDatabase.GetAssetPath(character.Portrait);
+                string expectedPortraitPath =
+                    $"Assets/_Game/Art/Generated/UI/Portraits/Portrait_{character.Id}.png";
+                Require(string.Equals(portraitPath, expectedPortraitPath, StringComparison.Ordinal),
+                    $"Character '{character.Id}' must use '{expectedPortraitPath}', found '{portraitPath}'.");
+                TextureImporter portraitImporter = AssetImporter.GetAtPath(portraitPath) as TextureImporter;
+                Require(portraitImporter != null &&
+                        portraitImporter.textureType == TextureImporterType.Sprite &&
+                        portraitImporter.spriteImportMode == SpriteImportMode.Single &&
+                        !portraitImporter.mipmapEnabled &&
+                        portraitImporter.wrapMode == TextureWrapMode.Clamp &&
+                        portraitImporter.filterMode == FilterMode.Bilinear &&
+                        portraitImporter.sRGBTexture &&
+                        !portraitImporter.alphaIsTransparency &&
+                        portraitImporter.maxTextureSize == 1024,
+                    $"Character '{character.Id}' portrait import settings are invalid.");
                 if (character.IsLimited)
                 {
                     limitedCharacterCount++;
@@ -256,6 +276,7 @@ namespace GenericGachaRPG.Editor
 
             VerifyBasicSlimeAssets(database);
             VerifyBackdropTextureImport();
+            VerifyUiFontImport();
 
             Material backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>(
                 AbyssalObservatoryAssetBuilder.BackdropMaterialPath);
@@ -513,6 +534,13 @@ namespace GenericGachaRPG.Editor
                     importer.wrapModeV == TextureWrapMode.Clamp &&
                     importer.wrapModeW == TextureWrapMode.Clamp,
                 "Abyssal Observatory artwork must clamp on every wrap axis.");
+        }
+
+        private static void VerifyUiFontImport()
+        {
+            Font font = AssetDatabase.LoadAssetAtPath<Font>(UiFontPath);
+            Require(font != null, $"Bundled UI font is missing at '{UiFontPath}'.");
+            Require(font.dynamic, "Bundled UI font must remain dynamic for runtime text sizing.");
         }
 
         private static string[] GetDecorationPrefixes(BasicSlimeElement element)

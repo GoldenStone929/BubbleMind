@@ -19,7 +19,7 @@ MonoBehaviour:
   rarity: 0
   isLimited: 0
   displayColor: {r: 0.96, g: 0.28, b: 0.14, a: 1}
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: b9a9d1207ef207a49b15ab6cc37d1a11, type: 3}
   characterPrefab: {fileID: 4537301419148646311, guid: 8ff19538c193eac4c9bb8b905012cea8, type: 3}
   maxHealth: 1180
   attack: 172

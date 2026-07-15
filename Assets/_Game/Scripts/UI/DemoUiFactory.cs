@@ -8,27 +8,37 @@ namespace GenericGachaRPG
 {
     /// <summary>
     /// Small runtime UI factory used by the self-contained demo scene.
-    /// Keeping the temporary UI in code makes scene generation repeatable and
-    /// avoids hand-authored YAML or external art dependencies.
+    /// Keeping the UI in code makes scene generation repeatable while shared
+    /// project assets provide the authored font and illustration layer.
     /// </summary>
     public static class DemoUiFactory
     {
         private static Font cachedFont;
 
-        public static readonly Color Background = new Color(0.018f, 0.020f, 0.030f, 1f);
-        public static readonly Color Surface = new Color(0.055f, 0.065f, 0.085f, 0.96f);
-        public static readonly Color SurfaceLight = new Color(0.095f, 0.11f, 0.14f, 0.98f);
-        public static readonly Color Accent = new Color(0.12f, 0.76f, 0.88f, 1f);
-        public static readonly Color Positive = new Color(0.27f, 0.83f, 0.50f, 1f);
-        public static readonly Color Warning = new Color(0.88f, 0.70f, 0.30f, 1f);
-        public static readonly Color Danger = new Color(0.96f, 0.28f, 0.35f, 1f);
-        public static readonly Color TextPrimary = new Color(0.94f, 0.97f, 1f, 1f);
-        public static readonly Color TextMuted = new Color(0.67f, 0.73f, 0.82f, 1f);
+        public static readonly Color Background = new Color(0.063f, 0.075f, 0.106f, 1f);
+        public static readonly Color Surface = new Color(0.090f, 0.114f, 0.157f, 0.92f);
+        public static readonly Color SurfaceLight = new Color(0.169f, 0.204f, 0.259f, 0.97f);
+        public static readonly Color LineSubtle = new Color(0.867f, 0.910f, 0.957f, 0.16f);
+        public static readonly Color LineStrong = new Color(0.867f, 0.910f, 0.957f, 0.36f);
+        public static readonly Color Accent = new Color(0.38f, 0.84f, 0.76f, 1f);
+        public static readonly Color Action = new Color(0.94f, 0.43f, 0.38f, 1f);
+        public static readonly Color Positive = new Color(0.45f, 0.79f, 0.55f, 1f);
+        public static readonly Color Warning = new Color(0.95f, 0.78f, 0.43f, 1f);
+        public static readonly Color Danger = new Color(0.92f, 0.36f, 0.39f, 1f);
+        public static readonly Color TextPrimary = new Color(0.96f, 0.97f, 0.98f, 1f);
+        public static readonly Color TextSecondary = new Color(0.78f, 0.82f, 0.86f, 1f);
+        public static readonly Color TextMuted = new Color(0.56f, 0.61f, 0.67f, 1f);
 
         public static Font Font
         {
             get
             {
+                if (cachedFont != null)
+                {
+                    return cachedFont;
+                }
+
+                cachedFont = Resources.Load<Font>("Fonts/NotoSansCJKsc-Regular");
                 if (cachedFont != null)
                 {
                     return cachedFont;
@@ -168,6 +178,82 @@ namespace GenericGachaRPG
             return image;
         }
 
+        public static Image CreateFramedPanel(
+            string name,
+            Transform parent,
+            Color color,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 offsetMin,
+            Vector2 offsetMax,
+            Color? lineColor = null,
+            float lineWidth = 1f)
+        {
+            Image panel = CreatePanel(name, parent, color, anchorMin, anchorMax, offsetMin, offsetMax);
+            Outline outline = panel.gameObject.AddComponent<Outline>();
+            outline.effectColor = lineColor ?? LineSubtle;
+            outline.effectDistance = new Vector2(Mathf.Max(1f, lineWidth), -Mathf.Max(1f, lineWidth));
+            outline.useGraphicAlpha = true;
+            return panel;
+        }
+
+        public static Image CreatePortrait(
+            string name,
+            Transform parent,
+            Sprite portrait,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 offsetMin,
+            Vector2 offsetMax,
+            Color? tint = null)
+        {
+            RectTransform rect = CreateRect(name, parent, anchorMin, anchorMax, offsetMin, offsetMax);
+            Image image = rect.gameObject.AddComponent<Image>();
+            image.sprite = portrait;
+            image.preserveAspect = true;
+            image.color = tint ?? Color.white;
+            image.raycastTarget = false;
+            return image;
+        }
+
+        public static Text CreateBadge(
+            string name,
+            Transform parent,
+            string value,
+            Color background,
+            Color foreground)
+        {
+            Image badge = CreateFramedPanel(
+                name,
+                parent,
+                background,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                new Color(foreground.r, foreground.g, foreground.b, 0.42f));
+            Text label = CreateText("Label", badge.transform, value, 15, TextAnchor.MiddleCenter, foreground, FontStyle.Bold);
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 10;
+            label.resizeTextMaxSize = 16;
+            label.rectTransform.offsetMin = new Vector2(7f, 3f);
+            label.rectTransform.offsetMax = new Vector2(-7f, -3f);
+            return label;
+        }
+
+        public static Image CreateDivider(
+            string name,
+            Transform parent,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 offsetMin,
+            Vector2 offsetMax)
+        {
+            Image line = CreatePanel(name, parent, LineSubtle, anchorMin, anchorMax, offsetMin, offsetMax);
+            line.raycastTarget = false;
+            return line;
+        }
+
         public static Text CreateText(
             string name,
             Transform parent,
@@ -206,14 +292,14 @@ namespace GenericGachaRPG
             button.targetGraphic = image;
             ColorBlock colors = button.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.12f, 1.12f, 1.12f, 1f);
-            colors.pressedColor = new Color(0.78f, 0.82f, 0.9f, 1f);
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+            colors.pressedColor = new Color(0.84f, 0.87f, 0.92f, 1f);
             colors.disabledColor = new Color(0.45f, 0.48f, 0.54f, 0.55f);
             colors.colorMultiplier = 1f;
             colors.fadeDuration = 0.12f;
             button.colors = colors;
             Outline outline = rect.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(0.55f, 0.78f, 0.92f, 0.20f);
+            outline.effectColor = LineSubtle;
             outline.effectDistance = new Vector2(1f, -1f);
             if (onClick != null)
             {
@@ -224,13 +310,13 @@ namespace GenericGachaRPG
                 "Label",
                 rect,
                 label,
-                30,
+                24,
                 TextAnchor.MiddleCenter,
                 TextPrimary,
                 FontStyle.Bold);
             buttonText.resizeTextForBestFit = true;
-            buttonText.resizeTextMinSize = 18;
-            buttonText.resizeTextMaxSize = 32;
+            buttonText.resizeTextMinSize = 14;
+            buttonText.resizeTextMaxSize = 26;
             RectTransform labelRect = buttonText.rectTransform;
             labelRect.offsetMin = new Vector2(18f, 8f);
             labelRect.offsetMax = new Vector2(-18f, -8f);

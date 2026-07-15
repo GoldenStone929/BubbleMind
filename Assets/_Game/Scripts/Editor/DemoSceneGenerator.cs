@@ -18,6 +18,7 @@ namespace GenericGachaRPG.Editor
         private const string SkillFolder = "Assets/_Game/Data/Skills";
         private const string CharacterFolder = "Assets/_Game/Data/Characters";
         private const string GachaFolder = "Assets/_Game/Data/Gacha";
+        private const string PortraitFolder = "Assets/_Game/Art/Generated/UI/Portraits";
 
         static DemoSceneGenerator()
         {
@@ -35,6 +36,8 @@ namespace GenericGachaRPG.Editor
             }
 
             EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            ConfigurePortraitImportSettings();
             AbyssalObservatoryAssetBuilder.EnsureAssets();
             GameDatabase database = GenerateContentIfNeeded();
             bool sceneCreated = GenerateSceneIfNeeded(database);
@@ -112,7 +115,8 @@ namespace GenericGachaRPG.Editor
                     character.RageWhenHit != BattleRules.RagePerDamageReceived ||
                     character.UltimateSkill == null ||
                     character.Skill2 == null ||
-                    character.Skill3 == null)
+                    character.Skill3 == null ||
+                    character.Portrait == null)
                 {
                     return false;
                 }
@@ -635,6 +639,7 @@ namespace GenericGachaRPG.Editor
         {
             string path = $"{CharacterFolder}/Character_{id}.asset";
             CharacterDefinition character = GetOrCreateAsset<CharacterDefinition>(path, out _);
+            Sprite portrait = AssetDatabase.LoadAssetAtPath<Sprite>($"{PortraitFolder}/Portrait_{id}.png");
             character.Configure(
                 id,
                 displayName,
@@ -652,13 +657,58 @@ namespace GenericGachaRPG.Editor
                 BattleRules.RagePerDamageReceived,
                 ultimateSkill,
                 description,
-                null,
+                portrait,
                 prefab,
                 isLimited);
             character.ConfigureActiveSkills(skill2, skill3);
             EditorUtility.SetDirty(character);
 
             return character;
+        }
+
+        private static void ConfigurePortraitImportSettings()
+        {
+            string[] ids =
+            {
+                "azure_vanguard",
+                "ember_striker",
+                "verdant_medic",
+                "ur_cosmic_slime",
+                "violet_arcanist",
+                "gold_ranger",
+                "cyan_warden"
+            };
+
+            for (int i = 0; i < ids.Length; i++)
+            {
+                string path = $"{PortraitFolder}/Portrait_{ids[i]}.png";
+                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                if (importer == null)
+                {
+                    throw new FileNotFoundException($"Required character portrait is missing: {path}");
+                }
+
+                bool changed = importer.textureType != TextureImporterType.Sprite ||
+                               importer.spriteImportMode != SpriteImportMode.Single ||
+                               importer.mipmapEnabled ||
+                               importer.wrapMode != TextureWrapMode.Clamp ||
+                               importer.filterMode != FilterMode.Bilinear ||
+                               !importer.sRGBTexture ||
+                               importer.alphaIsTransparency ||
+                               importer.maxTextureSize != 1024;
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.sRGBTexture = true;
+                importer.alphaIsTransparency = false;
+                importer.maxTextureSize = 1024;
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
         }
 
         private static bool GenerateSceneIfNeeded(GameDatabase database)
@@ -897,6 +947,8 @@ namespace GenericGachaRPG.Editor
             EnsureFolder("Assets/_Game", "Scenes");
             EnsureFolder("Assets/_Game", "Art");
             EnsureFolder("Assets/_Game/Art", "Generated");
+            EnsureFolder("Assets/_Game/Art/Generated", "UI");
+            EnsureFolder("Assets/_Game/Art/Generated/UI", "Portraits");
             EnsureFolder("Assets/_Game", "Prefabs");
             EnsureFolder("Assets/_Game", "Tests");
         }

@@ -3,7 +3,7 @@
 ## P0 Vertical Slice
 
 ```text
-Home → Gacha → Collection → Formation → 3v5 Battle → Result → Home / Restart
+Home → Gacha → Character Archive → Formation → 3v5 Battle → Result → Home / Restart
 ```
 
 ## Runtime boundaries
@@ -30,6 +30,9 @@ DemoBattlePresenter
 
 - 静态内容使用 ScriptableObject；玩家拥有状态、余额和编队使用可序列化运行时数据。
 - UI 只展示状态并发送意图，不拥有 RNG、扣费、编队合法性或伤害规则。
+- `CharacterDefinition.Id` 是角色在抽卡结果、角色档案、编队槽位、存档与战斗请求之间的唯一身份键；所有页面从同一 `CharacterDefinition` 解析名称、稀有度、职业、三技能与 `Portrait`，不维护第二套角色资料。
+- `CharacterDefinition.Portrait` 是当前 2D 卡面单一来源。抽卡服务只返回权威 `rewardId` 与数量，UI 再通过数据库映射为卡面；展示层不得改变抽卡概率、扣费、重复角色转化或拥有状态。
+- 首页、抽卡、角色档案与编队使用独立 Screen View；`DemoGameController` 只协调导航和服务，卡面揭示动画属于纯表现层。
 - `IRandomService`、`ISaveService`、`IGachaService` 和 `IFormationService` 可在未来替换为正式实现。
 - `CharacterDefinition` 数据化保存职业、`MoveSpeed`、三个技能槽、怒气参数、`IsLimited` 与 `R -> SR -> SSR -> SP -> UR` 稀有度；攻击距离由职业统一约束。
 - 战斗核心按固定 Tick 运行，分别保存出生槽、当前战场位置和持续锁定目标；同一输入和 Seed 产生相同结果、位置及事件序列。

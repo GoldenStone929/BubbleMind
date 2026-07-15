@@ -1,8 +1,8 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v2.3-three-v-five-range-grid<br>
-> 当前状态：20 格战场、近战 2 格/远程 10 格射程、Catherine 5 格击退、五槽存档与固定 3v5 测试部署已完成；Ember Striker 可在第 5 秒切入敌方后排并持续攻击，Generate/核心验证、PlayMode、Windows D3D11 构建与 1922×1112 捕获窗口实机检查均通过<br>
-> 最近更新：2026-07-14
+> 计划版本：v2.4-character-archive-and-card-art<br>
+> 当前状态：20 格 3v5 战斗基线保持通过；角色主从详情页、七张原创 2D 卡面、抽卡卡面揭示、五槽卡面编队、统一视觉令牌与可随包分发中文 UI 字体已完成，Generate、PlayMode、Windows 构建与真实窗口抽卡均通过<br>
+> 最近更新：2026-07-15
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
 
@@ -815,7 +815,7 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.3 已同步 20 格战场、3v5 部署与刺客后排切入里程碑 | 2026-07-14 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.4 已同步角色档案、原创卡面、抽卡揭示与 UI 视觉系统里程碑 | 2026-07-15 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
 | 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 七角色/三技能/一组六角色标准抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-14 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
@@ -829,6 +829,7 @@ Agent 实际 Play Mode 验证：是 / 否
 | 阶段 6.3：Catherine 满级技能与 UR 视觉重制 | 已完成 | 满级三技能/领域/觉醒、大招全体拉拽与击飞、10×HP/0.1×ATK 测试敌人、UR Blend Shapes、Slime Toon Shader 与原创黑洞 VFX | `GenerateCompile3.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 均通过；D3D11 无 Shader error，1920×1080 / 1280×720 实机逐帧确认吸附、坍缩与击飞 | 2026-07-14 |
 | 阶段 6.4：怒气、三技能轮转与 Catherine 真实凝胶升级 | 已完成 | 0–1000 怒气制、槽位 1 大招、槽位 2 / 3 错峰 10 秒轮转、职业射程 1 / 5 与最大射程停位；Catherine 真实凝胶材质、纯黑核心、19,000 面轮廓和三点布光 | `Artifacts/CatherineRealism/RageGenerate4.log`、`RagePlaySmoke.log`、`RageWindowsBuild.log` 均通过；D3D11 构建 114,033,256 bytes / 24.1s，1920×1080 与 3440×1392 级宽屏实机检查及黑洞吸附截图确认 | 2026-07-14 |
 | 阶段 6.5：20 格 3v5 职业测试与刺客切后排 | 已完成 | 五槽存档保留；20 格战场、射程 2 / 10、Catherine 击退 5、固定坦克/射手/刺客对五敌、Ember 5 / 15 秒同后排目标瞬移与持续锁定 | `Artifacts/ThreeVsFiveRange/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 均通过；D3D11 构建 114,042,024 bytes / 58.6s，1922×1112 捕获窗口完成首页、Formation、战斗、结算检查 | 2026-07-14 |
+| 阶段 6.6：角色档案、2D 卡面与 UI 重制 | 已完成 | 角色主从详情页、七张原创竖版卡面、抽卡结果揭示、五槽卡面编队、Noto Sans CJK SC 与清洁室 UI 知识库 | `Artifacts/CharacterPage/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 全部通过；最终 Windows 窗口确认 3,000 初始水晶、真实单抽 2D 卡面与重置 | 2026-07-15 |
 
 状态仅使用：`未开始 / 进行中 / 修复中 / 已完成 / 阻塞`。
 

@@ -20,10 +20,10 @@ namespace GenericGachaRPG
         private IGachaService gachaService;
         private IFormationService formationService;
         private DemoBattlePresenter battlePresenter;
-        private HomeScreenView homeScreen;
-        private GachaScreenView gachaScreen;
-        private CollectionScreenView collectionScreen;
-        private FormationScreenView formationScreen;
+        private ObservatoryHomeScreenView homeScreen;
+        private SummonScreenView gachaScreen;
+        private CharacterPageScreenView collectionScreen;
+        private RosterFormationScreenView formationScreen;
         private BattleScreenView battleScreen;
         private DemoScreen currentScreen;
         private string formationFeedback = string.Empty;
@@ -79,16 +79,20 @@ namespace GenericGachaRPG
             Canvas canvas = DemoUiFactory.CreateCanvas(transform);
             RectTransform root = DemoUiFactory.CreateStretchRect("ScreenRoot", canvas.transform);
 
-            homeScreen = new HomeScreenView(
+            homeScreen = new ObservatoryHomeScreenView(
                 root,
                 OpenGacha,
                 OpenCollection,
                 OpenFormation,
                 BeginBattleFromSavedFormation,
                 ResetDemoData);
-            gachaScreen = new GachaScreenView(root, DrawSingle, ReturnHome);
-            collectionScreen = new CollectionScreenView(root, ReturnHome);
-            formationScreen = new FormationScreenView(root, ToggleFormationCharacter, BeginBattleFromDraft, ReturnHome);
+            gachaScreen = new SummonScreenView(root, DrawSingle, ReturnHome);
+            collectionScreen = new CharacterPageScreenView(root, ReturnHome);
+            formationScreen = new RosterFormationScreenView(
+                root,
+                ToggleFormationCharacter,
+                BeginBattleFromDraft,
+                ReturnHome);
             battleScreen = new BattleScreenView(root, RestartBattle, ReturnHomeFromBattle);
 
             battlePresenter = GetComponent<DemoBattlePresenter>();
