@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace GenericGachaRPG
 {
@@ -8,7 +9,7 @@ namespace GenericGachaRPG
         [SerializeField] private string id = "character";
         [SerializeField] private string displayName = "Character";
         [TextArea, SerializeField] private string description = string.Empty;
-        [SerializeField] private CharacterRole role = CharacterRole.Striker;
+        [SerializeField] private CharacterRole role = CharacterRole.Assassin;
         [SerializeField] private Rarity rarity = Rarity.R;
         [SerializeField] private bool isLimited;
         [SerializeField] private Color displayColor = Color.white;
@@ -20,12 +21,17 @@ namespace GenericGachaRPG
         [Min(0f), SerializeField] private float attack = 100f;
         [Min(0f), SerializeField] private float defense = 30f;
         [Min(0.05f), SerializeField] private float attackInterval = 1.5f;
-        [Min(BattleRules.MinimumAttackRange), SerializeField] private float attackRange = BattleRules.StrikerAttackRange;
-        [Min(0.05f), SerializeField] private float moveSpeed = BattleRules.StrikerMoveSpeed;
-        [Min(1), SerializeField] private int maxEnergy = 100;
-        [Min(0), SerializeField] private int energyPerAttack = 25;
-        [Min(0), SerializeField] private int energyWhenHit = 10;
+        [Min(BattleRules.MinimumAttackRange), SerializeField] private float attackRange = BattleRules.MeleeAttackRange;
+        [Min(0.05f), SerializeField] private float moveSpeed = BattleRules.AssassinMoveSpeed;
+        [FormerlySerializedAs("maxEnergy"), Min(1), SerializeField] private int maxRage = BattleRules.MaxRage;
+        [FormerlySerializedAs("energyPerAttack"), Min(0), SerializeField] private int ragePerAttack = BattleRules.RagePerBasicAttackHit;
+        [FormerlySerializedAs("energyWhenHit"), Min(0), SerializeField] private int rageWhenHit = BattleRules.RagePerDamageReceived;
+        [Tooltip("Skill slot 1. This is the Rage-powered ultimate.")]
         [SerializeField] private SkillDefinition skill;
+        [Tooltip("Automatic active skill cast at 5, 15, 25... battle seconds.")]
+        [SerializeField] private SkillDefinition skill2;
+        [Tooltip("Automatic active skill cast at 10, 20, 30... battle seconds.")]
+        [SerializeField] private SkillDefinition skill3;
 
         public string Id => id;
         public string DisplayName => displayName;
@@ -42,10 +48,19 @@ namespace GenericGachaRPG
         public float AttackInterval => attackInterval;
         public float AttackRange => attackRange;
         public float MoveSpeed => moveSpeed;
-        public int MaxEnergy => maxEnergy;
-        public int EnergyPerAttack => energyPerAttack;
-        public int EnergyWhenHit => energyWhenHit;
+        public int MaxRage => maxRage;
+        public int RagePerAttack => ragePerAttack;
+        public int RageWhenHit => rageWhenHit;
+
+        // Temporary source compatibility while presentation and authored assets
+        // migrate from the former Energy naming to the Rage contract.
+        public int MaxEnergy => maxRage;
+        public int EnergyPerAttack => ragePerAttack;
+        public int EnergyWhenHit => rageWhenHit;
         public SkillDefinition Skill => skill;
+        public SkillDefinition UltimateSkill => skill;
+        public SkillDefinition Skill2 => skill2;
+        public SkillDefinition Skill3 => skill3;
 
         // Compatibility aliases for presentation and future tuning code.
         public float Speed => 1f / Mathf.Max(0.05f, attackInterval);
@@ -63,9 +78,9 @@ namespace GenericGachaRPG
             float characterAttackInterval,
             float characterAttackRange,
             float characterMoveSpeed,
-            int characterMaxEnergy,
-            int characterEnergyPerAttack,
-            int characterEnergyWhenHit,
+            int characterMaxRage,
+            int characterRagePerAttack,
+            int characterRageWhenHit,
             SkillDefinition characterSkill,
             string characterDescription = "",
             Sprite characterPortrait = null,
@@ -85,12 +100,20 @@ namespace GenericGachaRPG
             attack = Mathf.Max(0f, characterAttack);
             defense = Mathf.Max(0f, characterDefense);
             attackInterval = Mathf.Max(0.05f, characterAttackInterval);
-            attackRange = SanitizePositive(characterAttackRange, BattleRules.GetDefaultAttackRange(characterRole));
+            attackRange = BattleRules.GetDefaultAttackRange(characterRole);
             moveSpeed = SanitizePositive(characterMoveSpeed, BattleRules.GetDefaultMoveSpeed(characterRole));
-            maxEnergy = Mathf.Max(1, characterMaxEnergy);
-            energyPerAttack = Mathf.Max(0, characterEnergyPerAttack);
-            energyWhenHit = Mathf.Max(0, characterEnergyWhenHit);
+            maxRage = Mathf.Max(1, characterMaxRage);
+            ragePerAttack = Mathf.Max(0, characterRagePerAttack);
+            rageWhenHit = Mathf.Max(0, characterRageWhenHit);
             skill = characterSkill;
+        }
+
+        public void ConfigureActiveSkills(
+            SkillDefinition characterSkill2,
+            SkillDefinition characterSkill3)
+        {
+            skill2 = characterSkill2;
+            skill3 = characterSkill3;
         }
 
         private void OnValidate()
@@ -101,11 +124,11 @@ namespace GenericGachaRPG
             attack = Mathf.Max(0f, attack);
             defense = Mathf.Max(0f, defense);
             attackInterval = Mathf.Max(0.05f, attackInterval);
-            attackRange = SanitizePositive(attackRange, BattleRules.GetDefaultAttackRange(role));
+            attackRange = BattleRules.GetDefaultAttackRange(role);
             moveSpeed = SanitizePositive(moveSpeed, BattleRules.GetDefaultMoveSpeed(role));
-            maxEnergy = Mathf.Max(1, maxEnergy);
-            energyPerAttack = Mathf.Max(0, energyPerAttack);
-            energyWhenHit = Mathf.Max(0, energyWhenHit);
+            maxRage = Mathf.Max(1, maxRage);
+            ragePerAttack = Mathf.Max(0, ragePerAttack);
+            rageWhenHit = Mathf.Max(0, rageWhenHit);
         }
 
         private static float SanitizePositive(float value, float fallback)

@@ -11,15 +11,29 @@ namespace GenericGachaRPG
     public static class BattleRules
     {
         public const int TeamSize = 5;
+        public const int MaxRage = 1000;
+        public const int RagePerBasicAttackHit = 100;
+        public const int RagePerDamageReceived = 50;
         public const float BasicAttackHitDelay = 0.7f;
+        public const float Skill2InitialCastTime = 5f;
+        public const float Skill3InitialCastTime = 10f;
+        public const float ActiveSkillCooldown = 10f;
         public const float MinimumAttackRange = 0.1f;
-        public const float GuardianAttackRange = 1.45f;
-        public const float StrikerAttackRange = 2.8f;
-        public const float SupportAttackRange = 4.2f;
-        public const float GuardianMoveSpeed = 3.3f;
-        public const float StrikerMoveSpeed = 3.7f;
+        public const float MeleeAttackRange = 1f;
+        public const float RangedAttackRange = 5f;
+        public const float TankMoveSpeed = 3.3f;
+        public const float AssassinMoveSpeed = 3.7f;
         public const float SupportMoveSpeed = 3.1f;
+        public const float RangedMoveSpeed = 3.2f;
+        public const float MageMoveSpeed = 3f;
         public const float RangeEpsilon = 0.001f;
+
+        // Source compatibility for presentation and authored-data migration.
+        public const float GuardianAttackRange = MeleeAttackRange;
+        public const float StrikerAttackRange = MeleeAttackRange;
+        public const float SupportAttackRange = RangedAttackRange;
+        public const float GuardianMoveSpeed = TankMoveSpeed;
+        public const float StrikerMoveSpeed = AssassinMoveSpeed;
 
         private static readonly Vector3[] PlayerSlotPositions =
         {
@@ -68,13 +82,14 @@ namespace GenericGachaRPG
         {
             switch (role)
             {
-                case CharacterRole.Guardian:
-                    return GuardianAttackRange;
+                case CharacterRole.Tank:
+                case CharacterRole.Assassin:
+                    return MeleeAttackRange;
                 case CharacterRole.Support:
-                    return SupportAttackRange;
-                case CharacterRole.Striker:
+                case CharacterRole.Ranged:
+                case CharacterRole.Mage:
                 default:
-                    return StrikerAttackRange;
+                    return RangedAttackRange;
             }
         }
 
@@ -82,13 +97,17 @@ namespace GenericGachaRPG
         {
             switch (role)
             {
-                case CharacterRole.Guardian:
-                    return GuardianMoveSpeed;
+                case CharacterRole.Tank:
+                    return TankMoveSpeed;
+                case CharacterRole.Assassin:
+                    return AssassinMoveSpeed;
                 case CharacterRole.Support:
                     return SupportMoveSpeed;
-                case CharacterRole.Striker:
+                case CharacterRole.Ranged:
+                    return RangedMoveSpeed;
+                case CharacterRole.Mage:
                 default:
-                    return StrikerMoveSpeed;
+                    return MageMoveSpeed;
             }
         }
 

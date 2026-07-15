@@ -15,7 +15,6 @@ namespace GenericGachaRPG
             Skill1Impact,
             Skill2FirstHit,
             Skill2SecondHit,
-            Skill3Impact,
             UltimateTransform,
             UltimateHit,
             UltimateCollapse
@@ -23,7 +22,6 @@ namespace GenericGachaRPG
 
         private sealed class CatherineRuntimeState
         {
-            public int NextActionIndex;
             public int ImaginaryMassStacks = CatherineYukiBattleKit.InitialImaginaryMassStacks;
             public int SuperArmorUntilTick;
             public bool DeathAwakeningUsed;
@@ -163,6 +161,11 @@ namespace GenericGachaRPG
 
                 UpdateTargetLocks();
                 MoveUnitsTowardLockedTargets();
+                ExecuteTimedActiveSkills();
+                if (_finished)
+                {
+                    break;
+                }
 
                 for (var index = 0; index < _actionOrder.Count; index++)
                 {
@@ -236,6 +239,120 @@ namespace GenericGachaRPG
             {
                 var unit = _actionOrder[index];
                 unit.NextActionTick = TicksForDuration(unit.AttackInterval);
+                unit.NextSkill2Tick = TicksForDuration(BattleRules.Skill2InitialCastTime);
+                unit.NextSkill3Tick = TicksForDuration(BattleRules.Skill3InitialCastTime);
+            }
+        }
+
+        private void ExecuteTimedActiveSkills()
+        {
+            int cooldownTicks = TicksForDuration(BattleRules.ActiveSkillCooldown);
+            for (int index = 0; index < _actionOrder.Count && !_finished; index++)
+            {
+                BattleUnitState actor = _actionOrder[index];
+                bool skill2Due = actor.NextSkill2Tick <= _currentTick;
+                bool skill3Due = actor.NextSkill3Tick <= _currentTick;
+                if (!skill2Due && !skill3Due)
+                {
+                    continue;
+                }
+
+                // The authored offsets prevent a collision in normal play. If a
+                // unit was unavailable for several periods, only one slot may run
+                // on a tick; the other remains due for the following fixed tick.
+                bool castSkill2 = skill2Due &&
+                                  (!skill3Due || actor.NextSkill2Tick <= actor.NextSkill3Tick);
+                if (!actor.IsAlive || IsControlled(actor))
+                {
+                    continue;
+                }
+
+                if (_catherineStates.TryGetValue(actor.RuntimeId, out CatherineRuntimeState catherineState) &&
+                    catherineState.RevivalPending)
+                {
+                    continue;
+                }
+
+                if (!TryBeginTimedActiveSkill(actor, castSkill2))
+                {
+                    continue;
+                }
+
+                if (castSkill2)
+                {
+                    actor.NextSkill2Tick = AdvanceRecurringTick(actor.NextSkill2Tick, cooldownTicks);
+                }
+                else
+                {
+                    actor.NextSkill3Tick = AdvanceRecurringTick(actor.NextSkill3Tick, cooldownTicks);
+                }
+            }
+        }
+
+        private bool TryBeginTimedActiveSkill(BattleUnitState actor, bool skill2Slot)
+        {
+            BattleUnitState lockedTarget = FindLockedAliveOpponent(actor);
+            if (_catherineStates.TryGetValue(actor.RuntimeId, out CatherineRuntimeState catherineState))
+            {
+                if (lockedTarget == null || !IsWithinAttackRange(actor, lockedTarget))
+                {
+                    return false;
+                }
+
+                CancelPendingBasicHits(actor);
+                if (skill2Slot)
+                {
+                    // Catherine slot 2 is Wind Wheel: Break. Star Rage remains
+                    // her passive and is never inserted into the active cadence.
+                    BeginCatherineSkill1(actor, lockedTarget);
+                }
+                else
+                {
+                    // Catherine slot 3 is Wind Wheel: Dance.
+                    BeginCatherineSkill2(actor, lockedTarget, catherineState);
+                }
+
+                return true;
+            }
+
+            SkillDefinition skill = skill2Slot ? actor.Skill2 : actor.Skill3;
+            if (skill == null ||
+                (skill.Category == SkillCategory.Damage &&
+                 (lockedTarget == null || !IsWithinAttackRange(actor, lockedTarget))))
+            {
+                return false;
+            }
+
+            List<BattleUnitState> targets = SelectSkillTargets(actor, skill);
+            if (targets.Count == 0)
+            {
+                return false;
+            }
+
+            CancelPendingBasicHits(actor);
+            CastSkill(actor, skill, targets, false);
+            return true;
+        }
+
+        private int AdvanceRecurringTick(int scheduledTick, int cooldownTicks)
+        {
+            int nextTick = AddTicksSafely(scheduledTick, cooldownTicks);
+            while (nextTick <= _currentTick && nextTick < int.MaxValue)
+            {
+                nextTick = AddTicksSafely(nextTick, cooldownTicks);
+            }
+
+            return nextTick;
+        }
+
+        private void CancelPendingBasicHits(BattleUnitState actor)
+        {
+            for (int index = _pendingBasicHits.Count - 1; index >= 0; index--)
+            {
+                if (_pendingBasicHits[index].Actor == actor)
+                {
+                    _pendingBasicHits.RemoveAt(index);
+                }
             }
         }
 
@@ -251,24 +368,33 @@ namespace GenericGachaRPG
             {
                 if (lockedTarget != null && IsWithinAttackRange(actor, lockedTarget))
                 {
-                    BeginCatherineAction(actor, lockedTarget);
+                    if (actor.CanCastUltimate && CanStartCatherineUltimateBeforeNextActiveSkill(actor))
+                    {
+                        SpendUltimateRage(actor, CatherineYukiBattleKit.UltimateId);
+                        CancelPendingBasicHits(actor);
+                        BeginCatherineUltimate(actor, GetAliveOpponents(actor), false);
+                    }
+                    else
+                    {
+                        BeginBasicAttack(actor, lockedTarget);
+                    }
                 }
 
                 return;
             }
 
-            if (actor.CanCastSkill)
+            if (actor.CanCastUltimate)
             {
-                if (actor.Skill.Category == SkillCategory.Damage &&
+                if (actor.UltimateSkill.Category == SkillCategory.Damage &&
                     (lockedTarget == null || !IsWithinAttackRange(actor, lockedTarget)))
                 {
                     return;
                 }
 
-                var skillTargets = SelectSkillTargets(actor, actor.Skill);
+                var skillTargets = SelectSkillTargets(actor, actor.UltimateSkill);
                 if (skillTargets.Count > 0)
                 {
-                    CastSkill(actor, actor.Skill, skillTargets);
+                    CastSkill(actor, actor.UltimateSkill, skillTargets, true);
                     return;
                 }
             }
@@ -279,31 +405,26 @@ namespace GenericGachaRPG
             }
         }
 
-        private void BeginCatherineAction(BattleUnitState actor, BattleUnitState lockedTarget)
+        private bool CanStartCatherineUltimateBeforeNextActiveSkill(BattleUnitState actor)
         {
             CatherineRuntimeState state = _catherineStates[actor.RuntimeId];
             if (state.RevivalPending)
             {
-                return;
+                return false;
             }
 
-            switch (state.NextActionIndex)
-            {
-                case 0:
-                    BeginCatherineSkill1(actor, lockedTarget);
-                    break;
-                case 1:
-                    BeginCatherineSkill2(actor, lockedTarget, state);
-                    break;
-                case 2:
-                    BeginCatherineSkill3(actor, lockedTarget);
-                    break;
-                default:
-                    BeginCatherineUltimate(actor, GetAliveOpponents(actor), false);
-                    break;
-            }
-
-            state.NextActionIndex = (state.NextActionIndex + 1) % 4;
+            int nextTimedSkillTick = Math.Min(actor.NextSkill2Tick, actor.NextSkill3Tick);
+            int ultimateDurationTicks =
+                TicksForDuration(CatherineYukiBattleKit.UltimateChargeDuration) +
+                TicksForDuration(CatherineYukiBattleKit.UltimatePullDuration) +
+                (CatherineYukiBattleKit.UltimateHitCount - 1) *
+                TicksForDuration(CatherineYukiBattleKit.UltimateHitInterval) +
+                TicksForDuration(CatherineYukiBattleKit.UltimateCollapseDelay) +
+                TicksForDuration(CatherineYukiBattleKit.KnockUpDuration);
+            // An exact fit is valid: the ultimate resolves before timed skills are
+            // processed on the boundary tick, so rejecting equality can starve a
+            // full-Rage Catherine on the repeating 5-second cadence.
+            return AddTicksSafely(_currentTick, ultimateDurationTicks) <= nextTimedSkillTick;
         }
 
         private void BeginCatherineSkill1(BattleUnitState actor, BattleUnitState lockedTarget)
@@ -361,22 +482,6 @@ namespace GenericGachaRPG
                 AddTicksSafely(_currentTick, secondHitTicks));
         }
 
-        private void BeginCatherineSkill3(BattleUnitState actor, BattleUnitState lockedTarget)
-        {
-            List<BattleUnitState> targets = GetAliveOpponents(actor);
-            EmitSkillCast(actor, lockedTarget, CatherineYukiBattleKit.Skill3Id);
-            int delayTicks = TicksForDuration(CatherineYukiBattleKit.Skill3HitDelay);
-            actor.NextActionTick = AddTicksSafely(
-                _currentTick,
-                Math.Max(TicksForDuration(actor.AttackInterval), AddTicksSafely(delayTicks, 1)));
-            ScheduleCatherinePhase(
-                actor,
-                lockedTarget,
-                targets,
-                CatherinePhase.Skill3Impact,
-                AddTicksSafely(_currentTick, delayTicks));
-        }
-
         private void BeginCatherineUltimate(
             BattleUnitState actor,
             List<BattleUnitState> targets,
@@ -391,11 +496,12 @@ namespace GenericGachaRPG
             string castSkillId = deathAwakening
                 ? CatherineYukiBattleKit.DeathUltimateId
                 : CatherineYukiBattleKit.UltimateId;
-            EmitSkillCast(actor, targets[0], castSkillId, !deathAwakening);
+            BattleUnitState primaryTarget = FindLockedAliveOpponent(actor) ?? targets[0];
+            EmitSkillCast(actor, primaryTarget, castSkillId, !deathAwakening);
             Emit(
                 BattleEventType.UltimatePhase,
                 actor,
-                targets[0],
+                primaryTarget,
                 state.ImaginaryMassStacks,
                 actor.CurrentHealth,
                 actor.CurrentEnergy,
@@ -410,7 +516,7 @@ namespace GenericGachaRPG
                 TicksForDuration(CatherineYukiBattleKit.UltimateChargeDuration));
             ScheduleCatherinePhase(
                 actor,
-                targets[0],
+                primaryTarget,
                 targets,
                 CatherinePhase.UltimateTransform,
                 transformTick,
@@ -425,7 +531,7 @@ namespace GenericGachaRPG
             {
                 ScheduleCatherinePhase(
                     actor,
-                    targets[0],
+                    primaryTarget,
                     targets,
                     CatherinePhase.UltimateHit,
                     AddTicksSafely(firstHitTick, hitIndex * hitSpacing),
@@ -441,7 +547,7 @@ namespace GenericGachaRPG
                 TicksForDuration(CatherineYukiBattleKit.UltimateCollapseDelay));
             ScheduleCatherinePhase(
                 actor,
-                targets[0],
+                primaryTarget,
                 targets,
                 CatherinePhase.UltimateCollapse,
                 collapseTick,
@@ -553,21 +659,17 @@ namespace GenericGachaRPG
         private void ResolveBasicHit(BattleUnitState actor, BattleUnitState target)
         {
             float damage = CalculateFinalDamage(actor, target, 1f);
-            ApplyDamageValue(actor, target, damage, null, false);
+            ApplyDamageValue(actor, target, damage, null, true);
 
-            ChangeEnergy(actor, actor.EnergyPerAttack);
-
-            if (target.IsAlive)
-            {
-                ChangeEnergy(target, target.EnergyWhenHit, actor);
-            }
+            ChangeRage(actor, actor.RagePerAttack);
             TryFinishFromDefeat();
         }
 
         private void CastSkill(
             BattleUnitState actor,
             SkillDefinition skill,
-            List<BattleUnitState> targets)
+            List<BattleUnitState> targets,
+            bool spendUltimateRage)
         {
             BattleUnitState eventTarget = skill.Category == SkillCategory.Damage
                 ? FindLockedAliveOpponent(actor)
@@ -577,17 +679,9 @@ namespace GenericGachaRPG
                 return;
             }
 
-            var spentEnergy = actor.SpendSkillEnergy();
-            if (spentEnergy > 0)
+            if (spendUltimateRage)
             {
-                Emit(
-                    BattleEventType.EnergyChanged,
-                    actor,
-                    actor,
-                    -spentEnergy,
-                    actor.CurrentHealth,
-                    actor.CurrentEnergy,
-                    skill.Id);
+                SpendUltimateRage(actor, skill.Id);
             }
 
             Emit(
@@ -694,6 +788,14 @@ namespace GenericGachaRPG
 
                 ResolveCatherinePhase(pending);
             }
+
+            // A normal ultimate is cancelled if Catherine dies before a phase.
+            // Re-check defeat after removing those cancelled phases so a stale
+            // collapse cannot hold the battle open until the global timeout.
+            if (!_finished)
+            {
+                TryFinishFromDefeat();
+            }
         }
 
         private void ResolveCatherinePhase(PendingCatherinePhase pending)
@@ -708,9 +810,6 @@ namespace GenericGachaRPG
                     break;
                 case CatherinePhase.Skill2SecondHit:
                     ResolveCatherineSkill2Hit(pending, true);
-                    break;
-                case CatherinePhase.Skill3Impact:
-                    ResolveCatherineSkill3(pending);
                     break;
                 case CatherinePhase.UltimateTransform:
                     ResolveCatherineUltimateTransform(pending);
@@ -810,36 +909,6 @@ namespace GenericGachaRPG
                 duration: CatherineYukiBattleKit.TauntDuration);
         }
 
-        private void ResolveCatherineSkill3(PendingCatherinePhase pending)
-        {
-            for (int index = 0; index < pending.Targets.Count; index++)
-            {
-                BattleUnitState target = pending.Targets[index];
-                if (!target.IsAlive)
-                {
-                    continue;
-                }
-
-                _gravityDebuffUntilTick[target.RuntimeId] = AddTicksSafely(
-                    _currentTick,
-                    TicksForDuration(CatherineYukiBattleKit.GravityDebuffDuration));
-                Emit(
-                    BattleEventType.DebuffApplied,
-                    pending.Actor,
-                    target,
-                    CatherineYukiBattleKit.GravityDebuffDuration,
-                    target.CurrentHealth,
-                    target.CurrentEnergy,
-                    CatherineYukiBattleKit.GravityDebuffId,
-                    duration: CatherineYukiBattleKit.GravityDebuffDuration);
-            }
-
-            GainImaginaryMass(
-                pending.Actor,
-                CatherineYukiBattleKit.StarRageStacksPerTrigger,
-                CatherineYukiBattleKit.Skill3Id);
-        }
-
         private void ResolveCatherineUltimateTransform(PendingCatherinePhase pending)
         {
             Emit(
@@ -937,7 +1006,6 @@ namespace GenericGachaRPG
                 state.ImaginaryMassStacks = Math.Min(
                     CatherineYukiBattleKit.AwakenedImaginaryMassStackCap,
                     state.ImaginaryMassStacks + CatherineYukiBattleKit.RevivalMassStacks);
-                state.NextActionIndex = 0;
                 pending.Actor.NextActionTick = AddTicksSafely(
                     _currentTick,
                     TicksForDuration(pending.Actor.AttackInterval));
@@ -1047,7 +1115,7 @@ namespace GenericGachaRPG
             BattleUnitState target,
             float damage,
             string skillId,
-            bool grantEnergyWhenHit)
+            bool grantRageWhenHit)
         {
             float appliedDamage = target.ApplyDamage(damage);
             Emit(
@@ -1059,14 +1127,12 @@ namespace GenericGachaRPG
                 target.CurrentEnergy,
                 skillId);
 
-            if (target.IsAlive)
+            if (grantRageWhenHit && appliedDamage > 0f)
             {
-                if (grantEnergyWhenHit)
-                {
-                    ChangeEnergy(target, target.EnergyWhenHit, actor, skillId);
-                }
+                ChangeRage(target, target.RageWhenHit, actor, skillId);
             }
-            else
+
+            if (!target.IsAlive)
             {
                 Emit(
                     BattleEventType.UnitDefeated,
@@ -1413,6 +1479,7 @@ namespace GenericGachaRPG
                         continue;
                     }
 
+                    actor.LockTarget(null);
                     _taunts.Remove(actor.RuntimeId);
                 }
 
@@ -1447,6 +1514,24 @@ namespace GenericGachaRPG
                 float distance = toTarget.magnitude;
                 float remainingDistance = Math.Max(0f, distance - actor.AttackRange);
                 float step = Math.Min(remainingDistance, actor.MoveSpeed * maximumStep);
+                BattleUnitState targetLock = FindLockedAliveOpponent(target);
+                bool targetWillMoveTowardActor = targetLock == actor &&
+                                                 !IsWithinAttackRange(target, actor) &&
+                                                 !IsControlled(target);
+                if (targetWillMoveTowardActor)
+                {
+                    // Both destinations are calculated from the same snapshot.
+                    // Divide the remaining closing distance so simultaneous
+                    // movement lands on, rather than crosses, the first range edge.
+                    float sharedRangeEdge = Math.Max(actor.AttackRange, target.AttackRange);
+                    float sharedClosingDistance = Math.Max(0f, distance - sharedRangeEdge);
+                    float combinedMoveSpeed = actor.MoveSpeed + target.MoveSpeed;
+                    float actorShare = combinedMoveSpeed <= BattleRules.RangeEpsilon
+                        ? sharedClosingDistance * 0.5f
+                        : sharedClosingDistance * actor.MoveSpeed / combinedMoveSpeed;
+                    step = Math.Min(step, actorShare);
+                }
+
                 if (step <= BattleRules.RangeEpsilon || distance <= BattleRules.RangeEpsilon)
                 {
                     continue;
@@ -1508,25 +1593,43 @@ namespace GenericGachaRPG
                    controlledUntil >= _currentTick;
         }
 
-        private void ChangeEnergy(
-            BattleUnitState unit,
-            int requestedEnergy,
-            BattleUnitState eventActor = null,
-            string skillId = null)
+        private void SpendUltimateRage(BattleUnitState unit, string skillId)
         {
-            var gainedEnergy = unit.GainEnergy(requestedEnergy);
-            if (gainedEnergy <= 0)
+            int spentRage = unit.SpendUltimateRage();
+            if (spentRage <= 0)
             {
                 return;
             }
 
             Emit(
-                BattleEventType.EnergyChanged,
+                BattleEventType.RageChanged,
+                unit,
+                unit,
+                -spentRage,
+                unit.CurrentHealth,
+                unit.CurrentRage,
+                skillId);
+        }
+
+        private void ChangeRage(
+            BattleUnitState unit,
+            int requestedRage,
+            BattleUnitState eventActor = null,
+            string skillId = null)
+        {
+            int gainedRage = unit.GainRage(requestedRage);
+            if (gainedRage <= 0)
+            {
+                return;
+            }
+
+            Emit(
+                BattleEventType.RageChanged,
                 eventActor ?? unit,
                 unit,
-                gainedEnergy,
+                gainedRage,
                 unit.CurrentHealth,
-                unit.CurrentEnergy,
+                unit.CurrentRage,
                 skillId);
         }
 

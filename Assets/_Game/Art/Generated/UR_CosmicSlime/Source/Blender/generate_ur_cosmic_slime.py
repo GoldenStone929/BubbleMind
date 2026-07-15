@@ -55,9 +55,25 @@ def make_material(
     bsdf.inputs["Metallic"].default_value = metallic
     bsdf.inputs["Roughness"].default_value = roughness
     bsdf.inputs["Alpha"].default_value = alpha
+    if "IOR" in bsdf.inputs and name in {"MAT_Shell", "MAT_Nebula", "MAT_Energy"}:
+        bsdf.inputs["IOR"].default_value = 1.38 if name == "MAT_Shell" else 1.32
+    specular = bsdf.inputs.get("Specular IOR Level")
+    if specular and name == "MAT_BlackCore":
+        specular.default_value = 0.0
+    transmission = bsdf.inputs.get("Transmission Weight")
+    if transmission and name in {"MAT_Shell", "MAT_Nebula"}:
+        transmission.default_value = 0.10 if name == "MAT_Shell" else 0.18
+    subsurface = bsdf.inputs.get("Subsurface Weight")
+    if subsurface and name in {"MAT_Shell", "MAT_Nebula"}:
+        subsurface.default_value = 0.055 if name == "MAT_Shell" else 0.09
     if "Coat Weight" in bsdf.inputs:
-        bsdf.inputs["Coat Weight"].default_value = 0.22 if name == "MAT_Shell" else 0.05
-        bsdf.inputs["Coat Roughness"].default_value = 0.32
+        if name == "MAT_Shell":
+            bsdf.inputs["Coat Weight"].default_value = 0.48
+        elif name in {"MAT_Nebula", "MAT_Energy"}:
+            bsdf.inputs["Coat Weight"].default_value = 0.16
+        else:
+            bsdf.inputs["Coat Weight"].default_value = 0.0
+        bsdf.inputs["Coat Roughness"].default_value = 0.12 if name == "MAT_Shell" else 0.22
     if emission:
         emission_input = bsdf.inputs.get("Emission Color") or bsdf.inputs.get("Emission")
         strength_input = bsdf.inputs.get("Emission Strength")
@@ -123,13 +139,26 @@ def radial_slime(name, profile, top, material, segments=64, lobe_count=10):
     ring_count = len(profile)
 
     for ring_index, (z, radius_x, radius_y, lobe_amount, offset_x, offset_y) in enumerate(profile):
-        phase = 0.28 + ring_index * 0.045
+        height = ring_index / max(1, ring_count - 1)
+        phase = 0.24 + ring_index * 0.051
         for index in range(segments):
             angle = math.tau * index / segments
             scallop = 1.0 + lobe_amount * math.cos(lobe_count * angle + phase)
-            organic = 1.0 + 0.022 * math.sin(3.0 * angle - 0.55) + 0.010 * math.cos(5.0 * angle + 0.2)
-            x = offset_x + radius_x * scallop * organic * math.cos(angle)
-            y = offset_y + radius_y * scallop * (2.0 - organic) * math.sin(angle)
+            organic_x = (
+                1.0
+                + 0.030 * math.sin(3.0 * angle - 0.55 + height * 0.7)
+                + 0.014 * math.cos(5.0 * angle + 0.2 - height)
+                + 0.008 * math.sin(9.0 * angle + 0.6)
+            )
+            organic_y = (
+                1.0
+                + 0.024 * math.cos(4.0 * angle + 0.4 - height * 0.8)
+                - 0.012 * math.sin(7.0 * angle - 0.2)
+            )
+            lower_weight = pow(1.0 - height, 1.8)
+            directional_asymmetry = 1.0 + lower_weight * 0.022 * math.cos(angle + 0.65)
+            x = offset_x + radius_x * scallop * organic_x * directional_asymmetry * math.cos(angle)
+            y = offset_y + radius_y * scallop * organic_y * math.sin(angle)
             vertices.append((x, y, z))
 
     for ring_index in range(ring_count - 1):
@@ -496,60 +525,70 @@ def star_cloud(name, stars, material, parent=None):
 def build_character():
     shell_mat = make_material(
         "MAT_Shell",
-        (0.018, 0.004, 0.052),
-        roughness=0.40,
-        emission=(0.028, 0.004, 0.080),
-        emission_strength=0.08,
-        alpha=0.92,
+        (0.012, 0.003, 0.038),
+        roughness=0.20,
+        emission=(0.022, 0.003, 0.065),
+        emission_strength=0.045,
+        alpha=0.88,
     )
     nebula_mat = make_material(
         "MAT_Nebula",
-        (0.080, 0.012, 0.190),
-        roughness=0.50,
-        emission=(0.12, 0.018, 0.31),
-        emission_strength=0.32,
-        alpha=0.84,
+        (0.072, 0.010, 0.180),
+        roughness=0.30,
+        emission=(0.16, 0.022, 0.42),
+        emission_strength=0.48,
+        alpha=0.78,
     )
     energy_mat = make_material(
         "MAT_Energy",
-        (0.32, 0.055, 0.58),
-        roughness=0.46,
-        emission=(0.44, 0.07, 0.82),
-        emission_strength=0.78,
+        (0.36, 0.075, 0.62),
+        roughness=0.22,
+        emission=(0.66, 0.11, 1.0),
+        emission_strength=1.25,
     )
     black_core_mat = make_material("MAT_BlackCore", (0.0, 0.0, 0.0), roughness=1.0)
     orbit_mat = make_material(
         "MAT_Orbit",
-        (0.065, 0.018, 0.15),
-        metallic=0.12,
-        roughness=0.58,
-        emission=(0.10, 0.020, 0.24),
-        emission_strength=0.16,
+        (0.045, 0.012, 0.105),
+        metallic=0.82,
+        roughness=0.24,
+        emission=(0.08, 0.014, 0.20),
+        emission_strength=0.08,
     )
     orbit_trim_mat = make_material(
         "MAT_OrbitTrim",
-        (0.22, 0.085, 0.025),
-        metallic=0.22,
-        roughness=0.58,
-        emission=(0.08, 0.018, 0.004),
-        emission_strength=0.04,
+        (0.28, 0.14, 0.045),
+        metallic=0.88,
+        roughness=0.20,
+        emission=(0.10, 0.025, 0.006),
+        emission_strength=0.025,
     )
 
     root = empty("CharacterRoot")
 
     outer_profile = [
-        (0.018, 0.52, 0.40, 0.11, -0.01, 0.00),
-        (0.050, 1.06, 0.76, 0.15, -0.02, 0.00),
-        (0.125, 1.14, 0.82, 0.12, -0.03, -0.01),
-        (0.245, 1.09, 0.83, 0.065, -0.02, -0.01),
-        (0.470, 1.07, 0.82, 0.028, 0.00, -0.015),
-        (0.735, 1.03, 0.79, 0.018, 0.02, -0.010),
-        (0.980, 0.95, 0.72, 0.012, 0.035, -0.005),
-        (1.190, 0.81, 0.63, 0.008, 0.055, 0.005),
-        (1.360, 0.59, 0.48, 0.004, 0.075, 0.010),
-        (1.475, 0.27, 0.30, 0.000, 0.085, 0.010),
+        (0.018, 0.62, 0.46, 0.17, -0.035, 0.015),
+        (0.046, 1.13, 0.81, 0.19, -0.045, 0.005),
+        (0.095, 1.20, 0.87, 0.15, -0.050, -0.008),
+        (0.170, 1.18, 0.87, 0.11, -0.045, -0.018),
+        (0.280, 1.14, 0.85, 0.068, -0.030, -0.024),
+        (0.430, 1.10, 0.82, 0.040, -0.010, -0.028),
+        (0.610, 1.07, 0.80, 0.026, 0.015, -0.026),
+        (0.790, 1.02, 0.76, 0.018, 0.040, -0.020),
+        (0.970, 0.94, 0.71, 0.013, 0.060, -0.010),
+        (1.130, 0.84, 0.64, 0.010, 0.078, 0.004),
+        (1.275, 0.69, 0.54, 0.007, 0.092, 0.015),
+        (1.395, 0.50, 0.41, 0.004, 0.105, 0.022),
+        (1.485, 0.28, 0.27, 0.000, 0.115, 0.025),
     ]
-    body = radial_slime("SlimeBody", outer_profile, (0.10, 0.01, 1.545), shell_mat)
+    body = radial_slime(
+        "SlimeBody",
+        outer_profile,
+        (0.12, 0.02, 1.555),
+        shell_mat,
+        segments=72,
+        lobe_count=11,
+    )
     body.parent = root
     add_slime_shape_keys(body, 1.545)
 
@@ -564,32 +603,43 @@ def build_character():
         )
         for z, radius_x, radius_y, lobe, offset_x, offset_y in outer_profile
     ]
-    inner = radial_slime("NebulaInner", inner_profile, (0.09, 0.02, 1.415), nebula_mat, segments=56)
+    inner = radial_slime(
+        "NebulaInner",
+        inner_profile,
+        (0.105, 0.025, 1.425),
+        nebula_mat,
+        segments=64,
+        lobe_count=11,
+    )
     inner.parent = root
     add_slime_shape_keys(inner, 1.415)
 
     for name, location, scale, rotation in (
-        ("PuddleLobe_01", (-0.88, -0.26, 0.075), (0.40, 0.30, 0.075), -12.0),
-        ("PuddleLobe_02", (-0.48, -0.68, 0.060), (0.36, 0.25, 0.060), 8.0),
-        ("PuddleLobe_03", (0.02, -0.76, 0.055), (0.42, 0.25, 0.055), -5.0),
-        ("PuddleLobe_04", (0.57, -0.63, 0.060), (0.40, 0.27, 0.060), 12.0),
-        ("PuddleLobe_05", (0.96, -0.20, 0.070), (0.34, 0.28, 0.070), -10.0),
+        ("PuddleLobe_01", (-1.03, -0.24, 0.086), (0.42, 0.29, 0.080), -14.0),
+        ("PuddleLobe_02", (-0.72, -0.67, 0.072), (0.40, 0.28, 0.066), 9.0),
+        ("PuddleLobe_03", (-0.20, -0.84, 0.066), (0.45, 0.27, 0.060), -5.0),
+        ("PuddleLobe_04", (0.38, -0.79, 0.070), (0.46, 0.28, 0.064), 8.0),
+        ("PuddleLobe_05", (0.90, -0.51, 0.079), (0.40, 0.29, 0.073), -9.0),
+        ("PuddleLobe_06", (1.12, 0.02, 0.086), (0.34, 0.31, 0.080), 13.0),
+        ("PuddleLobe_07", (0.52, 0.69, 0.073), (0.42, 0.29, 0.067), -11.0),
+        ("PuddleLobe_08", (-0.45, 0.72, 0.070), (0.44, 0.28, 0.064), 7.0),
     ):
-        lobe = ico(name, location, scale, shell_mat, 2, root)
+        lobe = uv_sphere(name, location, scale, shell_mat, 20, 10, root)
         lobe.rotation_euler.z = math.radians(rotation)
 
     tapered_tube(
         "Horn_L",
         [
-            (-0.46, -0.02, 1.25),
-            (-0.60, -0.02, 1.43),
-            (-0.64, -0.015, 1.67),
-            (-0.55, -0.01, 1.86),
-            (-0.38, -0.02, 1.91),
-            (-0.27, -0.04, 1.80),
+            (-0.47, -0.01, 1.28),
+            (-0.61, -0.01, 1.43),
+            (-0.67, -0.015, 1.65),
+            (-0.60, -0.025, 1.84),
+            (-0.43, -0.035, 1.94),
+            (-0.28, -0.055, 1.89),
+            (-0.25, -0.070, 1.78),
         ],
-        0.145,
-        0.022,
+        0.155,
+        0.018,
         shell_mat,
         radial_segments=12,
         flatten=0.92,
@@ -614,15 +664,16 @@ def build_character():
     tapered_tube(
         "Horn_RightFluid",
         [
-            (0.46, 0.00, 1.27),
-            (0.58, -0.01, 1.42),
-            (0.55, -0.015, 1.58),
-            (0.66, -0.02, 1.70),
-            (0.61, -0.03, 1.83),
-            (0.50, -0.04, 1.91),
+            (0.48, 0.00, 1.29),
+            (0.60, -0.01, 1.42),
+            (0.58, -0.018, 1.57),
+            (0.70, -0.028, 1.70),
+            (0.68, -0.040, 1.84),
+            (0.55, -0.055, 1.93),
+            (0.46, -0.070, 1.88),
         ],
-        0.105,
-        0.015,
+        0.118,
+        0.014,
         nebula_mat,
         radial_segments=10,
         flatten=0.82,
@@ -674,14 +725,14 @@ def build_character():
     face_spiral("NebulaVeil_B", (0.02, -0.816, 0.61), 0.49, 0.30, 18.0, 228.0, 0.008, energy_mat, root)
 
     accretion_rig = empty("SingularityAccretionRig", root)
-    accretion_rig.location = (0.02, -0.900, 0.55)
+    accretion_rig.location = (0.02, -0.835, 0.58)
     uv_sphere(
         "SingularityCore",
         (0.0, 0.0, 0.0),
-        (0.285, 0.125, 0.285),
+        (0.305, 0.050, 0.305),
         black_core_mat,
-        segments=32,
-        rings=16,
+        segments=40,
+        rings=20,
         parent=accretion_rig,
     )
     bpy.ops.mesh.primitive_torus_add(
@@ -689,8 +740,8 @@ def build_character():
         minor_segments=10,
         location=(0.0, 0.0, 0.0),
         rotation=(math.radians(90.0), 0.0, math.radians(14.0)),
-        major_radius=0.345,
-        minor_radius=0.042,
+        major_radius=0.382,
+        minor_radius=0.036,
     )
     accretion = bpy.context.object
     accretion.name = "SingularityAccretion"
@@ -698,6 +749,20 @@ def build_character():
     accretion.parent = accretion_rig
     assign(accretion, energy_mat)
     smooth(accretion)
+    bpy.ops.mesh.primitive_torus_add(
+        major_segments=56,
+        minor_segments=8,
+        location=(0.0, 0.012, 0.0),
+        rotation=(math.radians(90.0), 0.0, math.radians(-11.0)),
+        major_radius=0.446,
+        minor_radius=0.012,
+    )
+    photon_lens = bpy.context.object
+    photon_lens.name = "AccretionSpiral_PhotonLens"
+    photon_lens.scale.x = 1.18
+    photon_lens.parent = accretion_rig
+    assign(photon_lens, energy_mat)
+    smooth(photon_lens)
     for index, values in enumerate(
         (
             (0.45, 0.22, 198.0, 505.0, 0.016),
@@ -724,10 +789,10 @@ def build_character():
     lower_segments = ((12.0, 102.0), (132.0, 218.0), (252.0, 346.0))
     ribbon_segments(
         "OrbitBand_Lower",
-        1.12,
-        0.84,
+        1.38,
+        0.96,
         0.01,
-        0.15,
+        0.14,
         lower_segments,
         4.0,
         3.0,
@@ -738,10 +803,10 @@ def build_character():
     )
     ribbon_segments(
         "OrbitTrim_Lower",
-        1.12,
-        0.84,
+        1.38,
+        0.96,
         0.01,
-        0.15,
+        0.14,
         lower_segments,
         4.0,
         3.0,
@@ -756,8 +821,8 @@ def build_character():
     upper_segments = ((28.0, 112.0), (145.0, 222.0), (260.0, 336.0))
     ribbon_segments(
         "OrbitBand_Upper",
-        0.98,
-        0.72,
+        1.12,
+        0.80,
         0.12,
         1.29,
         upper_segments,
@@ -770,8 +835,8 @@ def build_character():
     )
     ribbon_segments(
         "OrbitTrim_Upper",
-        0.98,
-        0.72,
+        1.12,
+        0.80,
         0.12,
         1.29,
         upper_segments,
@@ -784,13 +849,36 @@ def build_character():
         radial_offsets=(-0.038, 0.038),
     )
 
-    for name, location, scale in (
-        ("CosmicDroplet_01", (-1.08, -0.01, 0.38), (0.050, 0.045, 0.095)),
-        ("CosmicDroplet_02", (1.10, 0.04, 0.48), (0.045, 0.040, 0.082)),
-        ("CosmicDroplet_03", (-0.88, 0.01, 1.06), (0.032, 0.029, 0.065)),
-        ("CosmicDroplet_04", (0.89, 0.02, 1.24), (0.038, 0.032, 0.074)),
+    for index, stem_points in enumerate(
+        (
+            ((-1.03, -0.04, 0.48), (-1.17, -0.05, 0.61), (-1.14, -0.07, 0.76), (-1.03, -0.09, 0.83)),
+            ((0.96, 0.02, 0.72), (1.12, 0.00, 0.83), (1.15, -0.02, 0.98), (1.06, -0.05, 1.07)),
+            ((0.69, 0.16, 1.32), (0.83, 0.13, 1.45), (0.80, 0.08, 1.57), (0.72, 0.04, 1.63)),
+        ),
+        start=1,
     ):
-        ico(name, location, scale, energy_mat, 2, root)
+        tapered_tube(
+            f"CosmicDropletStem_{index:02d}",
+            stem_points,
+            0.052,
+            0.020,
+            nebula_mat,
+            radial_segments=8,
+            flatten=0.88,
+            parent=root,
+        )
+
+    for name, location, scale in (
+        ("CosmicDroplet_01", (-1.03, -0.09, 0.86), (0.092, 0.072, 0.112)),
+        ("CosmicDroplet_02", (1.06, -0.05, 1.10), (0.082, 0.065, 0.102)),
+        ("CosmicDroplet_03", (0.72, 0.04, 1.66), (0.060, 0.050, 0.078)),
+        ("CosmicDroplet_04", (-1.16, 0.02, 1.12), (0.046, 0.040, 0.070)),
+        ("CosmicDroplet_05", (1.16, 0.08, 0.44), (0.052, 0.044, 0.072)),
+        ("CosmicDroplet_06", (-0.80, -0.03, 1.44), (0.038, 0.034, 0.058)),
+        ("CosmicDroplet_07", (0.94, -0.02, 1.36), (0.042, 0.036, 0.064)),
+        ("CosmicDroplet_08", (-0.40, -0.80, 0.29), (0.032, 0.026, 0.048)),
+    ):
+        uv_sphere(name, location, scale, nebula_mat, 16, 8, root)
 
     for name, position in (
         ("RightHandSocket", (0.78, -0.08, 0.70)),
@@ -892,8 +980,8 @@ def render_previews():
     world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
     scene.world = world
     world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.014, 0.010, 0.030, 1.0)
-    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.38
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.010, 0.014, 0.026, 1.0)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.24
 
     camera_data = bpy.data.cameras.new("PreviewCamera")
     camera = bpy.data.objects.new("PreviewCamera", camera_data)
@@ -901,15 +989,15 @@ def render_previews():
     scene.camera = camera
     camera_data.lens = 64.0
 
-    add_area_light("PreviewKey", (-3.4, -4.6, 4.4), 560.0, 3.0, (0.58, 0.32, 0.84))
-    add_area_light("PreviewFill", (3.7, -3.0, 2.4), 250.0, 3.2, (0.40, 0.22, 0.62))
-    add_area_light("PreviewRim", (0.7, 3.8, 3.4), 440.0, 2.5, (0.62, 0.20, 0.72))
-    add_area_light("PreviewFace", (0.0, -3.2, 1.0), 80.0, 1.8, (0.44, 0.16, 0.70))
+    add_area_light("PreviewKey", (-3.8, -4.8, 4.8), 760.0, 3.2, (1.0, 0.78, 0.62))
+    add_area_light("PreviewFill", (3.9, -3.2, 2.8), 360.0, 3.4, (0.25, 0.44, 1.0))
+    add_area_light("PreviewRim", (1.1, 4.2, 3.8), 690.0, 2.4, (0.76, 0.18, 1.0))
+    add_area_light("PreviewFace", (0.0, -3.0, 1.1), 145.0, 2.0, (0.72, 0.34, 1.0))
 
     bpy.ops.mesh.primitive_plane_add(size=8.0, location=(0.0, 0.0, -0.012))
     floor = bpy.context.object
     floor.name = "PreviewFloor"
-    floor_mat = make_material("MAT_PreviewFloor", (0.045, 0.026, 0.085), roughness=0.72)
+    floor_mat = make_material("MAT_PreviewFloor", (0.026, 0.032, 0.050), roughness=0.62)
     assign(floor, floor_mat)
 
     views = (

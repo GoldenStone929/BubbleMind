@@ -16,6 +16,14 @@ namespace GenericGachaRPG
         public const string UltimateId = "catherine_infinite_void";
         public const string DeathUltimateId = "catherine_death_infinite_void";
 
+        // Runtime slot contract: the ultimate occupies skill slot 1, while the
+        // two authored active skills alternate on the global 5/10-second cadence.
+        // Star Rage remains a passive domain trigger.
+        public const string RageUltimateSkillId = UltimateId;
+        public const string TimedSkill2Id = Skill1Id;
+        public const string TimedSkill3Id = Skill2Id;
+        public const string StarRagePassiveId = Skill3Id;
+
         public const string UltimateChargePhaseId = "catherine_ultimate_charge";
         public const string UltimateTransformPhaseId = "catherine_ultimate_transform";
         public const string UltimateCollapsePhaseId = "catherine_ultimate_collapse";

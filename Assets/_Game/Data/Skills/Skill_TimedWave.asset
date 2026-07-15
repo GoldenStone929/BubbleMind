@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b4e8a204c946544aa93808e975b5029, type: 3}
-  m_Name: Skill_SpectrumNova
+  m_Name: Skill_TimedWave
   m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.SkillDefinition
-  id: spectrum_nova
-  displayName: Spectrum Nova
-  description: A wide spectrum blast that hits every opponent.
+  id: timed_wave
+  displayName: Tactical Wave
+  description: Automatic skill slot 3. Cast at 10 seconds, then every 10 seconds.
   category: 0
   targetMode: 1
-  damageMultiplier: 1.28
+  damageMultiplier: 0.72
   healingMultiplier: 0
-  rageCost: 1000
-  hitTiming: 0.48
+  rageCost: 0
+  hitTiming: 0.38
   targetCount: 5

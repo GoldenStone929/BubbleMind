@@ -45,8 +45,8 @@ namespace GenericGachaRPG.Editor
             Require(database.GachaBanners != null, "Database banner list is null.");
             Require(database.Characters.Count == 7,
                 $"Database must contain exactly 7 characters; found {database.Characters.Count}.");
-            Require(database.Skills.Count == 7,
-                $"Database must contain exactly 7 skills; found {database.Skills.Count}.");
+            Require(database.Skills.Count == 9,
+                $"Database must contain exactly 9 skills; found {database.Skills.Count}.");
 
             var characterIds = new HashSet<string>(StringComparer.Ordinal);
             int limitedCharacterCount = 0;
@@ -56,9 +56,20 @@ namespace GenericGachaRPG.Editor
                 Require(character != null, $"Character slot {i} is null.");
                 Require(!string.IsNullOrWhiteSpace(character.Id), $"Character slot {i} has an empty id.");
                 Require(characterIds.Add(character.Id), $"Character id '{character.Id}' is duplicated.");
-                Require(character.Skill != null, $"Character '{character.Id}' has no skill.");
-                Require(ContainsReference(database.Skills, character.Skill),
+                Require(character.UltimateSkill != null && character.Skill2 != null && character.Skill3 != null,
+                    $"Character '{character.Id}' does not have all three skill slots.");
+                Require(ContainsReference(database.Skills, character.UltimateSkill) &&
+                        ContainsReference(database.Skills, character.Skill2) &&
+                        ContainsReference(database.Skills, character.Skill3),
                     $"Character '{character.Id}' references a skill outside the database.");
+                Require(character.UltimateSkill.RageCost == BattleRules.MaxRage,
+                    $"Character '{character.Id}' ultimate does not cost 1000 Rage.");
+                Require(character.Skill2.RageCost == 0 && character.Skill3.RageCost == 0,
+                    $"Character '{character.Id}' timed active skills must not consume Rage.");
+                Require(character.MaxRage == BattleRules.MaxRage &&
+                        character.RagePerAttack == BattleRules.RagePerBasicAttackHit &&
+                        character.RageWhenHit == BattleRules.RagePerDamageReceived,
+                    $"Character '{character.Id}' Rage profile does not match the global contract.");
                 Require(IsFinitePositive(character.MaxHealth),
                     $"Character '{character.Id}' has invalid MaxHealth {character.MaxHealth}.");
                 Require(IsFiniteNonNegative(character.Attack) && IsFiniteNonNegative(character.Defense),
@@ -67,6 +78,10 @@ namespace GenericGachaRPG.Editor
                     $"Character '{character.Id}' has invalid AttackInterval {character.AttackInterval}.");
                 Require(IsFinitePositive(character.AttackRange),
                     $"Character '{character.Id}' has invalid AttackRange {character.AttackRange}.");
+                Require(Mathf.Approximately(
+                            character.AttackRange,
+                            BattleRules.GetDefaultAttackRange(character.Role)),
+                    $"Character '{character.Id}' does not use its role's fixed attack range.");
                 Require(IsFinitePositive(character.MoveSpeed),
                     $"Character '{character.Id}' has invalid MoveSpeed {character.MoveSpeed}.");
                 Require(Enum.IsDefined(typeof(Rarity), character.Rarity),
@@ -90,7 +105,7 @@ namespace GenericGachaRPG.Editor
                 Require(!string.IsNullOrWhiteSpace(skill.Id), $"Skill slot {i} has an empty id.");
                 Require(skillIds.Add(skill.Id), $"Skill id '{skill.Id}' is duplicated.");
                 Require(skill.TargetCount > 0, $"Skill '{skill.Id}' has no valid targets.");
-                Require(skill.EnergyCost >= 0, $"Skill '{skill.Id}' has a negative energy cost.");
+                Require(skill.RageCost >= 0, $"Skill '{skill.Id}' has a negative rage cost.");
                 Require(IsFiniteNonNegative(skill.HitTiming), $"Skill '{skill.Id}' has invalid hit timing.");
             }
 
@@ -136,9 +151,9 @@ namespace GenericGachaRPG.Editor
             CharacterDefinition cosmicSlime = database.GetCharacter("ur_cosmic_slime");
             Require(cosmicSlime != null, "Cosmic Slime definition is missing.");
             Require(cosmicSlime.Rarity == Rarity.UR, "Cosmic Slime must use UR rarity.");
-            Require(cosmicSlime.Role == CharacterRole.Guardian, "Cosmic Slime must use the tank role.");
+            Require(cosmicSlime.Role == CharacterRole.Tank, "Cosmic Slime must use the tank role.");
             Require(cosmicSlime.IsLimited, "Cosmic Slime must be marked as limited.");
-            Require(cosmicSlime.AttackRange <= BattleRules.GuardianAttackRange + BattleRules.RangeEpsilon,
+            Require(Mathf.Approximately(cosmicSlime.AttackRange, BattleRules.MeleeAttackRange),
                 $"Cosmic Slime must use melee tank range; found {cosmicSlime.AttackRange}.");
             Require(cosmicSlime.CharacterPrefab != null, "Cosmic Slime prefab is missing.");
             Require(cosmicSlime.CharacterPrefab.GetComponent<CharacterView>() != null,
@@ -159,6 +174,11 @@ namespace GenericGachaRPG.Editor
                         CatherineYukiBattleKit.UltimateId,
                         StringComparison.Ordinal),
                 "Catherine Yuki must expose Infinite Void as the authored character skill.");
+            Require(cosmicSlime.Skill2 != null &&
+                    string.Equals(cosmicSlime.Skill2.Id, CatherineYukiBattleKit.Skill1Id, StringComparison.Ordinal) &&
+                    cosmicSlime.Skill3 != null &&
+                    string.Equals(cosmicSlime.Skill3.Id, CatherineYukiBattleKit.Skill2Id, StringComparison.Ordinal),
+                "Catherine Skill 2/3 slots must be Wind Wheel: Break and Wind Wheel: Dance.");
 
             RequireCharacterRarity(database, "azure_vanguard", Rarity.R);
             RequireCharacterRarity(database, "ember_striker", Rarity.R);
@@ -166,13 +186,13 @@ namespace GenericGachaRPG.Editor
             RequireCharacterRarity(database, "violet_arcanist", Rarity.SR);
             RequireCharacterRarity(database, "gold_ranger", Rarity.SSR);
             RequireCharacterRarity(database, "cyan_warden", Rarity.SSR);
-            RequireCharacterCombatProfile(database, "azure_vanguard", 1.45f, 3.2f);
-            RequireCharacterCombatProfile(database, "ember_striker", 1.55f, 4.2f);
-            RequireCharacterCombatProfile(database, "verdant_medic", 4.4f, 3.0f);
-            RequireCharacterCombatProfile(database, "ur_cosmic_slime", 1.45f, 3.3f);
-            RequireCharacterCombatProfile(database, "violet_arcanist", 3.8f, 3.4f);
-            RequireCharacterCombatProfile(database, "gold_ranger", 4.6f, 3.8f);
-            RequireCharacterCombatProfile(database, "cyan_warden", 1.55f, 3.15f);
+            RequireCharacterCombatProfile(database, "azure_vanguard", BattleRules.MeleeAttackRange, 3.2f);
+            RequireCharacterCombatProfile(database, "ember_striker", BattleRules.MeleeAttackRange, 4.2f);
+            RequireCharacterCombatProfile(database, "verdant_medic", BattleRules.RangedAttackRange, 3.0f);
+            RequireCharacterCombatProfile(database, "ur_cosmic_slime", BattleRules.MeleeAttackRange, 3.3f);
+            RequireCharacterCombatProfile(database, "violet_arcanist", BattleRules.RangedAttackRange, 3.4f);
+            RequireCharacterCombatProfile(database, "gold_ranger", BattleRules.RangedAttackRange, 3.8f);
+            RequireCharacterCombatProfile(database, "cyan_warden", BattleRules.MeleeAttackRange, 3.15f);
 
             VerifyBasicSlimeAssets(database);
             VerifyBackdropTextureImport();
@@ -193,12 +213,14 @@ namespace GenericGachaRPG.Editor
             SkillDefinition ultimate = database.GetSkill(CatherineYukiBattleKit.UltimateId);
 
             Require(skill1 != null &&
+                    skill1.RageCost == 0 &&
                     skill1.TargetMode == SkillTargetMode.AllEnemies &&
                     Mathf.Approximately(
                         skill1.DamageMultiplier,
                         CatherineYukiBattleKit.Skill1DamageMultiplier),
                 "Catherine Skill 1 must be the max-level 600% line-break profile.");
             Require(skill2 != null &&
+                    skill2.RageCost == 0 &&
                     skill2.TargetMode == SkillTargetMode.SingleEnemy &&
                     Mathf.Approximately(
                         skill2.DamageMultiplier,
@@ -208,10 +230,12 @@ namespace GenericGachaRPG.Editor
                         CatherineYukiBattleKit.Skill2HealingFromDamageMultiplier),
                 "Catherine Skill 2 must be the max-level two-hit and 140% recovery profile.");
             Require(skill3 != null &&
+                    skill3.RageCost == 0 &&
                     skill3.TargetMode == SkillTargetMode.AllEnemies &&
                     Mathf.Approximately(skill3.DamageMultiplier, 0f),
                 "Catherine Skill 3 must be the deterministic debuff and mass-stack test profile.");
             Require(ultimate != null &&
+                    ultimate.RageCost == BattleRules.MaxRage &&
                     ultimate.TargetMode == SkillTargetMode.AllEnemies &&
                     ultimate.TargetCount == BattleRules.TeamSize &&
                     Mathf.Approximately(
@@ -764,26 +788,32 @@ namespace GenericGachaRPG.Editor
 
         private static void VerifyCatherineMaxedKitEvents(BattleResult result)
         {
-            int skill1Index = -1;
-            int skill2Index = -1;
-            int skill3Index = -1;
-            int ultimateIndex = -1;
-            int ultimateCastCount = 0;
+            var timedSkill2Casts = new List<BattleEvent>();
+            var timedSkill3Casts = new List<BattleEvent>();
+            var timedSkill2Ticks = new HashSet<int>();
             bool initialMass = false;
-            bool skill1KnockUp = false;
-            int skill2Hits = 0;
-            bool skill2Healing = false;
-            bool skill2Taunt = false;
-            bool skill2SuperArmor = false;
-            bool skill3Debuff = false;
-            bool skill3MassGain = false;
+            bool passiveMassGain = false;
+            int latestMassStacks = CatherineYukiBattleKit.InitialImaginaryMassStacks;
+            bool timedSkill2KnockUp = false;
+            int timedSkill3Hits = 0;
+            bool timedSkill3Healing = false;
+            bool timedSkill3Taunt = false;
+            bool timedSkill3SuperArmor = false;
+            bool activeStarRageCast = false;
+            bool sawRageFromAttack = false;
+            bool sawRageFromDamage = false;
+            bool sawFullRage = false;
+            bool sawUltimateRageSpend = false;
+            bool sawUltimateCast = false;
             bool ultimateCharge = false;
             bool ultimateTransform = false;
-            bool ultimateFourTimesScaling = false;
+            bool ultimateScalingMatchesMass = false;
             bool ultimateCollapse = false;
             int ultimatePullCount = 0;
             int ultimateDamageEvents = 0;
             int ultimateKnockUpCount = 0;
+            int ultimateChargeStacks = CatherineYukiBattleKit.InitialImaginaryMassStacks;
+            int firstCatherineRageEventIndex = -1;
 
             for (int index = 0; index < result.Events.Count; index++)
             {
@@ -792,113 +822,151 @@ namespace GenericGachaRPG.Editor
                     battleEvent.ActorRuntimeId,
                     "P0",
                     StringComparison.Ordinal);
-                if (battleEvent.Type == BattleEventType.StatusApplied &&
-                    catherineActor &&
-                    string.Equals(
-                        battleEvent.SkillId,
-                        CatherineYukiBattleKit.ImaginaryMassStatusId,
-                        StringComparison.Ordinal) &&
-                    Mathf.Approximately(
-                        battleEvent.Amount,
-                        CatherineYukiBattleKit.InitialImaginaryMassStacks))
+                if (battleEvent.Type == BattleEventType.StatusApplied && catherineActor &&
+                    battleEvent.Amount >= CatherineYukiBattleKit.InitialImaginaryMassStacks &&
+                    battleEvent.Amount <= CatherineYukiBattleKit.AwakenedImaginaryMassStackCap)
                 {
-                    initialMass = true;
+                    int stacks = Mathf.RoundToInt(battleEvent.Amount);
+                    if (stacks == CatherineYukiBattleKit.InitialImaginaryMassStacks)
+                    {
+                        initialMass = true;
+                    }
+
+                    passiveMassGain |= stacks > CatherineYukiBattleKit.InitialImaginaryMassStacks;
+                    latestMassStacks = Math.Max(latestMassStacks, stacks);
                 }
 
                 if (battleEvent.Type == BattleEventType.SkillCastStarted && catherineActor)
                 {
-                    if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill1Id, StringComparison.Ordinal) &&
-                        skill1Index < 0)
+                    if (string.Equals(
+                            battleEvent.SkillId,
+                            CatherineYukiBattleKit.TimedSkill2Id,
+                            StringComparison.Ordinal))
                     {
-                        skill1Index = index;
+                        timedSkill2Casts.Add(battleEvent);
+                        timedSkill2Ticks.Add(battleEvent.Tick);
                     }
-                    else if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill2Id, StringComparison.Ordinal) &&
-                             skill2Index < 0)
+                    else if (string.Equals(
+                                 battleEvent.SkillId,
+                                 CatherineYukiBattleKit.TimedSkill3Id,
+                                 StringComparison.Ordinal))
                     {
-                        skill2Index = index;
+                        timedSkill3Casts.Add(battleEvent);
                     }
-                    else if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill3Id, StringComparison.Ordinal) &&
-                             skill3Index < 0)
+                    else if (string.Equals(
+                                 battleEvent.SkillId,
+                                 CatherineYukiBattleKit.StarRagePassiveId,
+                                 StringComparison.Ordinal))
                     {
-                        skill3Index = index;
+                        activeStarRageCast = true;
                     }
-                    else if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.UltimateId, StringComparison.Ordinal) &&
-                             battleEvent.Type == BattleEventType.SkillCastStarted)
+                    else if (string.Equals(
+                                 battleEvent.SkillId,
+                                 CatherineYukiBattleKit.RageUltimateSkillId,
+                                 StringComparison.Ordinal))
                     {
-                        ultimateCastCount++;
-                        if (ultimateIndex < 0)
-                        {
-                            ultimateIndex = index;
-                        }
+                        sawUltimateCast = true;
                     }
+                }
+
+                if (battleEvent.Type == BattleEventType.RageChanged &&
+                    string.Equals(battleEvent.TargetRuntimeId, "P0", StringComparison.Ordinal))
+                {
+                    if (firstCatherineRageEventIndex < 0 && battleEvent.Amount > 0f)
+                    {
+                        firstCatherineRageEventIndex = index;
+                        Require(Mathf.Approximately(battleEvent.Amount, battleEvent.RageAfter),
+                            "Catherine Rage did not start from zero.");
+                    }
+
+                    sawRageFromAttack |= catherineActor &&
+                                         Mathf.Approximately(
+                                             battleEvent.Amount,
+                                             BattleRules.RagePerBasicAttackHit);
+                    sawRageFromDamage |= !catherineActor &&
+                                         Mathf.Approximately(
+                                             battleEvent.Amount,
+                                             BattleRules.RagePerDamageReceived);
+                    sawFullRage |= battleEvent.RageAfter == BattleRules.MaxRage;
+                    sawUltimateRageSpend |= catherineActor &&
+                                             battleEvent.RageAfter == 0 &&
+                                             Mathf.Approximately(
+                                                 battleEvent.Amount,
+                                                 -BattleRules.MaxRage) &&
+                                             string.Equals(
+                                                 battleEvent.SkillId,
+                                                 CatherineYukiBattleKit.RageUltimateSkillId,
+                                                 StringComparison.Ordinal);
                 }
 
                 if (battleEvent.Type == BattleEventType.UnitKnockedUp && catherineActor)
                 {
-                    if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill1Id, StringComparison.Ordinal))
+                    if (string.Equals(
+                            battleEvent.SkillId,
+                            CatherineYukiBattleKit.TimedSkill2Id,
+                            StringComparison.Ordinal))
                     {
-                        skill1KnockUp = true;
+                        timedSkill2KnockUp = true;
                     }
-                    else if (ultimateCastCount == 1 &&
-                             string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.UltimateId, StringComparison.Ordinal))
+                    else if (string.Equals(
+                                 battleEvent.SkillId,
+                                 CatherineYukiBattleKit.RageUltimateSkillId,
+                                 StringComparison.Ordinal))
                     {
-                        ultimateKnockUpCount++;
+                        ultimateKnockUpCount += 1;
                     }
                 }
 
                 if (catherineActor &&
-                    string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill2Id, StringComparison.Ordinal))
+                    string.Equals(
+                        battleEvent.SkillId,
+                        CatherineYukiBattleKit.TimedSkill3Id,
+                        StringComparison.Ordinal))
                 {
                     if (battleEvent.Type == BattleEventType.DamageApplied)
                     {
-                        skill2Hits++;
+                        timedSkill3Hits += 1;
                     }
                     else if (battleEvent.Type == BattleEventType.HealingApplied)
                     {
-                        skill2Healing = true;
+                        timedSkill3Healing = true;
                     }
                 }
 
-                skill2Taunt |= battleEvent.Type == BattleEventType.DebuffApplied &&
-                               catherineActor &&
-                               string.Equals(
-                                   battleEvent.SkillId,
-                                   CatherineYukiBattleKit.TauntDebuffId,
-                                   StringComparison.Ordinal);
-                skill2SuperArmor |= battleEvent.Type == BattleEventType.StatusApplied &&
+                timedSkill3Taunt |= battleEvent.Type == BattleEventType.DebuffApplied &&
                                     catherineActor &&
                                     string.Equals(
                                         battleEvent.SkillId,
-                                        CatherineYukiBattleKit.SuperArmorStatusId,
+                                        CatherineYukiBattleKit.TauntDebuffId,
                                         StringComparison.Ordinal);
-                skill3Debuff |= battleEvent.Type == BattleEventType.DebuffApplied &&
-                                catherineActor &&
-                                string.Equals(
-                                    battleEvent.SkillId,
-                                    CatherineYukiBattleKit.GravityDebuffId,
-                                    StringComparison.Ordinal);
-                skill3MassGain |= battleEvent.Type == BattleEventType.StatusApplied &&
-                                  catherineActor &&
-                                  string.Equals(
-                                      battleEvent.SkillId,
-                                      CatherineYukiBattleKit.Skill3Id,
-                                      StringComparison.Ordinal);
+                timedSkill3SuperArmor |= battleEvent.Type == BattleEventType.StatusApplied &&
+                                         catherineActor &&
+                                         string.Equals(
+                                             battleEvent.SkillId,
+                                             CatherineYukiBattleKit.SuperArmorStatusId,
+                                             StringComparison.Ordinal);
 
                 if (battleEvent.Type == BattleEventType.UltimatePhase &&
-                    catherineActor &&
-                    ultimateCastCount == 1)
+                    catherineActor)
                 {
-                    ultimateCharge |= string.Equals(
-                        battleEvent.SkillId,
-                        CatherineYukiBattleKit.UltimateChargePhaseId,
-                        StringComparison.Ordinal);
+                    if (string.Equals(
+                            battleEvent.SkillId,
+                            CatherineYukiBattleKit.UltimateChargePhaseId,
+                            StringComparison.Ordinal))
+                    {
+                        ultimateCharge = true;
+                        ultimateChargeStacks = Mathf.RoundToInt(battleEvent.Amount);
+                    }
+
                     if (string.Equals(
                             battleEvent.SkillId,
                             CatherineYukiBattleKit.UltimateTransformPhaseId,
                             StringComparison.Ordinal))
                     {
                         ultimateTransform = true;
-                        ultimateFourTimesScaling |= Mathf.Approximately(battleEvent.Amount, 4f);
+                        ultimateScalingMatchesMass |= Mathf.Approximately(
+                            battleEvent.Amount,
+                            CatherineYukiBattleKit.GetUltimateScaling(ultimateChargeStacks, false));
                     }
 
                     ultimateCollapse |= string.Equals(
@@ -908,8 +976,10 @@ namespace GenericGachaRPG.Editor
                 }
 
                 if (catherineActor &&
-                    ultimateCastCount == 1 &&
-                    string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.UltimateId, StringComparison.Ordinal))
+                    string.Equals(
+                        battleEvent.SkillId,
+                        CatherineYukiBattleKit.RageUltimateSkillId,
+                        StringComparison.Ordinal))
                 {
                     if (battleEvent.Type == BattleEventType.UnitPulled)
                     {
@@ -917,26 +987,68 @@ namespace GenericGachaRPG.Editor
                     }
                     else if (battleEvent.Type == BattleEventType.DamageApplied)
                     {
-                        ultimateDamageEvents++;
+                        ultimateDamageEvents += 1;
                     }
                 }
             }
 
             Require(initialMass, "Catherine did not start the demo at 30 Imaginary Mass stacks.");
-            Require(skill1Index >= 0 && skill2Index > skill1Index && skill3Index > skill2Index &&
-                    ultimateIndex > skill3Index,
-                "Catherine did not execute Skill 1, Skill 2, Skill 3, and Ultimate in order.");
-            Require(result.Events[ultimateIndex].Time < 20f,
-                "Catherine must expose the complete four-action test rotation in the first 20 seconds.");
-            Require(skill1KnockUp, "Catherine Skill 1 emitted no knock-up event.");
-            Require(skill2Hits >= 2 && skill2Healing && skill2Taunt && skill2SuperArmor,
-                "Catherine Skill 2 is missing two-hit, 140% recovery, Taunt, or Super Armor semantics.");
-            Require(skill3Debuff && skill3MassGain,
-                "Catherine Skill 3 is missing gravity-debuff or Imaginary Mass events.");
-            Require(ultimateCharge && ultimateTransform && ultimateFourTimesScaling && ultimateCollapse,
-                "Catherine ultimate is missing charge, 4x transform, or collapse phases.");
-            Require(ultimatePullCount == BattleRules.TeamSize,
-                $"Catherine ultimate must pull five living enemies; found {ultimatePullCount}.");
+            Require(passiveMassGain && latestMassStacks > CatherineYukiBattleKit.InitialImaginaryMassStacks,
+                "Star Rage did not passively gain Imaginary Mass from enemy active skills.");
+            Require(!activeStarRageCast,
+                "Star Rage must remain passive and cannot occupy an active skill cast slot.");
+            int expectedSkill2Casts = ExpectedRecurringCastCount(
+                result.ElapsedTime,
+                BattleRules.Skill2InitialCastTime);
+            int expectedSkill3Casts = ExpectedRecurringCastCount(
+                result.ElapsedTime,
+                BattleRules.Skill3InitialCastTime);
+            Require(timedSkill2Casts.Count == expectedSkill2Casts &&
+                    timedSkill3Casts.Count == expectedSkill3Casts,
+                $"Catherine timed active-skill count does not match the completed battle window " +
+                $"(Skill 2={timedSkill2Casts.Count}, Skill 3={timedSkill3Casts.Count}, " +
+                $"expected={expectedSkill2Casts}/{expectedSkill3Casts}, " +
+                $"battle={result.ElapsedTime:0.0}s/{result.Outcome}).");
+            Require(timedSkill2Casts.Count > 0 && timedSkill3Casts.Count > 0,
+                "Catherine battle ended before both timed active skills could be observed.");
+            float tickTolerance = BattleContext.DefaultTickDuration + 0.001f;
+            Require(Mathf.Abs(timedSkill2Casts[0].Time - BattleRules.Skill2InitialCastTime) <= tickTolerance,
+                "Catherine Skill 2 did not first cast at 5 seconds.");
+            Require(Mathf.Abs(timedSkill3Casts[0].Time - BattleRules.Skill3InitialCastTime) <= tickTolerance,
+                "Catherine Skill 3 did not first cast at 10 seconds.");
+            for (int index = 1; index < timedSkill2Casts.Count; index++)
+            {
+                Require(Mathf.Abs(
+                            timedSkill2Casts[index].Time - timedSkill2Casts[index - 1].Time -
+                            BattleRules.ActiveSkillCooldown) <= tickTolerance,
+                    "Catherine Skill 2 did not repeat on a 10-second cooldown.");
+            }
+
+            for (int index = 0; index < timedSkill3Casts.Count; index++)
+            {
+                Require(!timedSkill2Ticks.Contains(timedSkill3Casts[index].Tick),
+                    "Catherine Skill 2 and Skill 3 cast on the same tick.");
+                if (index > 0)
+                {
+                    Require(Mathf.Abs(
+                                timedSkill3Casts[index].Time - timedSkill3Casts[index - 1].Time -
+                                BattleRules.ActiveSkillCooldown) <= tickTolerance,
+                        "Catherine Skill 3 did not repeat on a 10-second cooldown.");
+                }
+            }
+
+            Require(timedSkill2KnockUp,
+                "Catherine timed Skill 2 emitted no Wind Wheel: Break knock-up event.");
+            Require(timedSkill3Hits >= 2 && timedSkill3Healing && timedSkill3Taunt && timedSkill3SuperArmor,
+                "Catherine timed Skill 3 is missing two-hit, 140% recovery, Taunt, or Super Armor semantics.");
+            Require(sawRageFromAttack && sawRageFromDamage && sawFullRage,
+                "Catherine did not gain Rage from both attacks and received damage up to 1000.");
+            Require(sawUltimateRageSpend && sawUltimateCast,
+                "Catherine did not spend 1000 Rage to cast the slot-1 ultimate.");
+            Require(ultimateCharge && ultimateTransform && ultimateScalingMatchesMass && ultimateCollapse,
+                "Catherine ultimate is missing charge, mass-scaled transform, or collapse phases.");
+            Require(ultimatePullCount >= BattleRules.TeamSize,
+                $"Catherine ultimate must pull at least five living enemies; found {ultimatePullCount}.");
             Require(ultimateDamageEvents >= CatherineYukiBattleKit.UltimateHitCount,
                 "Catherine ultimate emitted fewer than four continuous damage beats.");
             Require(ultimateKnockUpCount > 0,
@@ -953,7 +1065,7 @@ namespace GenericGachaRPG.Editor
                 executioner.Configure(
                     "verification_executioner",
                     "Verification Executioner",
-                    CharacterRole.Striker,
+                    CharacterRole.Assassin,
                     Rarity.R,
                     Color.red,
                     1200f,
@@ -1072,6 +1184,7 @@ namespace GenericGachaRPG.Editor
             }
 
             var lockedTargets = new Dictionary<string, string>(StringComparer.Ordinal);
+            var tauntExpiresAtTick = new Dictionary<string, int>(StringComparer.Ordinal);
             var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
             var playerTankTargets = new HashSet<string>(StringComparer.Ordinal);
             Dictionary<string, Vector3> tickStartPositions = null;
@@ -1079,6 +1192,8 @@ namespace GenericGachaRPG.Editor
             int movementEventCount = 0;
             int playerTankMovementCount = 0;
             int playerTankActionCount = 0;
+            bool verifiedPlayerTankRangeBoundary = false;
+            bool verifiedTauntExpiryRetarget = false;
 
             for (int index = 0; index < result.Events.Count; index++)
             {
@@ -1092,6 +1207,12 @@ namespace GenericGachaRPG.Editor
                 if (battleEvent.Type == BattleEventType.UnitDefeated)
                 {
                     defeatedUnits.Add(battleEvent.TargetRuntimeId);
+                    continue;
+                }
+
+                if (battleEvent.Type == BattleEventType.UnitRevived)
+                {
+                    defeatedUnits.Remove(battleEvent.TargetRuntimeId);
                     continue;
                 }
 
@@ -1116,6 +1237,11 @@ namespace GenericGachaRPG.Editor
                     !string.IsNullOrEmpty(battleEvent.ActorRuntimeId))
                 {
                     lockedTargets[battleEvent.TargetRuntimeId] = battleEvent.ActorRuntimeId;
+                    int tauntDurationTicks = Math.Max(
+                        1,
+                        Mathf.CeilToInt(battleEvent.Duration / BattleContext.DefaultTickDuration));
+                    tauntExpiresAtTick[battleEvent.TargetRuntimeId] =
+                        battleEvent.Tick + tauntDurationTicks;
                     continue;
                 }
 
@@ -1146,11 +1272,13 @@ namespace GenericGachaRPG.Editor
                             Vector3.Distance(actorPositionBefore, targetPositionBefore) + 0.001f,
                         $"Actor '{battleEvent.ActorRuntimeId}' moved away from its locked target.");
 
-                    VerifyTargetLock(
+                    verifiedTauntExpiryRetarget |= VerifyTargetLock(
                         battleEvent.ActorRuntimeId,
                         battleEvent.TargetRuntimeId,
                         lockedTargets,
+                        tauntExpiresAtTick,
                         defeatedUnits,
+                        battleEvent.Tick,
                         index);
                     positions[battleEvent.ActorRuntimeId] = battleEvent.ActorPositionAfter;
                     if (string.Equals(battleEvent.ActorRuntimeId, "P0", StringComparison.Ordinal))
@@ -1167,9 +1295,11 @@ namespace GenericGachaRPG.Editor
                 {
                     Require(definitions.TryGetValue(battleEvent.ActorRuntimeId, out CharacterDefinition actorDefinition),
                         $"Action event {index} has unknown actor '{battleEvent.ActorRuntimeId}'.");
+                    SkillDefinition actionSkill = battleEvent.Type == BattleEventType.SkillCastStarted
+                        ? ResolveActiveSkill(actorDefinition, battleEvent.SkillId)
+                        : null;
                     bool damagingAction = battleEvent.Type == BattleEventType.BasicAttackStarted ||
-                                          (actorDefinition.Skill != null &&
-                                           actorDefinition.Skill.Category == SkillCategory.Damage);
+                                          (actionSkill != null && actionSkill.Category == SkillCategory.Damage);
                     if (!damagingAction)
                     {
                         continue;
@@ -1177,11 +1307,13 @@ namespace GenericGachaRPG.Editor
 
                     Require(!defeatedUnits.Contains(battleEvent.TargetRuntimeId),
                         $"Actor '{battleEvent.ActorRuntimeId}' targeted defeated unit '{battleEvent.TargetRuntimeId}'.");
-                    VerifyTargetLock(
+                    verifiedTauntExpiryRetarget |= VerifyTargetLock(
                         battleEvent.ActorRuntimeId,
                         battleEvent.TargetRuntimeId,
                         lockedTargets,
+                        tauntExpiresAtTick,
                         defeatedUnits,
+                        battleEvent.Tick,
                         index);
                     Vector3 actorPosition = default;
                     Vector3 targetPosition = default;
@@ -1195,8 +1327,20 @@ namespace GenericGachaRPG.Editor
                             actorDefinition.AttackRange),
                         $"Actor '{battleEvent.ActorRuntimeId}' started a damage action outside attack range.");
 
+                    if (!verifiedPlayerTankRangeBoundary &&
+                        battleEvent.Type == BattleEventType.BasicAttackStarted &&
+                        string.Equals(battleEvent.ActorRuntimeId, "P0", StringComparison.Ordinal))
+                    {
+                        float distanceAtFirstAttack = Vector3.Distance(actorPosition, targetPosition);
+                        Require(Mathf.Abs(distanceAtFirstAttack - actorDefinition.AttackRange) <= 0.02f,
+                            $"Player tank first attacked at distance {distanceAtFirstAttack:0.###}; " +
+                            $"expected its maximum range {actorDefinition.AttackRange:0.###}.");
+                        verifiedPlayerTankRangeBoundary = true;
+                    }
+
                     if (battleEvent.Type == BattleEventType.SkillCastStarted &&
-                        actorDefinition.Skill.TargetMode == SkillTargetMode.SingleEnemy)
+                        actionSkill != null &&
+                        actionSkill.TargetMode == SkillTargetMode.SingleEnemy)
                     {
                         Require(string.Equals(
                                 lockedTargets[battleEvent.ActorRuntimeId],
@@ -1216,6 +1360,10 @@ namespace GenericGachaRPG.Editor
             Require(movementEventCount > 0, "Battle emitted no fixed-tick movement events.");
             Require(playerTankMovementCount > 0, "Player slot 0 tank emitted no movement events.");
             Require(playerTankActionCount > 0, "Player slot 0 tank never acted after entering range.");
+            Require(verifiedPlayerTankRangeBoundary,
+                "Player slot 0 tank never performed a basic attack at its maximum range boundary.");
+            Require(verifiedTauntExpiryRetarget,
+                "No unit released Catherine's temporary Taunt lock after its configured duration.");
             Require(playerTankTargets.Count >= 2,
                 "Player slot 0 tank never retargeted after its first locked target was defeated.");
             Require(Vector3.Distance(
@@ -1224,23 +1372,70 @@ namespace GenericGachaRPG.Editor
                 "Player slot 0 tank returned to its formation spawn instead of holding the frontline.");
         }
 
-        private static void VerifyTargetLock(
+        private static SkillDefinition ResolveActiveSkill(CharacterDefinition definition, string skillId)
+        {
+            if (definition == null || string.IsNullOrEmpty(skillId))
+            {
+                return null;
+            }
+
+            SkillDefinition[] activeSkills =
+            {
+                definition.UltimateSkill,
+                definition.Skill2,
+                definition.Skill3
+            };
+            for (int index = 0; index < activeSkills.Length; index++)
+            {
+                SkillDefinition skill = activeSkills[index];
+                if (skill != null && string.Equals(skill.Id, skillId, StringComparison.Ordinal))
+                {
+                    return skill;
+                }
+            }
+
+            return null;
+        }
+
+        private static int ExpectedRecurringCastCount(float elapsedTime, float initialCastTime)
+        {
+            if (elapsedTime + BattleRules.RangeEpsilon < initialCastTime)
+            {
+                return 0;
+            }
+
+            return 1 + Mathf.FloorToInt(
+                (elapsedTime - initialCastTime + BattleRules.RangeEpsilon) /
+                BattleRules.ActiveSkillCooldown);
+        }
+
+        private static bool VerifyTargetLock(
             string actorRuntimeId,
             string targetRuntimeId,
             IDictionary<string, string> lockedTargets,
+            IDictionary<string, int> tauntExpiresAtTick,
             ISet<string> defeatedUnits,
+            int currentTick,
             int eventIndex)
         {
             Require(!string.IsNullOrEmpty(actorRuntimeId) && !string.IsNullOrEmpty(targetRuntimeId),
                 $"Targeted event {eventIndex} has an empty actor or target id.");
+            bool releasedExpiredTaunt = false;
             if (lockedTargets.TryGetValue(actorRuntimeId, out string previousTarget) &&
                 !string.Equals(previousTarget, targetRuntimeId, StringComparison.Ordinal))
             {
-                Require(defeatedUnits.Contains(previousTarget),
-                    $"Actor '{actorRuntimeId}' switched from living target '{previousTarget}' to '{targetRuntimeId}'.");
+                bool previousTargetDefeated = defeatedUnits.Contains(previousTarget);
+                bool tauntExpired = tauntExpiresAtTick.TryGetValue(actorRuntimeId, out int expiresAtTick) &&
+                                    currentTick > expiresAtTick;
+                Require(previousTargetDefeated || tauntExpired,
+                    $"Event {eventIndex} at tick {currentTick}: actor '{actorRuntimeId}' switched " +
+                    $"from living target '{previousTarget}' to '{targetRuntimeId}'.");
+                tauntExpiresAtTick.Remove(actorRuntimeId);
+                releasedExpiredTaunt = tauntExpired && !previousTargetDefeated;
             }
 
             lockedTargets[actorRuntimeId] = targetRuntimeId;
+            return releasedExpiredTaunt;
         }
 
         private static void VerifySceneAndBuildSettings()
@@ -1280,14 +1475,28 @@ namespace GenericGachaRPG.Editor
                 $"BattleRules.TeamSize must be 5; found {BattleRules.TeamSize}.");
             Require(TeamFormationState.RequiredMemberCount == BattleRules.TeamSize,
                 "Formation and battle team-size rules have diverged.");
-            Require(BattleRules.GuardianAttackRange < BattleRules.StrikerAttackRange &&
-                    BattleRules.StrikerAttackRange < BattleRules.SupportAttackRange,
-                "Default attack ranges must progress from Guardian to Striker to Support.");
-            Require(IsFinitePositive(BattleRules.GuardianMoveSpeed) &&
-                    IsFinitePositive(BattleRules.StrikerMoveSpeed) &&
-                    IsFinitePositive(BattleRules.SupportMoveSpeed),
+            Require(Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Tank), 1f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Assassin), 1f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Support), 5f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Ranged), 5f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Mage), 5f),
+                "Tank/Assassin range must be 1 and every other role range must be 5.");
+            Require(BattleRules.MaxRage == 1000 &&
+                    BattleRules.RagePerBasicAttackHit == 100 &&
+                    BattleRules.RagePerDamageReceived == 50,
+                "Rage must use the authored 1000 max, +100 hit, and +50 damaged contract.");
+            Require(Mathf.Approximately(BattleRules.Skill2InitialCastTime, 5f) &&
+                    Mathf.Approximately(BattleRules.Skill3InitialCastTime, 10f) &&
+                    Mathf.Approximately(BattleRules.ActiveSkillCooldown, 10f),
+                "Skill 2/3 must use the 5s/10s offset and 10s individual cooldown.");
+            Require(IsFinitePositive(BattleRules.TankMoveSpeed) &&
+                    IsFinitePositive(BattleRules.AssassinMoveSpeed) &&
+                    IsFinitePositive(BattleRules.SupportMoveSpeed) &&
+                    IsFinitePositive(BattleRules.RangedMoveSpeed) &&
+                    IsFinitePositive(BattleRules.MageMoveSpeed),
                 "Default movement speeds must be finite and positive.");
-            Require((int)BattleEventType.BattleFinished == 7 &&
+            Require((int)BattleEventType.RageChanged == 5 &&
+                    (int)BattleEventType.BattleFinished == 7 &&
                     (int)BattleEventType.UnitMoved == 8 &&
                     (int)BattleEventType.UnitPulled == 9 &&
                     (int)BattleEventType.UnitKnockedUp == 10 &&

@@ -2,9 +2,11 @@ namespace GenericGachaRPG
 {
     public enum CharacterRole
     {
-        Guardian,
-        Striker,
-        Support
+        Tank = 0,
+        Assassin = 1,
+        Support = 2,
+        Ranged = 3,
+        Mage = 4
     }
 
     public enum Rarity

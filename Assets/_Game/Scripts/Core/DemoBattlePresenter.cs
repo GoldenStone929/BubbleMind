@@ -47,6 +47,24 @@ namespace GenericGachaRPG
             return false;
         }
 
+        public bool TryGetPresentedRage(
+            string runtimeId,
+            out int currentRage,
+            out int maxRage)
+        {
+            if (!string.IsNullOrEmpty(runtimeId) &&
+                units.TryGetValue(runtimeId, out UnitPresentation unit))
+            {
+                currentRage = unit.Rage;
+                maxRage = unit.Definition.MaxRage;
+                return true;
+            }
+
+            currentRage = 0;
+            maxRage = 0;
+            return false;
+        }
+
         public event Action<BattleResult> BattleCompleted;
 
         public void Configure(Camera cameraToUse)
@@ -183,11 +201,18 @@ namespace GenericGachaRPG
                         string skillName = CatherineYukiBattleKit.GetDisplayName(battleEvent.SkillId);
                         if (string.IsNullOrEmpty(skillName))
                         {
-                            skillName = actor.Definition.Skill == null
-                                ? "Skill"
-                                : actor.Definition.Skill.DisplayName;
+                            skillName = ResolveSkillDisplayName(actor.Definition, battleEvent.SkillId);
                         }
-                        screen?.SetBattleStatus(battleEvent.Time, $"{actor.Definition.DisplayName} - {skillName}");
+
+                        bool isUltimate = actor.Definition.UltimateSkill != null &&
+                                          string.Equals(
+                                              actor.Definition.UltimateSkill.Id,
+                                              battleEvent.SkillId,
+                                              StringComparison.Ordinal);
+                        string actionLabel = isUltimate ? $"ULTIMATE - {skillName}" : skillName;
+                        screen?.SetBattleStatus(
+                            battleEvent.Time,
+                            $"{actor.Definition.DisplayName} - {actionLabel}");
                     }
 
                     break;
@@ -217,11 +242,11 @@ namespace GenericGachaRPG
 
                     break;
 
-                case BattleEventType.EnergyChanged:
+                case BattleEventType.RageChanged:
                     if (target != null)
                     {
-                        target.Energy = battleEvent.EnergyAfter;
-                        target.Bar.SetEnergy(target.Energy, target.Definition.MaxEnergy);
+                        target.Rage = battleEvent.RageAfter;
+                        target.Bar.SetRage(target.Rage, target.Definition.MaxRage);
                     }
 
                     break;
@@ -542,7 +567,7 @@ namespace GenericGachaRPG
                     accent,
                     styleSeed,
                     GetArchetype(definition.Role),
-                    definition.Role == CharacterRole.Guardian ? 1.12f : 1f);
+                    definition.Role == CharacterRole.Tank ? 1.12f : 1f);
             }
 
             Transform barAnchor = view.HealthBar != null ? view.HealthBar : view.transform;
@@ -553,10 +578,10 @@ namespace GenericGachaRPG
             float runtimeMaxHealth = definition.MaxHealth *
                                      (enemy ? CatherineYukiBattleKit.DemoEnemyHealthMultiplier : 1f);
             bar.SetHealth(runtimeMaxHealth, runtimeMaxHealth, true);
-            bar.SetEnergy(0f, definition.MaxEnergy, true);
+            bar.SetRage(0f, definition.MaxRage, true);
             bar.SetColors(
                 enemy ? new Color(1f, 0.30f, 0.25f, 1f) : new Color(0.22f, 0.94f, 0.45f, 1f),
-                new Color(0.22f, 0.66f, 1f, 1f));
+                new Color(1f, 0.50f, 0.12f, 1f));
 
             CreateWorldName(barAnchor, definition.DisplayName, enemy ? DemoUiFactory.Danger : DemoUiFactory.Accent);
             units[runtimeId] = new UnitPresentation(definition, view, bar, runtimeMaxHealth);
@@ -622,6 +647,33 @@ namespace GenericGachaRPG
                 color,
                 0.44f,
                 scale));
+        }
+
+        private static string ResolveSkillDisplayName(
+            CharacterDefinition definition,
+            string skillId)
+        {
+            if (definition == null)
+            {
+                return "Skill";
+            }
+
+            SkillDefinition[] slots =
+            {
+                definition.UltimateSkill,
+                definition.Skill2,
+                definition.Skill3
+            };
+            for (int index = 0; index < slots.Length; index++)
+            {
+                SkillDefinition slot = slots[index];
+                if (slot != null && string.Equals(slot.Id, skillId, StringComparison.Ordinal))
+                {
+                    return slot.DisplayName;
+                }
+            }
+
+            return "Skill";
         }
 
         private static bool PlayCatherineSkillVfx(
@@ -821,10 +873,13 @@ namespace GenericGachaRPG
         {
             switch (role)
             {
-                case CharacterRole.Guardian:
+                case CharacterRole.Tank:
                     return ProceduralCharacterArchetype.Vanguard;
                 case CharacterRole.Support:
+                case CharacterRole.Mage:
                     return ProceduralCharacterArchetype.Mystic;
+                case CharacterRole.Assassin:
+                case CharacterRole.Ranged:
                 default:
                     return ProceduralCharacterArchetype.Striker;
             }
@@ -989,7 +1044,7 @@ namespace GenericGachaRPG
                 Bar = bar;
                 MaxHealth = maxHealth;
                 Health = maxHealth;
-                Energy = 0;
+                Rage = 0;
             }
 
             public CharacterDefinition Definition { get; }
@@ -997,7 +1052,7 @@ namespace GenericGachaRPG
             public WorldBarView Bar { get; }
             public float MaxHealth { get; set; }
             public float Health { get; set; }
-            public int Energy { get; set; }
+            public int Rage { get; set; }
         }
     }
 }

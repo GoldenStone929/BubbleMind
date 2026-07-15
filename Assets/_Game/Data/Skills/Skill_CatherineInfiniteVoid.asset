@@ -20,6 +20,6 @@ MonoBehaviour:
   targetMode: 1
   damageMultiplier: 9.6
   healingMultiplier: 0
-  energyCost: 0
+  rageCost: 1000
   hitTiming: 0.6
   targetCount: 5

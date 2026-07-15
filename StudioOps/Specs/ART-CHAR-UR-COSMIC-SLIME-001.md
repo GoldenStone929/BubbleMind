@@ -29,7 +29,8 @@
 - 正面识别：白紫色斜眼、胸腹中央纯黑事件视界与白紫吸积盘、额部菱形符号。
 - 背面识别：深色星空穹顶、紫色星云带与环绕碎片。
 - 色彩：近黑深靛紫外壳、深紫星云、电光紫细节、纯黑事件视界、核心白紫 `#F4E9FF`、轨道暗金 `#9A7554`。
-- 材质语言：主体外壳使用项目自有 Slime Toon Shader，呈近黑半透明厚胶、顶部/底部渐变、两段明暗、Fresnel 软边和克制果冻高光；内部星云、星点与核心使用独立层；事件视界保持真正黑色，吸积盘以白紫高对比包围；轨道为暗紫金属带与独立暗金边。
+- 材质语言：主体外壳使用项目自有 Slime Toon Shader，呈近黑高密度半透明凝胶、顶部/底部渐变、厚部吸光、Fresnel 软边和克制果冻高光；内部星云、星点与核心使用独立层；事件视界保持 RGBA `0,0,0,1` 的纯黑体积核心，白紫吸积盘、光子透镜与多层螺旋提供深度；轨道为暗紫金属带与独立暗金边。
+- 灯光语言：战斗场景使用主光、补光、轮廓光三点布光，主光塑造胶体体积，补光保留近黑外壳细节，轮廓光分离透明软边与背景。
 - 禁止：不复制任何现有 IP 的角色、标志、名称、招式或构图；不使用来源不明的模型/贴图。
 
 ## 4. 技术预算
@@ -38,8 +39,8 @@
 - Tripo 原始结果：无；余额为 0，未上传或生成。未来候选才使用 `_ProjectTools/Tripo/jobs/<task-id>/`。
 - Unity FBX：`Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/UR_CosmicSlime.fbx`。
 - Unity 材质/贴图：`Assets/_Game/Art/Generated/UR_CosmicSlime/Runtime/Materials/` 与 `Textures/`。
-- 单位与轴：1 Unity unit = 1 m；Y-up；Pivot 位于主体底部中心；最新 Blender 几何审计尺寸约 `2.593 × 1.945 × 1.978 m`（XYZ），Unity Prefab 以 0.92 缩放并使用三分之四展示角。
-- LOD0：主体、角、奇点、星云与轨道总计 ≤20,000 triangles；当前为 `11,468`。
+- 单位与轴：1 Unity unit = 1 m；Y-up；Pivot 位于主体底部中心；最新 Blender 几何审计尺寸约 `2.896 × 2.131 × 2.019 m`（XYZ），Unity Prefab 使用三分之四展示角。
+- LOD0：主体、角、奇点、星云与轨道总计 ≤20,000 triangles；当前为 `19,000`。
 - LOD1：≤8,000 triangles；首轮样板可延期，但在移动端发布前必须完成。
 - 材质：当前 6 个（Shell、Nebula、Energy、BlackCore、Orbit、OrbitTrim）；Unity 将 FBX 的 Energy 槽重映射到 `MAT_UR_CosmicSlime_Core`，Shell 与 Nebula 使用 Slime Toon 的 AlphaTest/网点透明方案，其余结构保持独立材质。
 - 贴图：最多 4 张 2048²；Windows 原型 2048，移动端导入覆盖 1024。
@@ -85,16 +86,18 @@ CharacterRoot
 - 运行时连接：`CharacterDefinition.characterPrefab` 指向 Prefab；`DemoBattlePresenter` 优先实例化 Prefab，缺失时回退 `ProceduralCharacterBuilder`。
 - 数据：新增稳定 ID `ur_cosmic_slime`；现有 Generator 必须纳入该定义，重复运行不能把它移除。
 - UR 显示：全局稀有度为 `R -> SR -> SSR -> SP -> UR`；本角色显示 `UR / TANK / LIMITED`，进入默认编队但排除标准池。
-- 战斗数据：近战攻击距离与移动速度由 `CharacterDefinition` 配置；进入射程后留在前线，锁定目标死亡后才重新接近最近敌人。
+- 战斗数据：Catherine 为 Tank，攻击距离固定为 1；按移动速度接近到最大射程边界后留在前线，锁定目标死亡后才重新接近最近敌人。Assassin 同为 1，Support / Ranged / Mage 为 5。
 
 ## 7. 满级战斗契约
 
 - Demo 中角色始终按满级测试，不建立本轮升级界面。
-- Skill 1：600% ATK 直线穿透、破防语义与击飞事件。
-- Skill 2：200% + 200% 两段伤害，按实际伤害 140% 恢复生命，命中嘲讽，技能阶段具有霸体语义。
-- Skill 3 / 领域：默认 30 层虚拟质量，每层提供 1.5% 最终减伤；本轮必须发出可验证的减益与层数事件。
-- Ultimate：960% ATK 基础，30 层按 4×；蓄力后把所有存活敌人拉至黑洞位置，持续多段伤害，坍缩后全体击飞。
+- 怒气：初始 0、上限 1000；普攻命中 +100，受到实际伤害 +50。技能槽 1 只有满怒才释放，释放后清零。
+- 技能槽 1 / Ultimate：`Imaginary Mass: Infinite Void`，960% ATK 基础并按虚拟质量层数动态缩放；蓄力后把所有存活敌人拉至黑洞位置，持续多段伤害，坍缩后全体击飞。
+- 技能槽 2：`Wind Wheel: Break`，600% ATK 直线穿透、破防语义与击飞事件；首次在 5 秒释放，此后每 10 秒一次。
+- 技能槽 3：`Wind Wheel: Dance`，200% + 200% 两段伤害，按实际伤害 140% 恢复生命，命中嘲讽，技能阶段具有霸体语义；首次在 10 秒释放，此后每 10 秒一次。
+- 领域 / 被动：`Star Rage` 不占主动技能槽；响应敌方主动技能并积累虚拟质量，每层提供 1.5% 最终减伤。
 - 觉醒：死亡时自动大招且最低 6×，恢复 99% HP并获得 20 层，每战最多一次。
+- 技能槽 2 / 3 使用独立时间表且不得同 Tick 同时释放。本轮验证战斗在 19.3 秒结束，实际覆盖槽 2 的 5 / 15 秒和槽 3 的 10 秒触发。
 - 技能事件与位置变化必须由固定 Tick 模拟先行决定；VFX 只能重播，不得改变结果。
 
 ## 8. 验收与证据
@@ -107,18 +110,18 @@ CharacterRoot
 - [x] Unity 6000.5.3f1 中 FBX 导入、Prefab 生成与 C# 核心验证成功
 - [x] Prefab、Sockets 与 `CharacterView` 正确
 - [x] 收藏/编队条目与战斗模型均可见
-- [x] URP 材质、黑洞核心与轨道动画通过 1920×1080 / 1280×720 最终实机视觉验收
-- [x] Blender 几何与视觉预算通过：11,468 / 20,000 triangles，6 / 6 materials
+- [x] URP 材质、纯黑核心、三点布光与轨道动画通过 1920×1080 / 3440×1392 级宽屏实机视觉检查
+- [x] Blender 几何与视觉预算通过：19,000 / 20,000 triangles，6 / 6 materials
 - [x] 纯黑体积事件视界、侧视吸积盘、下轨净空、近黑外壳与接地审计全部通过
 - [x] Meta 文件与 Git LFS 状态正确
 - [x] P0 Play 与 Windows Build 回归通过
 - [x] 四个 Blend Shapes 在 FBX 和 Unity 导入后均存在，并由 Idle、三技能与大招阶段驱动
 - [x] Slime Toon Shader 与黑洞阶段 VFX 通过 D3D11 编译和实机运行验证
-- [x] 满级三技能、30 层大招、死亡觉醒、全体拉拽与击飞通过确定性验证
-- [x] Generate/核心验证、PlayMode 冒烟与 Windows BuildPipeline 均留下 PASS 标记
-- [x] 战斗 1.25 倍实时回放与 1280×720、1920×1080 视觉验收通过
+- [x] 0–1000 怒气、三主动槽位、错峰 10 秒轮转、满级技能、领域被动、死亡觉醒、全体拉拽与击飞通过确定性验证
+- [x] Generate/核心验证、PlayMode 冒烟与 Windows D3D11 BuildPipeline 均留下 PASS 标记
+- [x] 1920×1080 与 3440×1392 级宽屏视觉检查通过，黑洞吸附由截图确认
 
-证据目录：`Artifacts/UR_CosmicSlime/`、`Artifacts/CatherineRework/` 与 `StudioOps/MILESTONES/2026-07-14_CATHERINE_MAXED_UR_REWORK.md`
+证据目录：`Artifacts/UR_CosmicSlime/`、`Artifacts/CatherineRealism/` 与 `StudioOps/MILESTONES/2026-07-14_RAGE_THREE_SKILL_AND_CATHERINE_REALISM.md`
 
 ## 9. 已知限制与交接
 
@@ -126,5 +129,5 @@ CharacterRoot
 - 免费 Tripo 输出不得被描述为商业发布资产。
 - API Key 已在聊天中暴露且存在用户级环境变量；完成本次生成后需轮换，并在用户单独授权后清理该变量。
 - 当前没有 Tripo 候选；未来有额度时只做一次受控 A/B 测试，不覆盖本地 Blender 基线。
-- 初次 Windows 构建曾出现 D3D11 保留字冲突，且通用实心技能球遮挡画面；最终构建已修复并保留前后日志供复盘。
+- 历史 Windows 构建曾出现 D3D11 保留字冲突与通用实心技能球遮挡；本轮 `RageWindowsBuild.log` 再次确认最终 D3D11 构建通过且无 `Shader error`。
 - 当前仍是内部原型：多人近战会发生模型相交，正式 Animator、碰撞分离和收藏页 3D 近景预览留待后续里程碑。

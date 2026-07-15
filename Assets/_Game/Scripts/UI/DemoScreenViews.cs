@@ -59,12 +59,16 @@ namespace GenericGachaRPG
         {
             switch (role)
             {
-                case CharacterRole.Guardian:
+                case CharacterRole.Tank:
                     return "TANK";
+                case CharacterRole.Assassin:
+                    return "ASSASSIN";
                 case CharacterRole.Support:
                     return "SUPPORT";
-                case CharacterRole.Striker:
-                    return "DAMAGE";
+                case CharacterRole.Ranged:
+                    return "RANGED";
+                case CharacterRole.Mage:
+                    return "MAGE";
                 default:
                     return "UNKNOWN";
             }

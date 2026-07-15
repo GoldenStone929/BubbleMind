@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace GenericGachaRPG
 {
@@ -12,7 +13,7 @@ namespace GenericGachaRPG
         [SerializeField] private SkillTargetMode targetMode = SkillTargetMode.SingleEnemy;
         [Min(0f), SerializeField] private float damageMultiplier = 1.5f;
         [Min(0f), SerializeField] private float healingMultiplier = 1f;
-        [Min(0), SerializeField] private int energyCost = 100;
+        [FormerlySerializedAs("energyCost"), Min(0), SerializeField] private int rageCost = BattleRules.MaxRage;
         [Min(0f), SerializeField] private float hitTiming = 0.35f;
         [Min(1), SerializeField] private int targetCount = 1;
 
@@ -23,7 +24,8 @@ namespace GenericGachaRPG
         public SkillTargetMode TargetMode => targetMode;
         public float DamageMultiplier => damageMultiplier;
         public float HealingMultiplier => healingMultiplier;
-        public int EnergyCost => energyCost;
+        public int RageCost => rageCost;
+        public int EnergyCost => rageCost;
         public float HitTiming => hitTiming;
         public int TargetCount => targetCount;
 
@@ -34,7 +36,7 @@ namespace GenericGachaRPG
             SkillTargetMode skillTargetMode,
             float skillDamageMultiplier,
             float skillHealingMultiplier,
-            int skillEnergyCost,
+            int skillRageCost,
             float skillHitTiming,
             int skillTargetCount,
             string skillDescription = "")
@@ -46,7 +48,7 @@ namespace GenericGachaRPG
             targetMode = skillTargetMode;
             damageMultiplier = Mathf.Max(0f, skillDamageMultiplier);
             healingMultiplier = Mathf.Max(0f, skillHealingMultiplier);
-            energyCost = Mathf.Max(0, skillEnergyCost);
+            rageCost = Mathf.Max(0, skillRageCost);
             hitTiming = Mathf.Max(0f, skillHitTiming);
             targetCount = Mathf.Max(1, skillTargetCount);
         }
@@ -57,7 +59,7 @@ namespace GenericGachaRPG
             displayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName.Trim();
             damageMultiplier = Mathf.Max(0f, damageMultiplier);
             healingMultiplier = Mathf.Max(0f, healingMultiplier);
-            energyCost = Mathf.Max(0, energyCost);
+            rageCost = Mathf.Max(0, rageCost);
             hitTiming = Mathf.Max(0f, hitTiming);
             targetCount = Mathf.Max(1, targetCount);
         }

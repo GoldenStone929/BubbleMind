@@ -4,7 +4,7 @@ namespace GenericGachaRPG
 {
     /// <summary>
     /// Presentation-neutral event emitted by the simulation. Positive Amount is
-    /// used for damage/healing/energy gain; energy spending emits a negative value.
+    /// used for damage/healing/rage gain; rage spending emits a negative value.
     /// </summary>
     public sealed class BattleEvent
     {
@@ -73,6 +73,8 @@ namespace GenericGachaRPG
         public float MaxHealthAfter { get; }
 
         public int EnergyAfter { get; }
+
+        public int RageAfter => EnergyAfter;
 
         public string SkillId { get; }
 

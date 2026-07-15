@@ -38,6 +38,7 @@ namespace GenericGachaRPG.Editor
             AbyssalObservatoryAssetBuilder.EnsureAssets();
             GameDatabase database = GenerateContentIfNeeded();
             bool sceneCreated = GenerateSceneIfNeeded(database);
+            EnsureSceneLighting();
             ApplySafeProjectSettings();
             AddSceneToBuildSettings();
             AssetDatabase.SaveAssets();
@@ -95,7 +96,7 @@ namespace GenericGachaRPG.Editor
 
         private static bool HasCompleteGeneratedContent(GameDatabase database)
         {
-            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 7)
+            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 9)
             {
                 return false;
             }
@@ -105,7 +106,13 @@ namespace GenericGachaRPG.Editor
                 CharacterDefinition character = database.Characters[i];
                 if (character == null ||
                     !IsFinitePositive(character.AttackRange) ||
-                    !IsFinitePositive(character.MoveSpeed))
+                    !IsFinitePositive(character.MoveSpeed) ||
+                    character.MaxRage != BattleRules.MaxRage ||
+                    character.RagePerAttack != BattleRules.RagePerBasicAttackHit ||
+                    character.RageWhenHit != BattleRules.RagePerDamageReceived ||
+                    character.UltimateSkill == null ||
+                    character.Skill2 == null ||
+                    character.Skill3 == null)
                 {
                     return false;
                 }
@@ -139,13 +146,15 @@ namespace GenericGachaRPG.Editor
             SkillDefinition spectrumNova = database.GetSkill("spectrum_nova");
             SkillDefinition catherineUltimate = database.GetSkill(CatherineYukiBattleKit.UltimateId);
             return cosmicSlime != null &&
-                   cosmicSlime.Role == CharacterRole.Guardian &&
+                   cosmicSlime.Role == CharacterRole.Tank &&
                    cosmicSlime.Rarity == Rarity.UR &&
                    cosmicSlime.IsLimited &&
-                   cosmicSlime.AttackRange <= BattleRules.GuardianAttackRange + BattleRules.RangeEpsilon &&
+                   Mathf.Approximately(cosmicSlime.AttackRange, BattleRules.MeleeAttackRange) &&
                    cosmicSlime.CharacterPrefab != null &&
                    cosmicSlime.CharacterPrefab.GetComponent<CatherineSkillVfxController>() != null &&
-                   cosmicSlime.Skill == catherineUltimate &&
+                   cosmicSlime.UltimateSkill == catherineUltimate &&
+                   cosmicSlime.Skill2 == database.GetSkill(CatherineYukiBattleKit.Skill1Id) &&
+                   cosmicSlime.Skill3 == database.GetSkill(CatherineYukiBattleKit.Skill2Id) &&
                    HasBasicSlimePrefab(database, "azure_vanguard", BasicSlimeElement.Water) &&
                    HasBasicSlimePrefab(database, "ember_striker", BasicSlimeElement.Fire) &&
                    HasBasicSlimePrefab(database, "verdant_medic", BasicSlimeElement.Wind) &&
@@ -158,19 +167,23 @@ namespace GenericGachaRPG.Editor
                    HasRarity(database, "violet_arcanist", Rarity.SR) &&
                    HasRarity(database, "gold_ranger", Rarity.SSR) &&
                    HasRarity(database, "cyan_warden", Rarity.SSR) &&
-                   HasCombatProfile(database, "azure_vanguard", 1.45f, 3.2f) &&
-                   HasCombatProfile(database, "ember_striker", 1.55f, 4.2f) &&
-                   HasCombatProfile(database, "verdant_medic", 4.4f, 3.0f) &&
-                   HasCombatProfile(database, "ur_cosmic_slime", 1.45f, 3.3f) &&
-                   HasCombatProfile(database, "violet_arcanist", 3.8f, 3.4f) &&
-                   HasCombatProfile(database, "gold_ranger", 4.6f, 3.8f) &&
-                   HasCombatProfile(database, "cyan_warden", 1.55f, 3.15f) &&
+                   HasCombatProfile(database, "azure_vanguard", BattleRules.MeleeAttackRange, 3.2f) &&
+                   HasCombatProfile(database, "ember_striker", BattleRules.MeleeAttackRange, 4.2f) &&
+                   HasCombatProfile(database, "verdant_medic", BattleRules.RangedAttackRange, 3.0f) &&
+                   HasCombatProfile(database, "ur_cosmic_slime", BattleRules.MeleeAttackRange, 3.3f) &&
+                   HasCombatProfile(database, "violet_arcanist", BattleRules.RangedAttackRange, 3.4f) &&
+                   HasCombatProfile(database, "gold_ranger", BattleRules.RangedAttackRange, 3.8f) &&
+                   HasCombatProfile(database, "cyan_warden", BattleRules.MeleeAttackRange, 3.15f) &&
                    AssetDatabase.LoadAssetAtPath<Material>(AbyssalObservatoryAssetBuilder.BackdropMaterialPath) != null &&
                    database.GetSkill("pulse_strike") != null &&
                    spectrumNova != null &&
                    spectrumNova.TargetMode == SkillTargetMode.AllEnemies &&
                    spectrumNova.TargetCount == BattleRules.TeamSize &&
                    database.GetSkill("restore_wave") != null &&
+                   database.GetSkill("timed_impact") != null &&
+                   database.GetSkill("timed_impact").RageCost == 0 &&
+                   database.GetSkill("timed_wave") != null &&
+                   database.GetSkill("timed_wave").RageCost == 0 &&
                    database.GetSkill(CatherineYukiBattleKit.Skill1Id) != null &&
                    database.GetSkill(CatherineYukiBattleKit.Skill2Id) != null &&
                    database.GetSkill(CatherineYukiBattleKit.Skill3Id) != null &&
@@ -239,7 +252,7 @@ namespace GenericGachaRPG.Editor
                 SkillTargetMode.SingleEnemy,
                 2.35f,
                 0f,
-                100,
+                BattleRules.MaxRage,
                 0.34f,
                 1,
                 "A focused burst against one target.");
@@ -255,7 +268,7 @@ namespace GenericGachaRPG.Editor
                 SkillTargetMode.AllEnemies,
                 1.28f,
                 0f,
-                100,
+                BattleRules.MaxRage,
                 0.48f,
                 BattleRules.TeamSize,
                 "A wide spectrum blast that hits every opponent.");
@@ -271,11 +284,43 @@ namespace GenericGachaRPG.Editor
                 SkillTargetMode.LowestHealthAlly,
                 0f,
                 1.45f,
-                100,
+                BattleRules.MaxRage,
                 0.42f,
                 1,
                 "Restores the ally with the lowest health ratio.");
             EditorUtility.SetDirty(healSkill);
+
+            SkillDefinition timedImpactSkill = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_TimedImpact.asset",
+                out _);
+            timedImpactSkill.Configure(
+                "timed_impact",
+                "Tactical Impact",
+                SkillCategory.Damage,
+                SkillTargetMode.SingleEnemy,
+                1.1f,
+                0f,
+                0,
+                0.28f,
+                1,
+                "Automatic skill slot 2. Cast at 5 seconds, then every 10 seconds.");
+            EditorUtility.SetDirty(timedImpactSkill);
+
+            SkillDefinition timedWaveSkill = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_TimedWave.asset",
+                out _);
+            timedWaveSkill.Configure(
+                "timed_wave",
+                "Tactical Wave",
+                SkillCategory.Damage,
+                SkillTargetMode.AllEnemies,
+                0.72f,
+                0f,
+                0,
+                0.38f,
+                BattleRules.TeamSize,
+                "Automatic skill slot 3. Cast at 10 seconds, then every 10 seconds.");
+            EditorUtility.SetDirty(timedWaveSkill);
 
             SkillDefinition catherineSkill1 = GetOrCreateAsset<SkillDefinition>(
                 $"{SkillFolder}/Skill_CatherineWindWheelBreak.asset",
@@ -335,7 +380,7 @@ namespace GenericGachaRPG.Editor
                 SkillTargetMode.AllEnemies,
                 CatherineYukiBattleKit.UltimateBaseDamageMultiplier,
                 0f,
-                0,
+                BattleRules.MaxRage,
                 CatherineYukiBattleKit.UltimateChargeDuration,
                 BattleRules.TeamSize,
                 "Max-level 960% base AoE: charge, transform, pull, multi-hit, collapse, and launch.");
@@ -346,6 +391,8 @@ namespace GenericGachaRPG.Editor
                 strikeSkill,
                 novaSkill,
                 healSkill,
+                timedImpactSkill,
+                timedWaveSkill,
                 catherineSkill1,
                 catherineSkill2,
                 catherineSkill3,
@@ -356,31 +403,35 @@ namespace GenericGachaRPG.Editor
                 CreateCharacter(
                     "azure_vanguard",
                     "Azure Vanguard",
-                    CharacterRole.Guardian,
+                    CharacterRole.Tank,
                     Rarity.R,
                     new Color(0.13f, 0.48f, 0.95f, 1f),
                     1620f,
                     116f,
                     58f,
                     1.45f,
-                    1.45f,
+                    BattleRules.MeleeAttackRange,
                     3.2f,
                     strikeSkill,
+                    timedImpactSkill,
+                    timedWaveSkill,
                     "A steady frontline defender.",
                     waterSlimePrefab),
                 CreateCharacter(
                     "ember_striker",
                     "Ember Striker",
-                    CharacterRole.Striker,
+                    CharacterRole.Assassin,
                     Rarity.R,
                     new Color(0.96f, 0.28f, 0.14f, 1f),
                     1180f,
                     172f,
                     29f,
                     1.12f,
-                    1.55f,
+                    BattleRules.MeleeAttackRange,
                     4.2f,
                     strikeSkill,
+                    timedImpactSkill,
+                    timedWaveSkill,
                     "A fast close-range attacker.",
                     fireSlimePrefab),
                 CreateCharacter(
@@ -393,70 +444,80 @@ namespace GenericGachaRPG.Editor
                     122f,
                     34f,
                     1.34f,
-                    4.4f,
+                    BattleRules.RangedAttackRange,
                     3.0f,
                     healSkill,
+                    timedImpactSkill,
+                    timedWaveSkill,
                     "A support unit that restores weakened allies.",
                     windSlimePrefab),
                 CreateCharacter(
                     "ur_cosmic_slime",
                     "Catherine Yuki",
-                    CharacterRole.Guardian,
+                    CharacterRole.Tank,
                     Rarity.UR,
                     new Color(0.52f, 0.16f, 0.96f, 1f),
                     2280f,
                     124f,
                     86f,
                     1.52f,
-                    1.45f,
+                    BattleRules.MeleeAttackRange,
                     3.3f,
                     catherineUltimate,
+                    catherineSkill1,
+                    catherineSkill2,
                     "A max-level limited singularity tank with Imaginary Mass and Infinite Void.",
                     cosmicSlimePrefab,
                     true),
                 CreateCharacter(
                     "violet_arcanist",
                     "Violet Arcanist",
-                    CharacterRole.Striker,
+                    CharacterRole.Mage,
                     Rarity.SR,
                     new Color(0.62f, 0.25f, 0.91f, 1f),
                     1110f,
                     158f,
                     26f,
                     1.28f,
-                    3.8f,
+                    BattleRules.RangedAttackRange,
                     3.4f,
                     novaSkill,
+                    timedImpactSkill,
+                    timedWaveSkill,
                     "A ranged caster with a team-wide burst.",
                     lightningSlimePrefab),
                 CreateCharacter(
                     "gold_ranger",
                     "Gold Ranger",
-                    CharacterRole.Striker,
+                    CharacterRole.Ranged,
                     Rarity.SSR,
                     new Color(0.96f, 0.68f, 0.13f, 1f),
                     1220f,
                     184f,
                     31f,
                     1.02f,
-                    4.6f,
+                    BattleRules.RangedAttackRange,
                     3.8f,
                     strikeSkill,
+                    timedImpactSkill,
+                    timedWaveSkill,
                     "A precise high-speed specialist.",
                     earthSlimePrefab),
                 CreateCharacter(
                     "cyan_warden",
                     "Cyan Warden",
-                    CharacterRole.Guardian,
+                    CharacterRole.Tank,
                     Rarity.SSR,
                     new Color(0.10f, 0.77f, 0.82f, 1f),
                     1780f,
                     132f,
                     64f,
                     1.50f,
-                    1.55f,
+                    BattleRules.MeleeAttackRange,
                     3.15f,
                     novaSkill,
+                    timedImpactSkill,
+                    timedWaveSkill,
                     "A durable guardian with an area disruption skill.",
                     waterSlimePrefab)
             };
@@ -511,7 +572,9 @@ namespace GenericGachaRPG.Editor
             float attackInterval,
             float attackRange,
             float moveSpeed,
-            SkillDefinition skill,
+            SkillDefinition ultimateSkill,
+            SkillDefinition skill2,
+            SkillDefinition skill3,
             string description,
             GameObject prefab = null,
             bool isLimited = false)
@@ -530,14 +593,15 @@ namespace GenericGachaRPG.Editor
                 attackInterval,
                 attackRange,
                 moveSpeed,
-                100,
-                24,
-                12,
-                skill,
+                BattleRules.MaxRage,
+                BattleRules.RagePerBasicAttackHit,
+                BattleRules.RagePerDamageReceived,
+                ultimateSkill,
                 description,
                 null,
                 prefab,
                 isLimited);
+            character.ConfigureActiveSkills(skill2, skill3);
             EditorUtility.SetDirty(character);
 
             return character;
@@ -591,6 +655,125 @@ namespace GenericGachaRPG.Editor
             }
 
             return true;
+        }
+
+        private static void EnsureSceneLighting()
+        {
+            Scene previousActive = SceneManager.GetActiveScene();
+            Scene targetScene = SceneManager.GetSceneByPath(ScenePath);
+            bool openedForRepair = !targetScene.IsValid() || !targetScene.isLoaded;
+            if (openedForRepair)
+            {
+                targetScene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
+            }
+
+            bool wasDirty = targetScene.isDirty;
+            SceneManager.SetActiveScene(targetScene);
+
+            ConfigureLight(
+                targetScene,
+                "Directional Light",
+                LightType.Directional,
+                new Color(1f, 0.90f, 0.82f, 1f),
+                1.08f,
+                0f,
+                Vector3.zero,
+                Quaternion.Euler(48f, -34f, 0f),
+                LightShadows.Soft);
+            ConfigureLight(
+                targetScene,
+                "Catherine Soft Fill",
+                LightType.Point,
+                new Color(0.34f, 0.52f, 1f, 1f),
+                4.8f,
+                18f,
+                new Vector3(-4.6f, 4.4f, -4.8f),
+                Quaternion.identity,
+                LightShadows.None);
+            ConfigureLight(
+                targetScene,
+                "Catherine Rim Light",
+                LightType.Point,
+                new Color(0.78f, 0.28f, 1f, 1f),
+                6.2f,
+                17f,
+                new Vector3(4.2f, 3.8f, 4.9f),
+                Quaternion.identity,
+                LightShadows.None);
+
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.10f, 0.14f, 0.22f, 1f);
+            RenderSettings.ambientEquatorColor = new Color(0.055f, 0.070f, 0.12f, 1f);
+            RenderSettings.ambientGroundColor = new Color(0.020f, 0.024f, 0.040f, 1f);
+            RenderSettings.ambientIntensity = 1f;
+            RenderSettings.reflectionIntensity = 0.72f;
+
+            EditorSceneManager.MarkSceneDirty(targetScene);
+            if (openedForRepair || !wasDirty)
+            {
+                EditorSceneManager.SaveScene(targetScene, ScenePath);
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[GenericGachaRPG] Demo lighting was repaired in memory; the already-dirty scene was not auto-saved.");
+            }
+
+            if (openedForRepair)
+            {
+                EditorSceneManager.CloseScene(targetScene, true);
+            }
+
+            if (previousActive.IsValid() && previousActive.isLoaded)
+            {
+                SceneManager.SetActiveScene(previousActive);
+            }
+        }
+
+        private static void ConfigureLight(
+            Scene scene,
+            string objectName,
+            LightType type,
+            Color color,
+            float intensity,
+            float range,
+            Vector3 position,
+            Quaternion rotation,
+            LightShadows shadows)
+        {
+            GameObject lightObject = null;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+            {
+                if (roots[i].name == objectName)
+                {
+                    lightObject = roots[i];
+                    break;
+                }
+            }
+
+            if (lightObject == null)
+            {
+                lightObject = new GameObject(objectName, typeof(Light));
+                SceneManager.MoveGameObjectToScene(lightObject, scene);
+            }
+
+            Light light = lightObject.GetComponent<Light>();
+            if (light == null)
+            {
+                light = lightObject.AddComponent<Light>();
+            }
+
+            light.type = type;
+            light.color = color;
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = shadows;
+            light.shadowStrength = shadows == LightShadows.None ? 0f : 0.82f;
+            light.shadowBias = 0.04f;
+            light.shadowNormalBias = 0.32f;
+            light.renderMode = LightRenderMode.ForcePixel;
+            lightObject.transform.SetPositionAndRotation(position, rotation);
         }
 
         private static void ApplySafeProjectSettings()

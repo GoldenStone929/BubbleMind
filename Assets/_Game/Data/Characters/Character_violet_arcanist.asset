@@ -15,7 +15,7 @@ MonoBehaviour:
   id: violet_arcanist
   displayName: Violet Arcanist
   description: A ranged caster with a team-wide burst.
-  role: 1
+  role: 4
   rarity: 1
   isLimited: 0
   displayColor: {r: 0.62, g: 0.25, b: 0.91, a: 1}
@@ -25,9 +25,11 @@ MonoBehaviour:
   attack: 158
   defense: 26
   attackInterval: 1.28
-  attackRange: 3.8
+  attackRange: 5
   moveSpeed: 3.4
-  maxEnergy: 100
-  energyPerAttack: 24
-  energyWhenHit: 12
+  maxRage: 1000
+  ragePerAttack: 100
+  rageWhenHit: 50
   skill: {fileID: 11400000, guid: 365dd5f3fffec934798fd7cb7de20e3e, type: 2}
+  skill2: {fileID: 11400000, guid: 1a8c43d035cd70e468d069cd29b642c6, type: 2}
+  skill3: {fileID: 11400000, guid: d18bdc81a9102954081a7c5fadbeac6f, type: 2}

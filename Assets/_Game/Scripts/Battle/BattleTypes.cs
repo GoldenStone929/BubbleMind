@@ -21,7 +21,7 @@ namespace GenericGachaRPG
         SkillCastStarted = 2,
         DamageApplied = 3,
         HealingApplied = 4,
-        EnergyChanged = 5,
+        RageChanged = 5,
         UnitDefeated = 6,
         BattleFinished = 7,
         UnitMoved = 8,

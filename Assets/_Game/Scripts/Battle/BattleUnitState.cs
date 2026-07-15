@@ -23,24 +23,25 @@ namespace GenericGachaRPG
 
             CharacterId = definition.Id ?? string.Empty;
             DisplayName = definition.DisplayName ?? CharacterId;
+            Role = definition.Role;
             MaxHealth = SanitizePositive(definition.MaxHealth * healthMultiplier, 1f);
             BaseMaxHealth = MaxHealth;
             Attack = SanitizeNonNegative(definition.Attack * attackMultiplier);
             Defense = SanitizeNonNegative(definition.Defense);
             AttackInterval = SanitizePositive(definition.AttackInterval, BattleContext.DefaultTickDuration);
-            AttackRange = SanitizePositive(
-                definition.AttackRange,
-                BattleRules.GetDefaultAttackRange(definition.Role));
+            AttackRange = BattleRules.GetDefaultAttackRange(definition.Role);
             MoveSpeed = SanitizePositive(
                 definition.MoveSpeed,
                 BattleRules.GetDefaultMoveSpeed(definition.Role));
-            MaxEnergy = Math.Max(0, definition.MaxEnergy);
-            EnergyPerAttack = Math.Max(0, definition.EnergyPerAttack);
-            EnergyWhenHit = Math.Max(0, definition.EnergyWhenHit);
-            Skill = definition.Skill;
+            MaxRage = BattleRules.MaxRage;
+            RagePerAttack = BattleRules.RagePerBasicAttackHit;
+            RageWhenHit = BattleRules.RagePerDamageReceived;
+            UltimateSkill = definition.UltimateSkill;
+            Skill2 = definition.Skill2;
+            Skill3 = definition.Skill3;
 
             CurrentHealth = MaxHealth;
-            CurrentEnergy = 0;
+            CurrentRage = 0;
             CurrentPosition = BattleRules.GetSlotPosition(side, slotIndex);
         }
 
@@ -52,6 +53,7 @@ namespace GenericGachaRPG
             RuntimeId = source.RuntimeId;
             CharacterId = source.CharacterId;
             DisplayName = source.DisplayName;
+            Role = source.Role;
             MaxHealth = source.MaxHealth;
             BaseMaxHealth = source.BaseMaxHealth;
             Attack = source.Attack;
@@ -59,15 +61,19 @@ namespace GenericGachaRPG
             AttackInterval = source.AttackInterval;
             AttackRange = source.AttackRange;
             MoveSpeed = source.MoveSpeed;
-            MaxEnergy = source.MaxEnergy;
-            EnergyPerAttack = source.EnergyPerAttack;
-            EnergyWhenHit = source.EnergyWhenHit;
-            Skill = source.Skill;
+            MaxRage = source.MaxRage;
+            RagePerAttack = source.RagePerAttack;
+            RageWhenHit = source.RageWhenHit;
+            UltimateSkill = source.UltimateSkill;
+            Skill2 = source.Skill2;
+            Skill3 = source.Skill3;
             CurrentHealth = source.CurrentHealth;
-            CurrentEnergy = source.CurrentEnergy;
+            CurrentRage = source.CurrentRage;
             CurrentPosition = source.CurrentPosition;
             LockedTargetRuntimeId = source.LockedTargetRuntimeId;
             NextActionTick = source.NextActionTick;
+            NextSkill2Tick = source.NextSkill2Tick;
+            NextSkill3Tick = source.NextSkill3Tick;
         }
 
         public CharacterDefinition Definition { get; }
@@ -77,6 +83,8 @@ namespace GenericGachaRPG
         public string CharacterId { get; }
 
         public string DisplayName { get; }
+
+        public CharacterRole Role { get; }
 
         public BattleTeamSide Side { get; }
 
@@ -96,17 +104,31 @@ namespace GenericGachaRPG
 
         public float MoveSpeed { get; }
 
-        public int MaxEnergy { get; }
+        public int MaxRage { get; }
 
-        public int EnergyPerAttack { get; }
+        public int RagePerAttack { get; }
 
-        public int EnergyWhenHit { get; }
+        public int RageWhenHit { get; }
 
-        public SkillDefinition Skill { get; }
+        public SkillDefinition UltimateSkill { get; }
+
+        public SkillDefinition Skill2 { get; }
+
+        public SkillDefinition Skill3 { get; }
+
+        public int MaxEnergy => MaxRage;
+
+        public int EnergyPerAttack => RagePerAttack;
+
+        public int EnergyWhenHit => RageWhenHit;
+
+        public SkillDefinition Skill => UltimateSkill;
 
         public float CurrentHealth { get; private set; }
 
-        public int CurrentEnergy { get; private set; }
+        public int CurrentRage { get; private set; }
+
+        public int CurrentEnergy => CurrentRage;
 
         public Vector3 CurrentPosition { get; private set; }
 
@@ -116,11 +138,19 @@ namespace GenericGachaRPG
 
         public float HealthNormalized => MaxHealth <= 0f ? 0f : CurrentHealth / MaxHealth;
 
-        public float EnergyNormalized => MaxEnergy <= 0 ? 0f : (float)CurrentEnergy / MaxEnergy;
+        public float RageNormalized => MaxRage <= 0 ? 0f : (float)CurrentRage / MaxRage;
+
+        public float EnergyNormalized => RageNormalized;
 
         internal int NextActionTick { get; set; }
 
-        internal bool CanCastSkill => Skill != null && MaxEnergy > 0 && CurrentEnergy >= MaxEnergy;
+        internal int NextSkill2Tick { get; set; }
+
+        internal int NextSkill3Tick { get; set; }
+
+        internal bool CanCastUltimate => UltimateSkill != null && CurrentRage >= MaxRage;
+
+        internal bool CanCastSkill => CanCastUltimate;
 
         internal void SetCurrentPosition(Vector3 position)
         {
@@ -190,30 +220,33 @@ namespace GenericGachaRPG
             return addedMaxHealth;
         }
 
-        internal int GainEnergy(int requestedEnergy)
+        internal int GainRage(int requestedRage)
         {
-            if (!IsAlive || MaxEnergy <= 0 || requestedEnergy <= 0)
+            if (MaxRage <= 0 || requestedRage <= 0)
             {
                 return 0;
             }
 
-            var previousEnergy = CurrentEnergy;
-            CurrentEnergy = Math.Min(MaxEnergy, CurrentEnergy + requestedEnergy);
-            return CurrentEnergy - previousEnergy;
+            int previousRage = CurrentRage;
+            CurrentRage = Math.Min(MaxRage, CurrentRage + requestedRage);
+            return CurrentRage - previousRage;
         }
 
-        internal int SpendSkillEnergy()
+        internal int SpendUltimateRage()
         {
-            if (CurrentEnergy <= 0)
+            if (CurrentRage <= 0)
             {
                 return 0;
             }
 
-            var configuredCost = Skill == null ? 0 : Skill.EnergyCost;
-            var cost = configuredCost > 0 ? Math.Min(CurrentEnergy, configuredCost) : CurrentEnergy;
-            CurrentEnergy -= cost;
-            return cost;
+            int spentRage = CurrentRage;
+            CurrentRage = 0;
+            return spentRage;
         }
+
+        internal int GainEnergy(int requestedEnergy) => GainRage(requestedEnergy);
+
+        internal int SpendSkillEnergy() => SpendUltimateRage();
 
         internal BattleUnitState CreateSnapshot()
         {

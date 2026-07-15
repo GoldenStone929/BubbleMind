@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Lightweight world-space HP and energy bars. Values are supplied by a
+    /// Lightweight world-space HP and Rage bars. Values are supplied by a
     /// presenter/controller; this component performs no combat calculations.
     /// </summary>
     [DisallowMultipleComponent]
@@ -14,6 +14,7 @@ namespace GenericGachaRPG
         [SerializeField] private RectTransform visualRoot;
         [SerializeField] private RectTransform healthFill;
         [SerializeField] private RectTransform energyFill;
+        [SerializeField] private Text rageLabel;
         [SerializeField] private CanvasGroup canvasGroup;
 
         [Header("Behavior")]
@@ -25,7 +26,7 @@ namespace GenericGachaRPG
 
         [Header("Colors")]
         [SerializeField] private Color healthColor = new Color(0.25f, 0.95f, 0.42f, 1f);
-        [SerializeField] private Color energyColor = new Color(0.18f, 0.64f, 1f, 1f);
+        [SerializeField] private Color energyColor = new Color(1f, 0.52f, 0.12f, 1f);
         [SerializeField] private Color backgroundColor = new Color(0.025f, 0.035f, 0.065f, 0.94f);
 
         private Camera targetCamera;
@@ -33,8 +34,11 @@ namespace GenericGachaRPG
         private float targetHealth = 1f;
         private float displayedEnergy;
         private float targetEnergy;
+        private int currentRage;
+        private int maximumRage = BattleRules.MaxRage;
 
         public float HealthNormalized => targetHealth;
+        public float RageNormalized => targetEnergy;
         public float EnergyNormalized => targetEnergy;
         public bool IsVisible => canvasGroup == null || canvasGroup.alpha > 0.001f;
 
@@ -93,10 +97,23 @@ namespace GenericGachaRPG
 
         public void SetEnergy(float current, float maximum, bool immediate = false)
         {
-            SetEnergyNormalized(maximum > 0f ? current / maximum : 0f, immediate);
+            SetRage(current, maximum, immediate);
         }
 
         public void SetEnergyNormalized(float normalizedValue, bool immediate = false)
+        {
+            SetRageNormalized(normalizedValue, immediate);
+        }
+
+        public void SetRage(float current, float maximum, bool immediate = false)
+        {
+            maximumRage = Mathf.Max(1, Mathf.RoundToInt(maximum));
+            currentRage = Mathf.Clamp(Mathf.RoundToInt(current), 0, maximumRage);
+            UpdateRageLabel();
+            SetRageNormalized(maximum > 0f ? current / maximum : 0f, immediate);
+        }
+
+        public void SetRageNormalized(float normalizedValue, bool immediate = false)
         {
             targetEnergy = Mathf.Clamp01(normalizedValue);
             if (immediate)
@@ -104,6 +121,8 @@ namespace GenericGachaRPG
                 displayedEnergy = targetEnergy;
                 ApplyFill(energyFill, displayedEnergy);
             }
+
+            UpdateRageLabel();
         }
 
         public void SetVisible(bool visible)
@@ -145,6 +164,7 @@ namespace GenericGachaRPG
                     canvasGroup = visualRoot.GetComponent<CanvasGroup>();
                 }
 
+                EnsureRageLabel(energyFill.parent as RectTransform);
                 return;
             }
 
@@ -162,6 +182,7 @@ namespace GenericGachaRPG
                 canvasGroup = existing.GetComponent<CanvasGroup>();
                 if (visualRoot != null && healthFill != null && energyFill != null)
                 {
+                    EnsureRageLabel(energyFill.parent as RectTransform);
                     return;
                 }
             }
@@ -178,7 +199,7 @@ namespace GenericGachaRPG
             visualRoot.localPosition = Vector3.zero;
             visualRoot.localRotation = Quaternion.identity;
             visualRoot.localScale = Vector3.one * worldScale;
-            visualRoot.sizeDelta = new Vector2(166f, 34f);
+            visualRoot.sizeDelta = new Vector2(166f, 42f);
 
             Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
@@ -198,24 +219,25 @@ namespace GenericGachaRPG
                 visualRoot,
                 backgroundColor,
                 Vector2.zero,
-                new Vector2(166f, 34f));
+                new Vector2(166f, 42f));
             backdrop.SetAsFirstSibling();
 
             RectTransform healthTrack = CreateImage(
                 "HealthTrack",
                 visualRoot,
                 new Color(0.16f, 0.045f, 0.06f, 1f),
-                new Vector2(0f, 7f),
+                new Vector2(0f, 9f),
                 new Vector2(154f, 11f));
             healthFill = CreateStretchFill("HealthFill", healthTrack, healthColor);
 
             RectTransform energyTrack = CreateImage(
                 "EnergyTrack",
                 visualRoot,
-                new Color(0.035f, 0.08f, 0.17f, 1f),
+                new Color(0.18f, 0.055f, 0.02f, 1f),
                 new Vector2(0f, -8f),
-                new Vector2(154f, 7f));
+                new Vector2(154f, 11f));
             energyFill = CreateStretchFill("EnergyFill", energyTrack, energyColor);
+            EnsureRageLabel(energyTrack);
 
             ApplyValuesImmediately();
         }
@@ -226,6 +248,61 @@ namespace GenericGachaRPG
             displayedEnergy = targetEnergy;
             ApplyFill(healthFill, displayedHealth);
             ApplyFill(energyFill, displayedEnergy);
+            UpdateRageLabel();
+        }
+
+        private void EnsureRageLabel(RectTransform track)
+        {
+            if (rageLabel != null || track == null)
+            {
+                return;
+            }
+
+            Transform existing = track.Find("RageLabel");
+            if (existing != null)
+            {
+                rageLabel = existing.GetComponent<Text>();
+            }
+
+            if (rageLabel == null)
+            {
+                var labelObject = new GameObject(
+                    "RageLabel",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Text),
+                    typeof(Shadow));
+                labelObject.layer = track.gameObject.layer;
+                RectTransform rect = labelObject.GetComponent<RectTransform>();
+                rect.SetParent(track, false);
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+
+                rageLabel = labelObject.GetComponent<Text>();
+                rageLabel.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                rageLabel.fontSize = 9;
+                rageLabel.fontStyle = FontStyle.Bold;
+                rageLabel.alignment = TextAnchor.MiddleCenter;
+                rageLabel.color = Color.white;
+                rageLabel.raycastTarget = false;
+
+                Shadow shadow = labelObject.GetComponent<Shadow>();
+                shadow.effectColor = new Color(0f, 0f, 0f, 0.92f);
+                shadow.effectDistance = new Vector2(1f, -1f);
+            }
+
+            rageLabel.transform.SetAsLastSibling();
+            UpdateRageLabel();
+        }
+
+        private void UpdateRageLabel()
+        {
+            if (rageLabel != null)
+            {
+                rageLabel.text = $"RAGE {currentRage}/{maximumRage}";
+            }
         }
 
         private static void ApplyFill(RectTransform fill, float normalizedValue)

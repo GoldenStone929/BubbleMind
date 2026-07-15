@@ -30,10 +30,10 @@ namespace GenericGachaRPG.Editor
             Material nebula = EnsureSlimeMaterial(NebulaMaterialPath, true);
             Material core = EnsureMaterial(
                 CoreMaterialPath,
-                new Color(0.86f, 0.72f, 1f, 1f),
-                new Color(0.82f, 0.38f, 1f, 1f) * 5.6f,
+                new Color(0.80f, 0.46f, 1f, 1f),
+                new Color(0.68f, 0.15f, 1f, 1f) * 5.4f,
                 0.02f,
-                0.82f,
+                0.90f,
                 false);
             Material blackCore = EnsureMaterial(
                 BlackCoreMaterialPath,
@@ -44,17 +44,17 @@ namespace GenericGachaRPG.Editor
                 false);
             Material orbit = EnsureMaterial(
                 OrbitMaterialPath,
-                new Color(0.035f, 0.006f, 0.078f, 1f),
-                new Color(0.12f, 0.010f, 0.30f, 1f) * 0.36f,
-                0.74f,
-                0.58f,
+                new Color(0.030f, 0.006f, 0.068f, 1f),
+                new Color(0.09f, 0.008f, 0.22f, 1f) * 0.24f,
+                0.88f,
+                0.78f,
                 false);
             Material orbitTrim = EnsureMaterial(
                 OrbitTrimMaterialPath,
-                new Color(0.30f, 0.16f, 0.055f, 1f),
-                new Color(0.16f, 0.045f, 0.008f, 1f) * 0.18f,
-                0.86f,
-                0.62f,
+                new Color(0.34f, 0.18f, 0.052f, 1f),
+                new Color(0.12f, 0.032f, 0.005f, 1f) * 0.12f,
+                0.92f,
+                0.74f,
                 false);
 
             GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
@@ -257,21 +257,30 @@ namespace GenericGachaRPG.Editor
 
             material.SetColor("_BaseColor", Color.white);
             material.SetColor("_TopColor", internalLayer
-                ? new Color(0.34f, 0.10f, 0.62f, 1f)
-                : new Color(0.16f, 0.055f, 0.32f, 1f));
+                ? new Color(0.25f, 0.050f, 0.55f, 1f)
+                : new Color(0.075f, 0.014f, 0.17f, 1f));
             material.SetColor("_BottomColor", internalLayer
-                ? new Color(0.045f, 0.006f, 0.12f, 1f)
-                : new Color(0.012f, 0.002f, 0.035f, 1f));
+                ? new Color(0.032f, 0.003f, 0.095f, 1f)
+                : new Color(0.006f, 0.001f, 0.020f, 1f));
             material.SetColor("_ShadowColor", internalLayer
-                ? new Color(0.22f, 0.10f, 0.38f, 1f)
-                : new Color(0.16f, 0.075f, 0.27f, 1f));
+                ? new Color(0.18f, 0.065f, 0.34f, 1f)
+                : new Color(0.10f, 0.028f, 0.18f, 1f));
             material.SetColor("_InnerColor", internalLayer
-                ? new Color(0.44f, 0.16f, 0.80f, 1f)
-                : new Color(0.20f, 0.055f, 0.42f, 1f));
+                ? new Color(0.46f, 0.12f, 0.86f, 1f)
+                : new Color(0.22f, 0.035f, 0.48f, 1f));
             material.SetColor("_FresnelColor", internalLayer
-                ? new Color(0.72f, 0.38f, 1f, 1f)
-                : new Color(0.63f, 0.42f, 0.94f, 1f));
-            material.SetColor("_HighlightColor", new Color(0.95f, 0.86f, 1f, 1f));
+                ? new Color(0.72f, 0.32f, 1f, 1f)
+                : new Color(0.55f, 0.30f, 0.92f, 1f));
+            material.SetColor("_HighlightColor", new Color(1f, 0.91f, 1f, 1f));
+            material.SetColor("_AbsorptionColor", internalLayer
+                ? new Color(0.080f, 0.008f, 0.22f, 1f)
+                : new Color(0.035f, 0.002f, 0.090f, 1f));
+            material.SetColor("_NebulaColorA", internalLayer
+                ? new Color(0.24f, 0.030f, 0.64f, 1f)
+                : new Color(0.16f, 0.012f, 0.42f, 1f));
+            material.SetColor("_NebulaColorB", internalLayer
+                ? new Color(0.76f, 0.12f, 1f, 1f)
+                : new Color(0.50f, 0.055f, 0.82f, 1f));
             material.SetColor("_StarColor", internalLayer
                 ? new Color(0.70f, 0.84f, 1f, 1f)
                 : new Color(0.88f, 0.72f, 1f, 1f));
@@ -285,7 +294,18 @@ namespace GenericGachaRPG.Editor
             material.SetFloat("_FresnelStrength", internalLayer ? 0.72f : 0.58f);
             material.SetFloat("_HighlightThreshold", internalLayer ? 0.82f : 0.86f);
             material.SetFloat("_HighlightSoftness", 0.065f);
-            material.SetFloat("_HighlightStrength", internalLayer ? 0.92f : 0.76f);
+            material.SetFloat("_HighlightStrength", internalLayer ? 0.88f : 0.94f);
+            material.SetFloat("_Realism", internalLayer ? 0.74f : 0.86f);
+            material.SetFloat("_Roughness", internalLayer ? 0.28f : 0.17f);
+            material.SetFloat("_CoatStrength", internalLayer ? 0.42f : 0.92f);
+            material.SetFloat("_CoatRoughness", internalLayer ? 0.24f : 0.12f);
+            material.SetFloat("_MicroSurfaceScale", internalLayer ? 15f : 21f);
+            material.SetFloat("_MicroSurfaceStrength", internalLayer ? 0.16f : 0.10f);
+            material.SetFloat("_AbsorptionStrength", internalLayer ? 0.48f : 0.64f);
+            material.SetFloat("_TransmissionStrength", internalLayer ? 0.96f : 0.82f);
+            material.SetFloat("_NebulaScale", internalLayer ? 4.5f : 3.6f);
+            material.SetFloat("_NebulaStrength", internalLayer ? 0.82f : 0.58f);
+            material.SetFloat("_NebulaSpeed", internalLayer ? 0.24f : 0.14f);
             material.SetFloat("_StarDensity", internalLayer ? 0.22f : 0.10f);
             material.SetFloat("_StarScale", internalLayer ? 25f : 19f);
             material.SetFloat("_StarStrength", internalLayer ? 1.45f : 0.82f);
@@ -298,6 +318,8 @@ namespace GenericGachaRPG.Editor
             material.DisableKeyword("_ALPHAMODULATE_ON");
             material.SetOverrideTag("RenderType", "TransparentCutout");
             material.renderQueue = (int)RenderQueue.AlphaTest;
+            material.SetShaderPassEnabled("ShadowCaster", true);
+            material.SetShaderPassEnabled("DepthOnly", true);
             material.enableInstancing = true;
             EditorUtility.SetDirty(material);
             return material;
@@ -362,7 +384,8 @@ namespace GenericGachaRPG.Editor
                 {
                     selected = orbit;
                 }
-                else if (objectName == "NebulaInner")
+                else if (objectName == "NebulaInner" ||
+                         objectName.StartsWith("CosmicDroplet", StringComparison.Ordinal))
                 {
                     selected = nebula;
                 }
@@ -371,7 +394,6 @@ namespace GenericGachaRPG.Editor
                     selected = blackCore;
                 }
                 else if (objectName.StartsWith("Eye", StringComparison.Ordinal) ||
-                         objectName.StartsWith("CosmicDroplet", StringComparison.Ordinal) ||
                          objectName.StartsWith("AccretionSpiral", StringComparison.Ordinal) ||
                          objectName.StartsWith("NebulaVeil", StringComparison.Ordinal) ||
                          objectName == "StarCloudPoints" ||
