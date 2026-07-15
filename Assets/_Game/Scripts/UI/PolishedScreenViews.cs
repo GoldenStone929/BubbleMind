@@ -488,11 +488,25 @@ namespace GenericGachaRPG
         private readonly Text detailStats;
         private readonly Text detailState;
         private readonly Text[] skillTexts = new Text[3];
+        private readonly Button combatTabButton;
+        private readonly Button archiveTabButton;
+        private readonly Button growthTabButton;
+        private readonly Button previousDetailButton;
+        private readonly Button nextDetailButton;
         private readonly Dictionary<string, Image> cardBackgrounds = new Dictionary<string, Image>();
         private readonly Dictionary<string, Outline> cardOutlines = new Dictionary<string, Outline>();
         private GameDatabase database;
         private PlayerState state;
         private string selectedId;
+        private DetailSection detailSection = DetailSection.Combat;
+        private int detailPageIndex;
+
+        private enum DetailSection
+        {
+            Combat,
+            Archive,
+            Growth
+        }
 
         public CharacterPageScreenView(Transform parent, Action back)
             : base(CreateRoot(parent))
@@ -607,15 +621,29 @@ namespace GenericGachaRPG
                 FontStyle.Bold);
             SetAnchors(detailState.rectTransform, 0.49f, 0.42f, 0.96f, 0.48f);
 
-            Text skillsTitle = DemoUiFactory.CreateText(
-                "SkillsTitle",
+            combatTabButton = DemoUiFactory.CreateButton(
+                "CharacterTab_Combat",
                 detail.transform,
-                "COMBAT KIT",
-                14,
-                TextAnchor.MiddleLeft,
-                DemoUiFactory.TextMuted,
-                FontStyle.Bold);
-            SetAnchors(skillsTitle.rectTransform, 0.49f, 0.36f, 0.96f, 0.42f);
+                "Combat",
+                DemoUiFactory.Accent,
+                () => SetDetailSection(DetailSection.Combat));
+            SetAnchors(combatTabButton.GetComponent<RectTransform>(), 0.49f, 0.36f, 0.64f, 0.415f);
+
+            archiveTabButton = DemoUiFactory.CreateButton(
+                "CharacterTab_Archive",
+                detail.transform,
+                "Archive",
+                DemoUiFactory.SurfaceLight,
+                () => SetDetailSection(DetailSection.Archive));
+            SetAnchors(archiveTabButton.GetComponent<RectTransform>(), 0.65f, 0.36f, 0.80f, 0.415f);
+
+            growthTabButton = DemoUiFactory.CreateButton(
+                "CharacterTab_Growth",
+                detail.transform,
+                "Growth",
+                DemoUiFactory.SurfaceLight,
+                () => SetDetailSection(DetailSection.Growth));
+            SetAnchors(growthTabButton.GetComponent<RectTransform>(), 0.81f, 0.36f, 0.96f, 0.415f);
 
             for (int i = 0; i < skillTexts.Length; i++)
             {
@@ -637,7 +665,39 @@ namespace GenericGachaRPG
                     DemoUiFactory.TextSecondary);
                 skillTexts[i].rectTransform.offsetMin = new Vector2(14f, 6f);
                 skillTexts[i].rectTransform.offsetMax = new Vector2(-14f, -6f);
+                skillTexts[i].resizeTextForBestFit = true;
+                skillTexts[i].resizeTextMinSize = 10;
+                skillTexts[i].resizeTextMaxSize = 15;
             }
+
+            skillTexts[0].rectTransform.offsetMax = new Vector2(-88f, -6f);
+            previousDetailButton = DemoUiFactory.CreateButton(
+                "CharacterDetailPrevious",
+                detail.transform,
+                "<",
+                DemoUiFactory.SurfaceLight,
+                () => ChangeDetailPage(-1));
+            ConfigureDetailNavigationButton(previousDetailButton);
+            SetAnchors(
+                previousDetailButton.GetComponent<RectTransform>(),
+                0.865f,
+                0.307f,
+                0.907f,
+                0.345f);
+            nextDetailButton = DemoUiFactory.CreateButton(
+                "CharacterDetailNext",
+                detail.transform,
+                ">",
+                DemoUiFactory.SurfaceLight,
+                () => ChangeDetailPage(1));
+            ConfigureDetailNavigationButton(nextDetailButton);
+            SetAnchors(
+                nextDetailButton.GetComponent<RectTransform>(),
+                0.912f,
+                0.307f,
+                0.954f,
+                0.345f);
+            SetDetailNavigationVisible(false);
         }
 
         public void Refresh(GameDatabase gameDatabase, PlayerState playerState)
@@ -769,6 +829,11 @@ namespace GenericGachaRPG
 
         private void SelectCharacter(string characterId)
         {
+            if (!string.Equals(selectedId, characterId, StringComparison.Ordinal))
+            {
+                detailPageIndex = 0;
+            }
+
             selectedId = characterId;
             foreach (KeyValuePair<string, Image> pair in cardBackgrounds)
             {
@@ -803,6 +868,8 @@ namespace GenericGachaRPG
                     skillTexts[i].text = string.Empty;
                 }
 
+                SetDetailNavigationVisible(false);
+
                 return;
             }
 
@@ -812,27 +879,274 @@ namespace GenericGachaRPG
             detailPortrait.color = unlocked ? Color.white : new Color(0.62f, 0.65f, 0.70f, 1f);
             detailName.text = character.DisplayName;
             detailName.color = RarityColor(character.Rarity);
-            detailTags.text = FormatCharacterTags(character);
-            detailDescription.text = character.Description;
+            CharacterContentProfile profile = character.ContentProfile;
+            detailTags.text = profile == null
+                ? FormatCharacterTags(character)
+                : $"{FormatCharacterTags(character)}  /  {profile.Element.ToString().ToUpperInvariant()}  /  {profile.Faction.ToUpperInvariant()}";
+            detailDescription.text = profile == null
+                ? character.Description
+                : $"{profile.Title}\n{character.Description}";
             detailStats.text =
                 $"HP  {character.MaxHealth:0}      ATK  {character.Attack:0}      DEF  {character.Defense:0}\n" +
                 $"RANGE  {character.AttackRange:0.0} / 20      INTERVAL  {character.AttackInterval:0.00}s      MOVE  {character.MoveSpeed:0.0}";
+            OwnedCharacterState ownedState = state == null ? null : state.FindOwnedCharacter(character.Id);
             detailState.text = unlocked
-                ? CatherineYukiBattleKit.IsCatherine(character.Id)
-                    ? "OWNED  /  MAX LEVEL  /  IMAGINARY MASS 30"
-                    : "OWNED  /  LEVEL 1"
+                ? profile != null && HasKeyword(profile, "maxed-demo")
+                    ? $"OWNED  /  MAX PROFILE {profile.MaxLevel}  /  IMAGINARY MASS 30"
+                    : $"OWNED  /  LEVEL {ownedState?.Level ?? 1}  /  COPIES {ownedState?.Copies ?? 1}"
                 : character.IsLimited
                     ? "ARCHIVE PREVIEW  /  LIMITED SIGNAL"
                     : "ARCHIVE PREVIEW  /  ACQUIRE FROM RECRUITMENT";
+            PopulateDetailRows(character, profile, ownedState);
+        }
 
-            SkillDefinition[] skills = { character.UltimateSkill, character.Skill2, character.Skill3 };
-            for (int i = 0; i < skillTexts.Length; i++)
+        private void SetDetailSection(DetailSection section)
+        {
+            if (detailSection != section)
             {
-                SkillDefinition skill = skills[i];
-                skillTexts[i].text = skill == null
-                    ? "Skill data unavailable"
-                    : FormatSkill(skill, i);
+                detailPageIndex = 0;
             }
+
+            detailSection = section;
+            SetTabColor(combatTabButton, section == DetailSection.Combat);
+            SetTabColor(archiveTabButton, section == DetailSection.Archive);
+            SetTabColor(growthTabButton, section == DetailSection.Growth);
+            CharacterDefinition character = database == null ? null : database.GetCharacter(selectedId);
+            if (character != null)
+            {
+                OwnedCharacterState owned = state == null ? null : state.FindOwnedCharacter(character.Id);
+                PopulateDetailRows(character, character.ContentProfile, owned);
+            }
+        }
+
+        private void PopulateDetailRows(
+            CharacterDefinition character,
+            CharacterContentProfile profile,
+            OwnedCharacterState owned)
+        {
+            if (detailSection == DetailSection.Combat)
+            {
+                SetDetailNavigationVisible(false);
+                SkillDefinition[] skills = { character.UltimateSkill, character.Skill2, character.Skill3 };
+                for (int i = 0; i < skillTexts.Length; i++)
+                {
+                    SkillDefinition skill = skills[i];
+                    skillTexts[i].text = skill == null
+                        ? "Skill data unavailable"
+                        : FormatSkill(skill, i);
+                }
+
+                return;
+            }
+
+            if (profile == null)
+            {
+                SetDetailNavigationVisible(false);
+                skillTexts[0].text = "CONTENT PROFILE\nProfile data unavailable.";
+                skillTexts[1].text = string.Empty;
+                skillTexts[2].text = string.Empty;
+                return;
+            }
+
+            if (detailSection == DetailSection.Archive)
+            {
+                int abilityCount = profile.Abilities.Count;
+                detailPageIndex = WrapIndex(detailPageIndex, abilityCount);
+                SetDetailNavigationVisible(abilityCount > 1);
+                CharacterAbilityRecord ability = abilityCount == 0
+                    ? null
+                    : profile.Abilities[detailPageIndex];
+                if (ability == null)
+                {
+                    skillTexts[0].text = "ABILITY ARCHIVE\nNo authored ability is available.";
+                    skillTexts[1].text = string.Empty;
+                    skillTexts[2].text = string.Empty;
+                    return;
+                }
+
+                string gate = ability.UnlockLevel > 1 ? $"UNLOCK LV.{ability.UnlockLevel}" : "AVAILABLE";
+                skillTexts[0].text =
+                    $"ABILITY {detailPageIndex + 1} / {abilityCount}  /  {ability.Kind.ToString().ToUpperInvariant()}\n" +
+                    $"{ability.DisplayName}  /  {gate}  /  MAX RANK {ability.MaxLevel}  /  {FormatTags(ability.Tags)}";
+                skillTexts[1].text =
+                    $"OVERVIEW\n{ability.Summary}\n" +
+                    $"TRIGGER  {ability.TriggerSummary}\nTARGET  {ability.TargetSummary}";
+                skillTexts[2].text =
+                    $"EFFECT\n{ability.EffectSummary}\n" +
+                    $"RANKS  {FormatAbilityRanks(ability)}";
+                return;
+            }
+
+            int growthPageCount = Mathf.Max(profile.ProgressionStages.Count, profile.Acquisition.Count);
+            detailPageIndex = WrapIndex(detailPageIndex, growthPageCount);
+            SetDetailNavigationVisible(growthPageCount > 1);
+            ProgressionStageRecord stage = profile.ProgressionStages.Count == 0
+                ? null
+                : profile.ProgressionStages[detailPageIndex % profile.ProgressionStages.Count];
+            AcquisitionRecord source = profile.Acquisition.Count == 0
+                ? null
+                : profile.Acquisition[detailPageIndex % profile.Acquisition.Count];
+            skillTexts[0].text = stage == null
+                ? "PROGRESSION\nNo progression stage authored."
+                : $"PROGRESSION {detailPageIndex + 1} / {growthPageCount}  /  MAX LEVEL {profile.MaxLevel}\n" +
+                  $"{stage.Title}  /  {stage.Track.ToString().ToUpperInvariant()} {stage.RequiredValue}  /  CAP {stage.LevelCap}\n" +
+                  stage.Summary;
+            skillTexts[1].text = source == null
+                ? "ACQUISITION\nNo acquisition source authored."
+                : $"ACQUISITION  /  {source.Label}\n{source.Availability}\nDUPLICATES  {source.DuplicateRule}";
+            skillTexts[2].text =
+                $"PROGRESSION & AWAKENING\n{profile.ProgressionSummary}\n{profile.AwakeningSummary}\n" +
+                $"CURRENT  LEVEL {owned?.Level ?? 0}  /  COPIES {owned?.Copies ?? 0}";
+        }
+
+        private void ChangeDetailPage(int direction)
+        {
+            CharacterDefinition character = database == null ? null : database.GetCharacter(selectedId);
+            CharacterContentProfile profile = character == null ? null : character.ContentProfile;
+            if (profile == null || detailSection == DetailSection.Combat)
+            {
+                return;
+            }
+
+            int pageCount = detailSection == DetailSection.Archive
+                ? profile.Abilities.Count
+                : Mathf.Max(profile.ProgressionStages.Count, profile.Acquisition.Count);
+            if (pageCount <= 1)
+            {
+                return;
+            }
+
+            detailPageIndex = WrapIndex(detailPageIndex + direction, pageCount);
+            OwnedCharacterState owned = state == null ? null : state.FindOwnedCharacter(character.Id);
+            PopulateDetailRows(character, profile, owned);
+        }
+
+        private void SetDetailNavigationVisible(bool visible)
+        {
+            previousDetailButton.gameObject.SetActive(visible);
+            nextDetailButton.gameObject.SetActive(visible);
+        }
+
+        private static int WrapIndex(int value, int count)
+        {
+            if (count <= 0)
+            {
+                return 0;
+            }
+
+            int wrapped = value % count;
+            return wrapped < 0 ? wrapped + count : wrapped;
+        }
+
+        private static string FormatAbilityRanks(CharacterAbilityRecord ability)
+        {
+            var ranks = new List<string>();
+            for (int rankIndex = 0; rankIndex < ability.Ranks.Count; rankIndex++)
+            {
+                SkillRankRecord rank = ability.Ranks[rankIndex];
+                if (rank == null)
+                {
+                    continue;
+                }
+
+                var values = new List<string>();
+                for (int valueIndex = 0; valueIndex < rank.Values.Count; valueIndex++)
+                {
+                    SkillValueRecord value = rank.Values[valueIndex];
+                    if (value != null)
+                    {
+                        values.Add($"{FormatSkillValueKey(value.Key)} {FormatSkillValue(value)}");
+                    }
+                }
+
+                string payload = values.Count == 0 ? rank.Summary : string.Join(", ", values);
+                ranks.Add($"Lv.{rank.Level} {payload}");
+            }
+
+            return ranks.Count == 0 ? "No rank data" : string.Join("  >  ", ranks);
+        }
+
+        private static string FormatSkillValue(SkillValueRecord value)
+        {
+            switch (value.Unit)
+            {
+                case SkillValueUnit.Percent:
+                case SkillValueUnit.PercentOfAttack:
+                case SkillValueUnit.PercentOfDamage:
+                case SkillValueUnit.PercentOfMaxHealth:
+                    return $"{value.Value:0.##}%";
+                case SkillValueUnit.Multiplier:
+                    return $"{value.Value:0.##}x";
+                case SkillValueUnit.Seconds:
+                    return $"{value.Value:0.##}s";
+                case SkillValueUnit.Stacks:
+                    return $"{value.Value:0.##} stacks";
+                default:
+                    return value.Value.ToString("0.##");
+            }
+        }
+
+        private static string FormatSkillValueKey(string key)
+        {
+            switch (key)
+            {
+                case "damage":
+                    return "DMG";
+                case "power":
+                    return "POWER";
+                case "trigger_chance":
+                    return "CHANCE";
+                case "stacks_per_trigger":
+                    return "STACKS";
+                case "max_hp_per_stack":
+                    return "MAX HP";
+                default:
+                    return string.IsNullOrWhiteSpace(key)
+                        ? "VALUE"
+                        : key.Replace('_', ' ').ToUpperInvariant();
+            }
+        }
+
+        private static string FormatTags(SkillTag tags)
+        {
+            return tags == SkillTag.None
+                ? "UNTAGGED"
+                : tags.ToString().Replace(", ", " / ").ToUpperInvariant();
+        }
+
+        private static void ConfigureDetailNavigationButton(Button button)
+        {
+            Text label = button == null ? null : button.GetComponentInChildren<Text>();
+            if (label == null)
+            {
+                return;
+            }
+
+            label.fontSize = 16;
+            label.resizeTextForBestFit = false;
+            label.rectTransform.offsetMin = Vector2.zero;
+            label.rectTransform.offsetMax = Vector2.zero;
+        }
+
+        private static void SetTabColor(Button button, bool selected)
+        {
+            if (button != null && button.targetGraphic is Image image)
+            {
+                image.color = selected ? DemoUiFactory.Accent : DemoUiFactory.SurfaceLight;
+            }
+        }
+
+        private static bool HasKeyword(CharacterContentProfile profile, string keyword)
+        {
+            for (int i = 0; i < profile.Keywords.Count; i++)
+            {
+                if (string.Equals(profile.Keywords[i], keyword, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string FormatSkill(SkillDefinition skill, int slot)

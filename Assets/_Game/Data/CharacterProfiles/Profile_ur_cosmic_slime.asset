@@ -1,0 +1,347 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa1902e63add53d4fb087b0a22e74996, type: 3}
+  m_Name: Profile_ur_cosmic_slime
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterContentProfile
+  ownerCharacterId: ur_cosmic_slime
+  schemaVersion: 1.0
+  contentVersion: 2026.07.15
+  approvalStatus: 2
+  title: Limited Singularity Guardian
+  element: 6
+  faction: Abyssal Observatory
+  keywords:
+  - tank
+  - gravity
+  - control
+  - survival
+  - limited
+  - maxed-demo
+  maxLevel: 61
+  progressionSummary: The current demo always runs the maximum authored ability ranks
+    and full awakening test behavior.
+  awakeningSummary: Two-stage awakening expands Imaginary Mass scaling and adds a
+    once-per-battle revival sequence.
+  progressionStages:
+  - track: 0
+    requiredValue: 0
+    levelCap: 1
+    title: Limited Signal Registered
+    summary: Unlocks the archive, event-horizon portrait, and tank battle definition.
+  - track: 1
+    requiredValue: 11
+    levelCap: 11
+    title: 'Wind Wheel: Break'
+    summary: First timed active ability becomes available in the complete progression
+      model.
+  - track: 1
+    requiredValue: 41
+    levelCap: 41
+    title: 'Wind Wheel: Dance'
+    summary: Survival and Taunt sequence becomes available.
+  - track: 1
+    requiredValue: 61
+    levelCap: 61
+    title: Star Rage
+    summary: Domain and Imaginary Mass progression become available.
+  - track: 4
+    requiredValue: 1
+    levelCap: 61
+    title: Singularity Awakening
+    summary: Adds permanent bonuses, expanded stacks, death detonation, and revival.
+  abilities:
+  - abilityId: catherine_basic_gravity_strike
+    kind: 0
+    runtimeSlot: 0
+    runtimeSkill: {fileID: 0}
+    displayName: Gravity Strike
+    summary: A close-range physical attack that builds Rage and holds the nearest
+      target.
+    triggerSummary: Repeats after the attack interval while the locked target remains
+      alive.
+    targetSummary: Nearest living enemy within two grid units.
+    effectSummary: Deals physical damage and grants Rage on hit.
+    unlockLevel: 1
+    maxLevel: 1
+    tags: 257
+    ranks:
+    - level: 1
+      summary: Maxed demo basic attack pattern.
+      values: []
+  - abilityId: catherine_infinite_void
+    kind: 1
+    runtimeSlot: 1
+    runtimeSkill: {fileID: 11400000, guid: 5c3f09408bca7a44088f944a7be020df, type: 2}
+    displayName: 'Imaginary Mass: Infinite Void'
+    summary: Transforms into a humanoid black hole, gathers every enemy, deals repeated
+      damage, then collapses and launches them.
+    triggerSummary: Casts at 1000 Rage and returns Rage to zero.
+    targetSummary: All living enemies.
+    effectSummary: Charge, pull, repeated physical damage, collapse, and launch.
+    unlockLevel: 1
+    maxLevel: 9
+    tags: 389
+    ranks:
+    - level: 1
+      summary: Damage scales to 720% of Attack.
+      values:
+      - key: damage
+        value: 720
+        unit: 2
+    - level: 2
+      summary: Damage scales to 750% of Attack.
+      values:
+      - key: damage
+        value: 750
+        unit: 2
+    - level: 3
+      summary: Damage scales to 780% of Attack.
+      values:
+      - key: damage
+        value: 780
+        unit: 2
+    - level: 4
+      summary: Damage scales to 810% of Attack.
+      values:
+      - key: damage
+        value: 810
+        unit: 2
+    - level: 5
+      summary: Damage scales to 840% of Attack.
+      values:
+      - key: damage
+        value: 840
+        unit: 2
+    - level: 6
+      summary: Damage scales to 870% of Attack.
+      values:
+      - key: damage
+        value: 870
+        unit: 2
+    - level: 7
+      summary: Damage scales to 900% of Attack.
+      values:
+      - key: damage
+        value: 900
+        unit: 2
+    - level: 8
+      summary: Damage scales to 930% of Attack.
+      values:
+      - key: damage
+        value: 930
+        unit: 2
+    - level: 9
+      summary: Damage scales to 960% of Attack.
+      values:
+      - key: damage
+        value: 960
+        unit: 2
+  - abilityId: catherine_wind_wheel_break
+    kind: 2
+    runtimeSlot: 2
+    runtimeSkill: {fileID: 11400000, guid: 7de4d33b278235c48affa3a2855a2cef, type: 2}
+    displayName: 'Wind Wheel: Break'
+    summary: Shapes the wind wheel into a focused line attack that breaks through
+      enemies and lifts them.
+    triggerSummary: Automatically casts at 5 seconds, then every 10 seconds.
+    targetSummary: Enemies in a forward line; knockback is capped by the 20-grid
+      arena.
+    effectSummary: Piercing physical damage, defense break presentation, and knock-up
+      control.
+    unlockLevel: 11
+    maxLevel: 5
+    tags: 389
+    ranks:
+    - level: 1
+      summary: Damage scales to 480% of Attack.
+      values:
+      - key: damage
+        value: 480
+        unit: 2
+    - level: 2
+      summary: Damage scales to 510% of Attack.
+      values:
+      - key: damage
+        value: 510
+        unit: 2
+    - level: 3
+      summary: Damage scales to 540% of Attack.
+      values:
+      - key: damage
+        value: 540
+        unit: 2
+    - level: 4
+      summary: Damage scales to 570% of Attack.
+      values:
+      - key: damage
+        value: 570
+        unit: 2
+    - level: 5
+      summary: Damage scales to 600% of Attack.
+      values:
+      - key: damage
+        value: 600
+        unit: 2
+  - abilityId: catherine_wind_wheel_dance
+    kind: 2
+    runtimeSlot: 3
+    runtimeSkill: {fileID: 11400000, guid: 5f0c27c80804241428542c1d5108ef7e, type: 2}
+    displayName: 'Wind Wheel: Dance'
+    summary: A two-hit assault that restores health from damage, charges forward,
+      Taunts, and grants Super Armor during the sequence.
+    triggerSummary: Automatically casts at 10 seconds, then every 10 seconds.
+    targetSummary: Current locked enemy, then a forward charge target.
+    effectSummary: Two physical hits, 140% damage-to-healing conversion, Taunt, and
+      Super Armor.
+    unlockLevel: 41
+    maxLevel: 4
+    tags: 303
+    ranks:
+    - level: 1
+      summary: Damage scales to 400% of Attack.
+      values:
+      - key: damage
+        value: 400
+        unit: 2
+    - level: 2
+      summary: Damage scales to 440% of Attack.
+      values:
+      - key: damage
+        value: 440
+        unit: 2
+    - level: 3
+      summary: Damage scales to 480% of Attack.
+      values:
+      - key: damage
+        value: 480
+        unit: 2
+    - level: 4
+      summary: Damage scales to 520% of Attack.
+      values:
+      - key: damage
+        value: 520
+        unit: 2
+  - abilityId: catherine_star_rage
+    kind: 4
+    runtimeSlot: 0
+    runtimeSkill: {fileID: 11400000, guid: c2eb7f10f92ab734ca1a1c136629f59b, type: 2}
+    displayName: Star Rage
+    summary: Enemy active skills can grant Imaginary Mass, improving final damage
+      reduction and scaling Infinite Void before stacks convert into maximum health.
+    triggerSummary: Checks whenever an enemy hero casts an active skill.
+    targetSummary: Self.
+    effectSummary: Up to 30 stacks; 10/20/30 stacks scale the ultimate to 2x/3x/4x,
+      then up to 20 stacks convert to Max HP.
+    unlockLevel: 61
+    maxLevel: 9
+    tags: 24
+    ranks:
+    - level: 1
+      summary: 40% trigger chance.
+      values:
+      - key: trigger_chance
+        value: 40
+        unit: 1
+    - level: 2
+      summary: 50% trigger chance.
+      values:
+      - key: trigger_chance
+        value: 50
+        unit: 1
+    - level: 3
+      summary: 60% trigger chance.
+      values:
+      - key: trigger_chance
+        value: 60
+        unit: 1
+    - level: 4
+      summary: 70% trigger chance.
+      values:
+      - key: trigger_chance
+        value: 70
+        unit: 1
+    - level: 5
+      summary: 80% trigger chance.
+      values:
+      - key: trigger_chance
+        value: 80
+        unit: 1
+    - level: 6
+      summary: Gain two stacks per trigger.
+      values:
+      - key: stacks_per_trigger
+        value: 2
+        unit: 7
+    - level: 7
+      summary: Each converted stack grants 3% Max HP.
+      values:
+      - key: max_hp_per_stack
+        value: 3
+        unit: 4
+    - level: 8
+      summary: Each converted stack grants 4% Max HP.
+      values:
+      - key: max_hp_per_stack
+        value: 4
+        unit: 4
+    - level: 9
+      summary: 99% trigger chance.
+      values:
+      - key: trigger_chance
+        value: 99
+        unit: 1
+  - abilityId: catherine_awakening
+    kind: 5
+    runtimeSlot: 0
+    runtimeSkill: {fileID: 0}
+    displayName: Singularity Awakening
+    summary: Permanent offense and defense gains expand the stack ceiling; a once-per-battle
+      death trigger detonates Infinite Void and revives Catherine.
+    triggerSummary: Permanent after awakening; the revival clause triggers once on
+      death.
+    targetSummary: Self and all enemies during the death detonation.
+    effectSummary: Damage dealt and reduction +35%; 50-stack ultimate can reach 6x;
+      death detonation revives to 99% HP and grants 20 stacks.
+    unlockLevel: 61
+    maxLevel: 2
+    tags: 1049
+    ranks:
+    - level: 1
+      summary: Permanent bonuses and expanded Imaginary Mass scaling.
+      values: []
+    - level: 2
+      summary: Once-per-battle death detonation and revival.
+      values: []
+  acquisition:
+  - source: 2
+    label: Limited Signal
+    availability: Excluded from the Standard Signal pool; reserved for a limited
+      banner template.
+    duplicateRule: Duplicate conversion is reserved for a future inventory schema.
+  - source: 0
+    label: Demo Test Grant
+    availability: Granted in fresh demo saves so the maxed UR battle kit can always
+      be tested.
+    duplicateRule: Not applicable to the initial grant.
+  synergyTags:
+  - frontline_anchor
+  - area_damage
+  - backline_followup
+  counterTags:
+  - healing_denial
+  - stack_suppression
+  - displacement_immunity
+  originalText: 1
+  independentlyAuthoredNumbers: 1
+  artSourceRecord: ART-CHAR-UR-COSMIC-SLIME-001; ART-UI-CHARACTER-PORTRAITS-001
+  authoringNotes: User-authored maxed UR design normalized into the BubbleMind content
+    template.

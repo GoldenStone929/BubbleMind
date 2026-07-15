@@ -15,6 +15,7 @@ namespace GenericGachaRPG
         [SerializeField] private Color displayColor = Color.white;
         [SerializeField] private Sprite portrait;
         [SerializeField] private GameObject characterPrefab;
+        [SerializeField] private CharacterContentProfile contentProfile;
 
         [Header("Battle Stats")]
         [Min(1f), SerializeField] private float maxHealth = 1000f;
@@ -42,6 +43,7 @@ namespace GenericGachaRPG
         public Color DisplayColor => displayColor;
         public Sprite Portrait => portrait;
         public GameObject CharacterPrefab => characterPrefab;
+        public CharacterContentProfile ContentProfile => contentProfile;
         public float MaxHealth => maxHealth;
         public float Attack => attack;
         public float Defense => defense;
@@ -100,7 +102,9 @@ namespace GenericGachaRPG
             attack = Mathf.Max(0f, characterAttack);
             defense = Mathf.Max(0f, characterDefense);
             attackInterval = Mathf.Max(0.05f, characterAttackInterval);
-            attackRange = BattleRules.GetDefaultAttackRange(characterRole);
+            attackRange = Mathf.Max(
+                BattleRules.MinimumAttackRange,
+                SanitizePositive(characterAttackRange, BattleRules.GetDefaultAttackRange(characterRole)));
             moveSpeed = SanitizePositive(characterMoveSpeed, BattleRules.GetDefaultMoveSpeed(characterRole));
             maxRage = Mathf.Max(1, characterMaxRage);
             ragePerAttack = Mathf.Max(0, characterRagePerAttack);
@@ -116,6 +120,11 @@ namespace GenericGachaRPG
             skill3 = characterSkill3;
         }
 
+        public void ConfigureContentProfile(CharacterContentProfile profile)
+        {
+            contentProfile = profile;
+        }
+
         private void OnValidate()
         {
             id = id == null ? string.Empty : id.Trim();
@@ -124,7 +133,9 @@ namespace GenericGachaRPG
             attack = Mathf.Max(0f, attack);
             defense = Mathf.Max(0f, defense);
             attackInterval = Mathf.Max(0.05f, attackInterval);
-            attackRange = BattleRules.GetDefaultAttackRange(role);
+            attackRange = Mathf.Max(
+                BattleRules.MinimumAttackRange,
+                SanitizePositive(attackRange, BattleRules.GetDefaultAttackRange(role)));
             moveSpeed = SanitizePositive(moveSpeed, BattleRules.GetDefaultMoveSpeed(role));
             maxRage = Mathf.Max(1, maxRage);
             ragePerAttack = Mathf.Max(0, ragePerAttack);

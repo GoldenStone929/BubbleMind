@@ -17,8 +17,32 @@ namespace GenericGachaRPG.Editor
 
         private const string SkillFolder = "Assets/_Game/Data/Skills";
         private const string CharacterFolder = "Assets/_Game/Data/Characters";
+        private const string CharacterProfileFolder = "Assets/_Game/Data/CharacterProfiles";
         private const string GachaFolder = "Assets/_Game/Data/Gacha";
         private const string PortraitFolder = "Assets/_Game/Art/Generated/UI/Portraits";
+        private static readonly string[] RequiredCharacterIds =
+        {
+            "azure_vanguard",
+            "ember_striker",
+            "verdant_medic",
+            "ur_cosmic_slime",
+            "violet_arcanist",
+            "gold_ranger",
+            "cyan_warden"
+        };
+        private static readonly string[] RequiredSkillIds =
+        {
+            "pulse_strike",
+            "spectrum_nova",
+            "restore_wave",
+            "timed_impact",
+            "timed_wave",
+            AssassinBattleKit.BacklineShiftSkillId,
+            CatherineYukiBattleKit.Skill1Id,
+            CatherineYukiBattleKit.Skill2Id,
+            CatherineYukiBattleKit.Skill3Id,
+            CatherineYukiBattleKit.UltimateId
+        };
 
         static DemoSceneGenerator()
         {
@@ -99,14 +123,16 @@ namespace GenericGachaRPG.Editor
 
         private static bool HasCompleteGeneratedContent(GameDatabase database)
         {
-            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 10)
+            if (database == null ||
+                !ContainsAllCharacters(database, RequiredCharacterIds) ||
+                !ContainsAllSkills(database, RequiredSkillIds))
             {
                 return false;
             }
 
-            for (int i = 0; i < database.Characters.Count; i++)
+            for (int i = 0; i < RequiredCharacterIds.Length; i++)
             {
-                CharacterDefinition character = database.Characters[i];
+                CharacterDefinition character = database.GetCharacter(RequiredCharacterIds[i]);
                 if (character == null ||
                     !IsFinitePositive(character.AttackRange) ||
                     !IsFinitePositive(character.MoveSpeed) ||
@@ -116,6 +142,7 @@ namespace GenericGachaRPG.Editor
                     character.UltimateSkill == null ||
                     character.Skill2 == null ||
                     character.Skill3 == null ||
+                    character.ContentProfile == null ||
                     character.Portrait == null)
                 {
                     return false;
@@ -216,8 +243,89 @@ namespace GenericGachaRPG.Editor
                    database.GetSkill(CatherineYukiBattleKit.Skill3Id) != null &&
                    catherineUltimate != null &&
                    Mathf.Approximately(
-                       catherineUltimate.DamageMultiplier,
-                       CatherineYukiBattleKit.UltimateBaseDamageMultiplier);
+                        catherineUltimate.DamageMultiplier,
+                        CatherineYukiBattleKit.UltimateBaseDamageMultiplier);
+        }
+
+        private static bool ContainsAllCharacters(GameDatabase database, IReadOnlyList<string> requiredIds)
+        {
+            for (int i = 0; i < requiredIds.Count; i++)
+            {
+                if (database.GetCharacter(requiredIds[i]) == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool ContainsAllSkills(GameDatabase database, IReadOnlyList<string> requiredIds)
+        {
+            for (int i = 0; i < requiredIds.Count; i++)
+            {
+                if (database.GetSkill(requiredIds[i]) == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        internal static List<T> MergeDefinitions<T>(
+            IReadOnlyList<T> existing,
+            IEnumerable<T> generated,
+            Func<T, string> getId)
+            where T : UnityEngine.Object
+        {
+            var merged = new List<T>();
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            if (generated != null)
+            {
+                foreach (T item in generated)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+
+                    string id = getId(item);
+                    if (!string.IsNullOrWhiteSpace(id) && ids.Add(id))
+                    {
+                        merged.Add(item);
+                    }
+                }
+            }
+
+            if (existing == null)
+            {
+                return merged;
+            }
+
+            for (int i = 0; i < existing.Count; i++)
+            {
+                T item = existing[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                string id = getId(item);
+                if (!string.IsNullOrWhiteSpace(id) && ids.Add(id))
+                {
+                    merged.Add(item);
+                }
+            }
+
+            return merged;
+        }
+
+        internal static bool ShouldInitializeProfile(
+            bool profileCreated,
+            CharacterContentProfile profile)
+        {
+            return profileCreated || profile == null || string.IsNullOrWhiteSpace(profile.SchemaVersion);
         }
 
         private static bool HasRarity(GameDatabase database, string characterId, Rarity expectedRarity)
@@ -283,6 +391,7 @@ namespace GenericGachaRPG.Editor
                 0.34f,
                 1,
                 "A focused burst against one target.");
+            strikeSkill.ConfigurePresentation(SkillTag.Damage | SkillTag.Physical);
             EditorUtility.SetDirty(strikeSkill);
 
             SkillDefinition novaSkill = GetOrCreateAsset<SkillDefinition>(
@@ -299,6 +408,7 @@ namespace GenericGachaRPG.Editor
                 0.48f,
                 BattleRules.TeamSize,
                 "A wide spectrum blast that hits every opponent.");
+            novaSkill.ConfigurePresentation(SkillTag.Damage | SkillTag.Area | SkillTag.Magical);
             EditorUtility.SetDirty(novaSkill);
 
             SkillDefinition healSkill = GetOrCreateAsset<SkillDefinition>(
@@ -315,6 +425,7 @@ namespace GenericGachaRPG.Editor
                 0.42f,
                 1,
                 "Restores the ally with the lowest health ratio.");
+            healSkill.ConfigurePresentation(SkillTag.Healing | SkillTag.Survival);
             EditorUtility.SetDirty(healSkill);
 
             SkillDefinition timedImpactSkill = GetOrCreateAsset<SkillDefinition>(
@@ -331,6 +442,7 @@ namespace GenericGachaRPG.Editor
                 0.28f,
                 1,
                 "Automatic skill slot 2. Cast at 5 seconds, then every 10 seconds.");
+            timedImpactSkill.ConfigurePresentation(SkillTag.Damage | SkillTag.Control);
             EditorUtility.SetDirty(timedImpactSkill);
 
             SkillDefinition timedWaveSkill = GetOrCreateAsset<SkillDefinition>(
@@ -347,6 +459,7 @@ namespace GenericGachaRPG.Editor
                 0.38f,
                 BattleRules.TeamSize,
                 "Automatic skill slot 3. Cast at 10 seconds, then every 10 seconds.");
+            timedWaveSkill.ConfigurePresentation(SkillTag.Damage | SkillTag.Area);
             EditorUtility.SetDirty(timedWaveSkill);
 
             SkillDefinition assassinBacklineShift = GetOrCreateAsset<SkillDefinition>(
@@ -363,6 +476,8 @@ namespace GenericGachaRPG.Editor
                 0.22f,
                 1,
                 "Teleports behind the deepest enemy backline unit, strikes, and keeps attacking it.");
+            assassinBacklineShift.ConfigurePresentation(
+                SkillTag.Damage | SkillTag.Mobility | SkillTag.Physical);
             EditorUtility.SetDirty(assassinBacklineShift);
 
             SkillDefinition catherineSkill1 = GetOrCreateAsset<SkillDefinition>(
@@ -379,6 +494,8 @@ namespace GenericGachaRPG.Editor
                 CatherineYukiBattleKit.Skill1HitDelay,
                 BattleRules.TeamSize,
                 "Max-level line break: pierces defenses and knocks targets up.");
+            catherineSkill1.ConfigurePresentation(
+                SkillTag.Damage | SkillTag.Control | SkillTag.Area | SkillTag.Physical);
             EditorUtility.SetDirty(catherineSkill1);
 
             SkillDefinition catherineSkill2 = GetOrCreateAsset<SkillDefinition>(
@@ -395,6 +512,9 @@ namespace GenericGachaRPG.Editor
                 CatherineYukiBattleKit.Skill2SecondHitDelay,
                 1,
                 "Max-level two-hit charge with damage-based healing, Taunt, and Super Armor.");
+            catherineSkill2.ConfigurePresentation(
+                SkillTag.Damage | SkillTag.Healing | SkillTag.Control | SkillTag.Survival |
+                SkillTag.Taunt | SkillTag.Physical);
             EditorUtility.SetDirty(catherineSkill2);
 
             SkillDefinition catherineSkill3 = GetOrCreateAsset<SkillDefinition>(
@@ -411,6 +531,8 @@ namespace GenericGachaRPG.Editor
                 CatherineYukiBattleKit.Skill3HitDelay,
                 BattleRules.TeamSize,
                 "Max-level domain test: applies gravity debuff and gains Imaginary Mass.");
+            catherineSkill3.ConfigurePresentation(
+                SkillTag.Survival | SkillTag.Enhancement | SkillTag.Control);
             EditorUtility.SetDirty(catherineSkill3);
 
             SkillDefinition catherineUltimate = GetOrCreateAsset<SkillDefinition>(
@@ -427,6 +549,8 @@ namespace GenericGachaRPG.Editor
                 CatherineYukiBattleKit.UltimateChargeDuration,
                 BattleRules.TeamSize,
                 "Max-level 960% base AoE: charge, transform, pull, multi-hit, collapse, and launch.");
+            catherineUltimate.ConfigurePresentation(
+                SkillTag.Damage | SkillTag.Control | SkillTag.Area | SkillTag.Physical);
             EditorUtility.SetDirty(catherineUltimate);
 
             var skills = new List<SkillDefinition>
@@ -566,6 +690,52 @@ namespace GenericGachaRPG.Editor
                     waterSlimePrefab)
             };
 
+            CreateStandardCharacterProfile(
+                characters[0],
+                CharacterElement.Water,
+                "Tidewall Sentinel",
+                new[] { "frontline", "guard", "steady" },
+                "Standard Signal recruitment.",
+                false);
+            CreateStandardCharacterProfile(
+                characters[1],
+                CharacterElement.Fire,
+                "Cinderstep Hunter",
+                new[] { "assassin", "backline", "mobility" },
+                "Standard Signal recruitment and demo starter access.",
+                true);
+            CreateStandardCharacterProfile(
+                characters[2],
+                CharacterElement.Wind,
+                "Canopy Field Medic",
+                new[] { "support", "healing", "sustain" },
+                "Standard Signal recruitment and demo starter access.",
+                true);
+            CreateCatherineContentProfile(
+                characters[3],
+                catherineSkill3);
+            CreateStandardCharacterProfile(
+                characters[4],
+                CharacterElement.Lightning,
+                "Stormglass Arcanist",
+                new[] { "mage", "area", "burst" },
+                "Standard Signal recruitment and demo starter access.",
+                true);
+            CreateStandardCharacterProfile(
+                characters[5],
+                CharacterElement.Earth,
+                "Gilded Horizon Ranger",
+                new[] { "ranged", "precision", "tempo" },
+                "Standard Signal recruitment and demo starter access.",
+                true);
+            CreateStandardCharacterProfile(
+                characters[6],
+                CharacterElement.Water,
+                "Prismatic Tide Warden",
+                new[] { "tank", "disruption", "area" },
+                "Standard Signal recruitment.",
+                false);
+
             GachaBannerDefinition banner = GetOrCreateAsset<GachaBannerDefinition>(
                 $"{GachaFolder}/Banner_StandardSignal.asset",
                 out _);
@@ -586,6 +756,12 @@ namespace GenericGachaRPG.Editor
             EditorUtility.SetDirty(banner);
 
             GameDatabase database = GetOrCreateAsset<GameDatabase>(DatabasePath, out _);
+            characters = MergeDefinitions(database.Characters, characters, character => character.Id);
+            skills = MergeDefinitions(database.Skills, skills, skill => skill.Id);
+            List<GachaBannerDefinition> banners = MergeDefinitions(
+                database.GachaBanners,
+                new[] { banner },
+                candidate => candidate.Id);
             database.Configure(
                 3000,
                 new[]
@@ -612,7 +788,7 @@ namespace GenericGachaRPG.Editor
                 },
                 characters,
                 skills,
-                new[] { banner });
+                banners);
 
             EditorUtility.SetDirty(database);
             return database;
@@ -664,6 +840,371 @@ namespace GenericGachaRPG.Editor
             EditorUtility.SetDirty(character);
 
             return character;
+        }
+
+        private static void CreateStandardCharacterProfile(
+            CharacterDefinition character,
+            CharacterElement element,
+            string title,
+            IEnumerable<string> keywords,
+            string acquisitionSummary,
+            bool includeStarterSource)
+        {
+            CharacterContentProfile profile = GetOrCreateAsset<CharacterContentProfile>(
+                $"{CharacterProfileFolder}/Profile_{character.Id}.asset",
+                out bool profileCreated);
+            var abilities = new List<CharacterAbilityRecord>
+            {
+                new CharacterAbilityRecord(
+                    $"{character.Id}_basic",
+                    CharacterAbilityKind.Basic,
+                    RuntimeSkillSlot.None,
+                    null,
+                    "Resonant Strike",
+                    "A role-aware basic attack that uses the character's authored range and tempo.",
+                    "Repeats after the attack interval when a valid target is in range.",
+                    "Current locked target.",
+                    "Deals physical damage and builds Rage on hit.",
+                    1,
+                    1,
+                    SkillTag.Damage | SkillTag.Physical,
+                    new[] { new SkillRankRecord(1, "Base combat pattern available.") }),
+                CreateRuntimeAbilityRecord(character, character.UltimateSkill, RuntimeSkillSlot.Ultimate),
+                CreateRuntimeAbilityRecord(character, character.Skill2, RuntimeSkillSlot.Skill2),
+                CreateRuntimeAbilityRecord(character, character.Skill3, RuntimeSkillSlot.Skill3),
+                new CharacterAbilityRecord(
+                    $"{character.Id}_resonance",
+                    CharacterAbilityKind.Passive,
+                    RuntimeSkillSlot.None,
+                    null,
+                    $"{element} Resonance",
+                    "Archive-ready passive slot reserved for future progression content.",
+                    "Passive while deployed after its progression gate is met.",
+                    "Self and compatible allies.",
+                    "Carries elemental and role synergy tags without changing the current demo battle.",
+                    20,
+                    1,
+                    SkillTag.Enhancement,
+                    new[] { new SkillRankRecord(1, "Template hook; no runtime modifier in this milestone.") })
+            };
+            var stages = new[]
+            {
+                new ProgressionStageRecord(
+                    ProgressionTrack.Ownership,
+                    0,
+                    1,
+                    "Signal Registered",
+                    "Unlocks the archive card, portrait, and base combat definition."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Level,
+                    1,
+                    20,
+                    "Field Calibration",
+                    "Base statistics and the three current runtime abilities are active."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Rank,
+                    1,
+                    40,
+                    "Resonance Channel",
+                    "Reserved template stage for rank materials and passive activation."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Awakening,
+                    1,
+                    60,
+                    "Awakened Signal",
+                    "Reserved template stage for future awakening effects and presentation assets.")
+            };
+            var acquisition = new List<AcquisitionRecord>
+            {
+                new AcquisitionRecord(
+                    AcquisitionSource.StandardRecruitment,
+                    "Standard Signal",
+                    acquisitionSummary,
+                    "Duplicates are counted in the current local demo state.")
+            };
+            if (includeStarterSource)
+            {
+                acquisition.Add(new AcquisitionRecord(
+                    AcquisitionSource.Starter,
+                    "Demo Starter",
+                    "Granted in a fresh local demo save for formation testing.",
+                    "Not applicable to the initial grant."));
+            }
+
+            profile.BindToCharacter(character.Id);
+            if (ShouldInitializeProfile(profileCreated, profile))
+            {
+                profile.Configure(
+                    "1.0",
+                    "2026.07.15",
+                    ContentApprovalStatus.Approved,
+                    title,
+                    element,
+                    "Abyssal Observatory",
+                    keywords,
+                    60,
+                    "Static authoring template only; the current save keeps Level and Copies without upgrade commands.",
+                    "Awakening is documented as a future content gate and does not alter the P0 simulation.",
+                    stages,
+                    abilities,
+                    acquisition,
+                    new[] { element.ToString().ToLowerInvariant(), character.Role.ToString().ToLowerInvariant() },
+                    new[] { "control_pressure", "formation_spacing" },
+                    true,
+                    true,
+                    "ART-UI-CHARACTER-PORTRAITS-001",
+                    "Original BubbleMind profile generated from the reusable content template.");
+            }
+
+            EditorUtility.SetDirty(profile);
+            character.ConfigureContentProfile(profile);
+            EditorUtility.SetDirty(character);
+        }
+
+        private static CharacterAbilityRecord CreateRuntimeAbilityRecord(
+            CharacterDefinition character,
+            SkillDefinition skill,
+            RuntimeSkillSlot slot)
+        {
+            CharacterAbilityKind kind = slot == RuntimeSkillSlot.Ultimate
+                ? CharacterAbilityKind.Ultimate
+                : CharacterAbilityKind.Active;
+            string trigger = slot == RuntimeSkillSlot.Ultimate
+                ? $"Automatically casts when Rage reaches {skill.RageCost}."
+                : slot == RuntimeSkillSlot.Skill2
+                    ? "Automatically casts at 5 seconds, then every 10 seconds."
+                    : "Automatically casts at 10 seconds, then every 10 seconds.";
+            return new CharacterAbilityRecord(
+                $"{character.Id}_{slot.ToString().ToLowerInvariant()}",
+                kind,
+                slot,
+                skill,
+                skill.DisplayName,
+                skill.Description,
+                trigger,
+                skill.TargetMode.ToString(),
+                skill.Description,
+                1,
+                1,
+                skill.Tags,
+                new[]
+                {
+                    new SkillRankRecord(
+                        1,
+                        "Runtime power is read directly from the linked SkillDefinition.")
+                });
+        }
+
+        private static void CreateCatherineContentProfile(
+            CharacterDefinition character,
+            SkillDefinition starRageSkill)
+        {
+            CharacterContentProfile profile = GetOrCreateAsset<CharacterContentProfile>(
+                $"{CharacterProfileFolder}/Profile_{character.Id}.asset",
+                out bool profileCreated);
+            var abilities = new List<CharacterAbilityRecord>
+            {
+                new CharacterAbilityRecord(
+                    "catherine_basic_gravity_strike",
+                    CharacterAbilityKind.Basic,
+                    RuntimeSkillSlot.None,
+                    null,
+                    "Gravity Strike",
+                    "A close-range physical attack that builds Rage and holds the nearest target.",
+                    "Repeats after the attack interval while the locked target remains alive.",
+                    "Nearest living enemy within two grid units.",
+                    "Deals physical damage and grants Rage on hit.",
+                    1,
+                    1,
+                    SkillTag.Damage | SkillTag.Physical,
+                    new[] { new SkillRankRecord(1, "Maxed demo basic attack pattern.") }),
+                new CharacterAbilityRecord(
+                    "catherine_infinite_void",
+                    CharacterAbilityKind.Ultimate,
+                    RuntimeSkillSlot.Ultimate,
+                    character.UltimateSkill,
+                    character.UltimateSkill.DisplayName,
+                    "Transforms into a humanoid black hole, gathers every enemy, deals repeated damage, then collapses and launches them.",
+                    "Casts at 1000 Rage and returns Rage to zero.",
+                    "All living enemies.",
+                    "Charge, pull, repeated physical damage, collapse, and launch.",
+                    1,
+                    9,
+                    SkillTag.Damage | SkillTag.Control | SkillTag.Area | SkillTag.Physical,
+                    CreateDamageRanks(new[] { 720f, 750f, 780f, 810f, 840f, 870f, 900f, 930f, 960f })),
+                new CharacterAbilityRecord(
+                    "catherine_wind_wheel_break",
+                    CharacterAbilityKind.Active,
+                    RuntimeSkillSlot.Skill2,
+                    character.Skill2,
+                    character.Skill2.DisplayName,
+                    "Shapes the wind wheel into a focused line attack that breaks through enemies and lifts them.",
+                    "Automatically casts at 5 seconds, then every 10 seconds.",
+                    "Enemies in a forward line; knockback is capped by the 20-grid arena.",
+                    "Piercing physical damage, defense break presentation, and knock-up control.",
+                    11,
+                    5,
+                    SkillTag.Damage | SkillTag.Control | SkillTag.Area | SkillTag.Physical,
+                    CreateDamageRanks(new[] { 480f, 510f, 540f, 570f, 600f })),
+                new CharacterAbilityRecord(
+                    "catherine_wind_wheel_dance",
+                    CharacterAbilityKind.Active,
+                    RuntimeSkillSlot.Skill3,
+                    character.Skill3,
+                    character.Skill3.DisplayName,
+                    "A two-hit assault that restores health from damage, charges forward, Taunts, and grants Super Armor during the sequence.",
+                    "Automatically casts at 10 seconds, then every 10 seconds.",
+                    "Current locked enemy, then a forward charge target.",
+                    "Two physical hits, 140% damage-to-healing conversion, Taunt, and Super Armor.",
+                    41,
+                    4,
+                    SkillTag.Damage | SkillTag.Healing | SkillTag.Control | SkillTag.Survival |
+                    SkillTag.Taunt | SkillTag.Physical,
+                    CreateDamageRanks(new[] { 400f, 440f, 480f, 520f })),
+                new CharacterAbilityRecord(
+                    "catherine_star_rage",
+                    CharacterAbilityKind.Domain,
+                    RuntimeSkillSlot.None,
+                    starRageSkill,
+                    starRageSkill.DisplayName,
+                    "Enemy active skills can grant Imaginary Mass, improving final damage reduction and scaling Infinite Void before stacks convert into maximum health.",
+                    "Checks whenever an enemy hero casts an active skill.",
+                    "Self.",
+                    "Up to 30 stacks; 10/20/30 stacks scale the ultimate to 2x/3x/4x, then up to 20 stacks convert to Max HP.",
+                    61,
+                    9,
+                    SkillTag.Survival | SkillTag.Enhancement,
+                    CreateStarRageRanks()),
+                new CharacterAbilityRecord(
+                    "catherine_awakening",
+                    CharacterAbilityKind.Awakening,
+                    RuntimeSkillSlot.None,
+                    null,
+                    "Singularity Awakening",
+                    "Permanent offense and defense gains expand the stack ceiling; a once-per-battle death trigger detonates Infinite Void and revives Catherine.",
+                    "Permanent after awakening; the revival clause triggers once on death.",
+                    "Self and all enemies during the death detonation.",
+                    "Damage dealt and reduction +35%; 50-stack ultimate can reach 6x; death detonation revives to 99% HP and grants 20 stacks.",
+                    61,
+                    2,
+                    SkillTag.Damage | SkillTag.Survival | SkillTag.Enhancement | SkillTag.Revival,
+                    new[]
+                    {
+                        new SkillRankRecord(1, "Permanent bonuses and expanded Imaginary Mass scaling."),
+                        new SkillRankRecord(2, "Once-per-battle death detonation and revival.")
+                    })
+            };
+            var stages = new[]
+            {
+                new ProgressionStageRecord(
+                    ProgressionTrack.Ownership,
+                    0,
+                    1,
+                    "Limited Signal Registered",
+                    "Unlocks the archive, event-horizon portrait, and tank battle definition."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Level,
+                    11,
+                    11,
+                    "Wind Wheel: Break",
+                    "First timed active ability becomes available in the complete progression model."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Level,
+                    41,
+                    41,
+                    "Wind Wheel: Dance",
+                    "Survival and Taunt sequence becomes available."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Level,
+                    61,
+                    61,
+                    "Star Rage",
+                    "Domain and Imaginary Mass progression become available."),
+                new ProgressionStageRecord(
+                    ProgressionTrack.Awakening,
+                    1,
+                    61,
+                    "Singularity Awakening",
+                    "Adds permanent bonuses, expanded stacks, death detonation, and revival.")
+            };
+            var acquisition = new[]
+            {
+                new AcquisitionRecord(
+                    AcquisitionSource.LimitedRecruitment,
+                    "Limited Signal",
+                    "Excluded from the Standard Signal pool; reserved for a limited banner template.",
+                    "Duplicate conversion is reserved for a future inventory schema."),
+                new AcquisitionRecord(
+                    AcquisitionSource.Starter,
+                    "Demo Test Grant",
+                    "Granted in fresh demo saves so the maxed UR battle kit can always be tested.",
+                    "Not applicable to the initial grant.")
+            };
+
+            profile.BindToCharacter(character.Id);
+            if (ShouldInitializeProfile(profileCreated, profile))
+            {
+                profile.Configure(
+                    "1.0",
+                    "2026.07.15",
+                    ContentApprovalStatus.Approved,
+                    "Limited Singularity Guardian",
+                    CharacterElement.Void,
+                    "Abyssal Observatory",
+                    new[] { "tank", "gravity", "control", "survival", "limited", "maxed-demo" },
+                    61,
+                    "The current demo always runs the maximum authored ability ranks and full awakening test behavior.",
+                    "Two-stage awakening expands Imaginary Mass scaling and adds a once-per-battle revival sequence.",
+                    stages,
+                    abilities,
+                    acquisition,
+                    new[] { "frontline_anchor", "area_damage", "backline_followup" },
+                    new[] { "healing_denial", "stack_suppression", "displacement_immunity" },
+                    true,
+                    true,
+                    "ART-CHAR-UR-COSMIC-SLIME-001; ART-UI-CHARACTER-PORTRAITS-001",
+                    "User-authored maxed UR design normalized into the BubbleMind content template.");
+            }
+
+            EditorUtility.SetDirty(profile);
+            character.ConfigureContentProfile(profile);
+            EditorUtility.SetDirty(character);
+        }
+
+        private static IEnumerable<SkillRankRecord> CreateDamageRanks(IReadOnlyList<float> percentages)
+        {
+            var ranks = new List<SkillRankRecord>();
+            for (int i = 0; i < percentages.Count; i++)
+            {
+                ranks.Add(new SkillRankRecord(
+                    i + 1,
+                    $"Damage scales to {percentages[i]:0}% of Attack.",
+                    new[]
+                    {
+                        new SkillValueRecord(
+                            "damage",
+                            percentages[i],
+                            SkillValueUnit.PercentOfAttack)
+                    }));
+            }
+
+            return ranks;
+        }
+
+        private static IEnumerable<SkillRankRecord> CreateStarRageRanks()
+        {
+            return new[]
+            {
+                new SkillRankRecord(1, "40% trigger chance.", new[] { new SkillValueRecord("trigger_chance", 40f, SkillValueUnit.Percent) }),
+                new SkillRankRecord(2, "50% trigger chance.", new[] { new SkillValueRecord("trigger_chance", 50f, SkillValueUnit.Percent) }),
+                new SkillRankRecord(3, "60% trigger chance.", new[] { new SkillValueRecord("trigger_chance", 60f, SkillValueUnit.Percent) }),
+                new SkillRankRecord(4, "70% trigger chance.", new[] { new SkillValueRecord("trigger_chance", 70f, SkillValueUnit.Percent) }),
+                new SkillRankRecord(5, "80% trigger chance.", new[] { new SkillValueRecord("trigger_chance", 80f, SkillValueUnit.Percent) }),
+                new SkillRankRecord(6, "Gain two stacks per trigger.", new[] { new SkillValueRecord("stacks_per_trigger", 2f, SkillValueUnit.Stacks) }),
+                new SkillRankRecord(7, "Each converted stack grants 3% Max HP.", new[] { new SkillValueRecord("max_hp_per_stack", 3f, SkillValueUnit.PercentOfMaxHealth) }),
+                new SkillRankRecord(8, "Each converted stack grants 4% Max HP.", new[] { new SkillValueRecord("max_hp_per_stack", 4f, SkillValueUnit.PercentOfMaxHealth) }),
+                new SkillRankRecord(9, "99% trigger chance.", new[] { new SkillValueRecord("trigger_chance", 99f, SkillValueUnit.Percent) })
+            };
         }
 
         private static void ConfigurePortraitImportSettings()
@@ -943,6 +1484,7 @@ namespace GenericGachaRPG.Editor
             EnsureFolder("Assets/_Game", "Data");
             EnsureFolder("Assets/_Game/Data", "Skills");
             EnsureFolder("Assets/_Game/Data", "Characters");
+            EnsureFolder("Assets/_Game/Data", "CharacterProfiles");
             EnsureFolder("Assets/_Game/Data", "Gacha");
             EnsureFolder("Assets/_Game", "Scenes");
             EnsureFolder("Assets/_Game", "Art");

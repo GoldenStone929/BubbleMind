@@ -29,13 +29,15 @@ namespace GenericGachaRPG
             Attack = SanitizeNonNegative(definition.Attack * attackMultiplier);
             Defense = SanitizeNonNegative(definition.Defense);
             AttackInterval = SanitizePositive(definition.AttackInterval, BattleContext.DefaultTickDuration);
-            AttackRange = BattleRules.GetDefaultAttackRange(definition.Role);
+            AttackRange = SanitizePositive(
+                definition.AttackRange,
+                BattleRules.GetDefaultAttackRange(definition.Role));
             MoveSpeed = SanitizePositive(
                 definition.MoveSpeed,
                 BattleRules.GetDefaultMoveSpeed(definition.Role));
-            MaxRage = BattleRules.MaxRage;
-            RagePerAttack = BattleRules.RagePerBasicAttackHit;
-            RageWhenHit = BattleRules.RagePerDamageReceived;
+            MaxRage = Math.Max(1, definition.MaxRage);
+            RagePerAttack = Math.Max(0, definition.RagePerAttack);
+            RageWhenHit = Math.Max(0, definition.RageWhenHit);
             UltimateSkill = definition.UltimateSkill;
             Skill2 = definition.Skill2;
             Skill3 = definition.Skill3;
@@ -148,7 +150,11 @@ namespace GenericGachaRPG
 
         internal int NextSkill3Tick { get; set; }
 
-        internal bool CanCastUltimate => UltimateSkill != null && CurrentRage >= MaxRage;
+        internal bool CanCastUltimate =>
+            UltimateSkill != null &&
+            UltimateSkill.RageCost > 0 &&
+            UltimateSkill.RageCost <= MaxRage &&
+            CurrentRage >= UltimateSkill.RageCost;
 
         internal bool CanCastSkill => CanCastUltimate;
 
@@ -234,14 +240,14 @@ namespace GenericGachaRPG
 
         internal int SpendUltimateRage()
         {
-            if (CurrentRage <= 0)
+            int cost = UltimateSkill == null ? 0 : UltimateSkill.RageCost;
+            if (cost <= 0 || CurrentRage < cost)
             {
                 return 0;
             }
 
-            int spentRage = CurrentRage;
-            CurrentRage = 0;
-            return spentRage;
+            CurrentRage -= cost;
+            return cost;
         }
 
         internal int GainEnergy(int requestedEnergy) => GainRage(requestedEnergy);

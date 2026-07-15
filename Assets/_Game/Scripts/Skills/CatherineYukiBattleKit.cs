@@ -48,7 +48,7 @@ namespace GenericGachaRPG
         public const float AwakeningDamageTakenMultiplier = 0.65f;
 
         public const float Skill1DamageMultiplier = 6f;
-        public const float Skill2HitDamageMultiplier = 2f;
+        public const float Skill2HitDamageMultiplier = 2.6f;
         public const float Skill2HealingFromDamageMultiplier = 1.4f;
         public const float UltimateBaseDamageMultiplier = 9.6f;
         public const int UltimateHitCount = 4;

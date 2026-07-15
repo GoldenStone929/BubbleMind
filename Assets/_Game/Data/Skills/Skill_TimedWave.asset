@@ -22,3 +22,5 @@ MonoBehaviour:
   rageCost: 0
   hitTiming: 0.38
   targetCount: 5
+  tags: 129
+  icon: {fileID: 0}

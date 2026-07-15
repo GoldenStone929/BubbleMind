@@ -16,6 +16,8 @@ namespace GenericGachaRPG
         [FormerlySerializedAs("energyCost"), Min(0), SerializeField] private int rageCost = BattleRules.MaxRage;
         [Min(0f), SerializeField] private float hitTiming = 0.35f;
         [Min(1), SerializeField] private int targetCount = 1;
+        [SerializeField] private SkillTag tags = SkillTag.Damage;
+        [SerializeField] private Sprite icon;
 
         public string Id => id;
         public string DisplayName => displayName;
@@ -28,6 +30,8 @@ namespace GenericGachaRPG
         public int EnergyCost => rageCost;
         public float HitTiming => hitTiming;
         public int TargetCount => targetCount;
+        public SkillTag Tags => tags;
+        public Sprite Icon => icon;
 
         public void Configure(
             string skillId,
@@ -51,6 +55,12 @@ namespace GenericGachaRPG
             rageCost = Mathf.Max(0, skillRageCost);
             hitTiming = Mathf.Max(0f, skillHitTiming);
             targetCount = Mathf.Max(1, skillTargetCount);
+        }
+
+        public void ConfigurePresentation(SkillTag skillTags, Sprite skillIcon = null)
+        {
+            tags = skillTags;
+            icon = skillIcon;
         }
 
         private void OnValidate()

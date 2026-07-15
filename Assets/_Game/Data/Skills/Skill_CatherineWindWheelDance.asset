@@ -18,8 +18,10 @@ MonoBehaviour:
     Armor.
   category: 0
   targetMode: 0
-  damageMultiplier: 4
+  damageMultiplier: 5.2
   healingMultiplier: 1.4
   rageCost: 0
   hitTiming: 0.46
   targetCount: 1
+  tags: 303
+  icon: {fileID: 0}

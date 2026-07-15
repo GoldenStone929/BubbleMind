@@ -27,12 +27,12 @@ F8  Tools > Generic Gacha RPG > Open Demo Scene
 F6  Tools > Generic Gacha RPG > Build Windows Demo
 ```
 
-生成器可以重复运行，会校正七名角色、五套元素基础史莱姆 Prefab、星渊吞噬体 Prefab、柔和漫画星渊观测台、十项技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
+生成器可以重复运行，会校正七名角色、七份完整内容档案、五套元素基础史莱姆 Prefab、星渊吞噬体 Prefab、柔和漫画星渊观测台、十项技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
 
 Windows 独立版已经生成在：
 
 ```text
-Builds/Windows/GenericGachaRPGDemo.exe
+Builds/Windows/BubbleMind.exe
 ```
 
 请保留 `Builds/Windows` 内的配套文件和文件夹，不要只单独移动 `.exe`。
@@ -46,11 +46,28 @@ Builds/Windows/GenericGachaRPGDemo.exe
 - 七名角色：六名标准角色使用水、火、土、风、雷五套 Blender 基础史莱姆，首位限定 UR 为“星渊吞噬体”。
 - 原创柔和漫画风 16:9 战斗地图“星渊观测台”，同时作为首页与实战视觉基准。
 - 全局稀有度顺序为 R / SR / SSR / SP / UR；标准池当前包含 R / SR / SSR，首位限定角色为 UR 且不进入标准池。
-- 收藏页、严格五人编队，以及角色卡上的攻击距离和移动速度。
+- 角色主从档案页、`Combat / Archive / Growth` 三种详情模式、严格五人编队，以及角色卡上的攻击距离和移动速度。
 - 固定 Tick、Seed 可复现的 3v5 自动战斗；我方固定为 Catherine 坦克、Gold Ranger 射手和 Ember Striker 刺客，敌方为五名测试单位。
 - 战场长度统一为 20 格；Tank / Assassin 射程 2 格，其余职业射程 10 格。Ember 的技能 2 在第 5 秒瞬移到敌方后排，第 15 秒再次施放时仍攻击同一存活目标。
-- 普攻、能量、单体伤害、群体伤害、治疗、死亡、超时和结果页。
+- 普攻、怒气、三技能错峰、单体伤害、群体伤害、治疗、死亡、超时和结果页。
 - JSON 本地存档、损坏恢复与一键 Reset。
+
+## 内容编辑位置
+
+```text
+角色战斗数据    Assets/_Game/Data/Characters/
+完整角色档案    Assets/_Game/Data/CharacterProfiles/
+技能运行时数据  Assets/_Game/Data/Skills/
+抽卡 Banner     Assets/_Game/Data/Gacha/
+卡面             Assets/_Game/Art/Generated/UI/Portraits/
+```
+
+新增角色和能力的字段、接入顺序与校验规则见：
+
+```text
+Assets/_Game/Docs/ContentTemplateSpecification.md
+Assets/_Game/Docs/OriginalCharacterCatalog.md
+```
 
 ## 定位
 

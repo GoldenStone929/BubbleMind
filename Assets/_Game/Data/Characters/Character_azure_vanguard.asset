@@ -21,6 +21,7 @@ MonoBehaviour:
   displayColor: {r: 0.13, g: 0.48, b: 0.95, a: 1}
   portrait: {fileID: 21300000, guid: e6cf4dc680610d44eb1ec75d48cda0e1, type: 3}
   characterPrefab: {fileID: 6399177392576135528, guid: c6f98ae11fcf29347a775241187b942a, type: 3}
+  contentProfile: {fileID: 11400000, guid: aa82731b006b6ef4bb860ad6d99db1ec, type: 2}
   maxHealth: 1620
   attack: 116
   defense: 58

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -28,6 +29,7 @@ namespace GenericGachaRPG.Editor
         public static void Verify(GameDatabase database)
         {
             VerifyRulesContract();
+            VerifyGeneratorExpansionContract();
             GachaBannerDefinition banner = VerifyDatabase(database);
             GameStateService gameState = VerifyDefaultSave(database);
             VerifySingleDraw(database, banner, gameState);
@@ -39,18 +41,66 @@ namespace GenericGachaRPG.Editor
                 $"{PassMarker} Database, in-memory save, gacha, formation, deterministic battle, scene, and Build Settings all passed.");
         }
 
+        private static void VerifyGeneratorExpansionContract()
+        {
+            SkillDefinition existingRequired = ScriptableObject.CreateInstance<SkillDefinition>();
+            SkillDefinition generatedReplacement = ScriptableObject.CreateInstance<SkillDefinition>();
+            SkillDefinition authoredExtra = ScriptableObject.CreateInstance<SkillDefinition>();
+            CharacterContentProfile authoredProfile = ScriptableObject.CreateInstance<CharacterContentProfile>();
+            try
+            {
+                ConfigureProbeSkill(existingRequired, "required_skill");
+                ConfigureProbeSkill(generatedReplacement, "required_skill");
+                ConfigureProbeSkill(authoredExtra, "authored_extra_skill");
+                List<SkillDefinition> merged = DemoSceneGenerator.MergeDefinitions(
+                    new[] { existingRequired, authoredExtra },
+                    new[] { generatedReplacement },
+                    skill => skill.Id);
+                Require(merged.Count == 2 &&
+                        merged[0] == generatedReplacement &&
+                        merged[1] == authoredExtra,
+                    "Generator merge contract did not preserve authored expansion content.");
+                Require(!DemoSceneGenerator.ShouldInitializeProfile(false, authoredProfile) &&
+                        DemoSceneGenerator.ShouldInitializeProfile(true, authoredProfile),
+                    "Generator profile guard would overwrite an existing authored profile.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(existingRequired);
+                UnityEngine.Object.DestroyImmediate(generatedReplacement);
+                UnityEngine.Object.DestroyImmediate(authoredExtra);
+                UnityEngine.Object.DestroyImmediate(authoredProfile);
+            }
+        }
+
+        private static void ConfigureProbeSkill(SkillDefinition skill, string id)
+        {
+            skill.Configure(
+                id,
+                id,
+                SkillCategory.Damage,
+                SkillTargetMode.SingleEnemy,
+                1f,
+                0f,
+                1,
+                0f,
+                1,
+                "Verifier-only merge probe.");
+        }
+
         private static GachaBannerDefinition VerifyDatabase(GameDatabase database)
         {
             Require(database != null, $"Database asset is missing at '{DatabasePath}'.");
             Require(database.Characters != null, "Database character list is null.");
             Require(database.Skills != null, "Database skill list is null.");
             Require(database.GachaBanners != null, "Database banner list is null.");
-            Require(database.Characters.Count == 7,
-                $"Database must contain exactly 7 characters; found {database.Characters.Count}.");
-            Require(database.Skills.Count == 10,
-                $"Database must contain exactly 10 skills; found {database.Skills.Count}.");
+            Require(database.Characters.Count >= 7,
+                $"Database must contain at least the 7 demo characters; found {database.Characters.Count}.");
+            Require(database.Skills.Count >= 10,
+                $"Database must contain at least the 10 demo skills; found {database.Skills.Count}.");
 
             var characterIds = new HashSet<string>(StringComparer.Ordinal);
+            var characterProfiles = new HashSet<CharacterContentProfile>();
             int limitedCharacterCount = 0;
             for (int i = 0; i < database.Characters.Count; i++)
             {
@@ -60,18 +110,31 @@ namespace GenericGachaRPG.Editor
                 Require(characterIds.Add(character.Id), $"Character id '{character.Id}' is duplicated.");
                 Require(character.UltimateSkill != null && character.Skill2 != null && character.Skill3 != null,
                     $"Character '{character.Id}' does not have all three skill slots.");
+                Require(character.ContentProfile != null,
+                    $"Character '{character.Id}' has no content profile.");
+                Require(string.Equals(
+                        character.ContentProfile.OwnerCharacterId,
+                        character.Id,
+                        StringComparison.Ordinal),
+                    $"Character '{character.Id}' content profile is bound to " +
+                    $"'{character.ContentProfile.OwnerCharacterId}'.");
+                Require(characterProfiles.Add(character.ContentProfile),
+                    $"Character '{character.Id}' shares a content profile with another character.");
+                Require(character.ContentProfile.TryValidate(character, out string profileIssue),
+                    $"Character '{character.Id}' content profile is invalid: {profileIssue}");
                 Require(ContainsReference(database.Skills, character.UltimateSkill) &&
                         ContainsReference(database.Skills, character.Skill2) &&
                         ContainsReference(database.Skills, character.Skill3),
                     $"Character '{character.Id}' references a skill outside the database.");
-                Require(character.UltimateSkill.RageCost == BattleRules.MaxRage,
-                    $"Character '{character.Id}' ultimate does not cost 1000 Rage.");
+                Require(character.UltimateSkill.RageCost > 0 &&
+                        character.UltimateSkill.RageCost <= character.MaxRage,
+                    $"Character '{character.Id}' ultimate cost must fit its Rage cap.");
                 Require(character.Skill2.RageCost == 0 && character.Skill3.RageCost == 0,
                     $"Character '{character.Id}' timed active skills must not consume Rage.");
-                Require(character.MaxRage == BattleRules.MaxRage &&
-                        character.RagePerAttack == BattleRules.RagePerBasicAttackHit &&
-                        character.RageWhenHit == BattleRules.RagePerDamageReceived,
-                    $"Character '{character.Id}' Rage profile does not match the global contract.");
+                Require(character.MaxRage > 0 &&
+                        character.RagePerAttack >= 0 &&
+                        character.RageWhenHit >= 0,
+                    $"Character '{character.Id}' has an invalid Rage profile.");
                 Require(IsFinitePositive(character.MaxHealth),
                     $"Character '{character.Id}' has invalid MaxHealth {character.MaxHealth}.");
                 Require(IsFiniteNonNegative(character.Attack) && IsFiniteNonNegative(character.Defense),
@@ -80,10 +143,8 @@ namespace GenericGachaRPG.Editor
                     $"Character '{character.Id}' has invalid AttackInterval {character.AttackInterval}.");
                 Require(IsFinitePositive(character.AttackRange),
                     $"Character '{character.Id}' has invalid AttackRange {character.AttackRange}.");
-                Require(Mathf.Approximately(
-                            character.AttackRange,
-                            BattleRules.GetDefaultAttackRange(character.Role)),
-                    $"Character '{character.Id}' does not use its role's fixed attack range.");
+                Require(character.AttackRange <= BattleRules.BattlefieldLength,
+                    $"Character '{character.Id}' attack range exceeds the battlefield length.");
                 Require(IsFinitePositive(character.MoveSpeed),
                     $"Character '{character.Id}' has invalid MoveSpeed {character.MoveSpeed}.");
                 Require(Enum.IsDefined(typeof(Rarity), character.Rarity),
@@ -93,10 +154,9 @@ namespace GenericGachaRPG.Editor
                 Require(character.Portrait != null,
                     $"Character '{character.Id}' is missing its 2D portrait sprite.");
                 string portraitPath = AssetDatabase.GetAssetPath(character.Portrait);
-                string expectedPortraitPath =
-                    $"Assets/_Game/Art/Generated/UI/Portraits/Portrait_{character.Id}.png";
-                Require(string.Equals(portraitPath, expectedPortraitPath, StringComparison.Ordinal),
-                    $"Character '{character.Id}' must use '{expectedPortraitPath}', found '{portraitPath}'.");
+                Require(!string.IsNullOrWhiteSpace(portraitPath) &&
+                        portraitPath.StartsWith("Assets/_Game/", StringComparison.Ordinal),
+                    $"Character '{character.Id}' portrait must be owned by the game project, found '{portraitPath}'.");
                 TextureImporter portraitImporter = AssetImporter.GetAtPath(portraitPath) as TextureImporter;
                 Require(portraitImporter != null &&
                         portraitImporter.textureType == TextureImporterType.Sprite &&
@@ -111,11 +171,14 @@ namespace GenericGachaRPG.Editor
                 if (character.IsLimited)
                 {
                     limitedCharacterCount++;
+                    Require(HasAcquisitionSource(character, AcquisitionSource.LimitedRecruitment),
+                        $"Limited character '{character.Id}' has no limited acquisition record.");
                 }
             }
 
-            Require(limitedCharacterCount == 1,
-                $"Demo database must contain exactly one limited character; found {limitedCharacterCount}.");
+            Require(limitedCharacterCount >= 1,
+                "Demo database must contain at least one limited character.");
+            VerifyCharacterRuntimeTuningContract(database);
 
             Require(database.DemoPlayerBattleCharacterIds != null &&
                     database.DemoPlayerBattleCharacterIds.Count == BattleRules.DemoPlayerTeamSize,
@@ -186,6 +249,7 @@ namespace GenericGachaRPG.Editor
                     spectrumNova.TargetCount == BattleRules.TeamSize,
                 "Spectrum Nova must target every opponent in the five-unit battle.");
             VerifyCatherineSkillDefinitions(database);
+            VerifyCatherineContentProfile(database);
 
             Require(database.GachaBanners.Count > 0, "Database has no gacha banner.");
             GachaBannerDefinition banner = database.DefaultBanner;
@@ -206,6 +270,8 @@ namespace GenericGachaRPG.Editor
                     $"Default banner entry {i} references unknown character '{entry.CharacterId}'.");
                 Require(!bannerCharacter.IsLimited,
                     $"Standard banner must not contain limited character '{entry.CharacterId}'.");
+                Require(HasAcquisitionSource(bannerCharacter, AcquisitionSource.StandardRecruitment),
+                    $"Standard banner character '{entry.CharacterId}' has no matching acquisition record.");
                 validWeight += entry.Weight;
             }
 
@@ -286,6 +352,27 @@ namespace GenericGachaRPG.Editor
             return banner;
         }
 
+        private static bool HasAcquisitionSource(
+            CharacterDefinition character,
+            AcquisitionSource expectedSource)
+        {
+            if (character == null || character.ContentProfile == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < character.ContentProfile.Acquisition.Count; i++)
+            {
+                AcquisitionRecord record = character.ContentProfile.Acquisition[i];
+                if (record != null && record.Source == expectedSource)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void VerifyCatherineSkillDefinitions(GameDatabase database)
         {
             SkillDefinition skill1 = database.GetSkill(CatherineYukiBattleKit.Skill1Id);
@@ -328,6 +415,119 @@ namespace GenericGachaRPG.Editor
                         CatherineYukiBattleKit.GetUltimateScaling(30, false),
                         4f),
                 "Catherine demo must start at 30 Imaginary Mass stacks and resolve a 4x ultimate.");
+        }
+
+        private static void VerifyCatherineContentProfile(GameDatabase database)
+        {
+            CharacterDefinition catherine = database.GetCharacter(CatherineYukiBattleKit.CharacterId);
+            SkillDefinition starRage = database.GetSkill(CatherineYukiBattleKit.Skill3Id);
+            Require(catherine != null && catherine.ContentProfile != null,
+                "Catherine content profile is missing.");
+            CharacterContentProfile profile = catherine.ContentProfile;
+            Require(profile.Element == CharacterElement.Void &&
+                    profile.ApprovalStatus == ContentApprovalStatus.Approved &&
+                    profile.MaxLevel >= 61 &&
+                    profile.Abilities.Count >= 6,
+                "Catherine content profile does not contain the complete maxed archive.");
+
+            bool foundDomain = false;
+            bool foundAwakening = false;
+            for (int i = 0; i < profile.Abilities.Count; i++)
+            {
+                CharacterAbilityRecord ability = profile.Abilities[i];
+                foundDomain |= ability != null &&
+                               ability.Kind == CharacterAbilityKind.Domain &&
+                               ability.RuntimeSkill == starRage &&
+                               ability.Ranks.Count == 9;
+                foundAwakening |= ability != null &&
+                                  ability.Kind == CharacterAbilityKind.Awakening &&
+                                  ability.Ranks.Count == 2 &&
+                                  (ability.Tags & SkillTag.Revival) != 0;
+            }
+
+            Require(foundDomain,
+                "Catherine Star Rage must be linked as a nine-rank Domain archive ability.");
+            Require(foundAwakening,
+                "Catherine two-stage revival Awakening is missing from the archive.");
+        }
+
+        private static void VerifyCharacterRuntimeTuningContract(GameDatabase database)
+        {
+            CharacterDefinition enemy = database.GetCharacter("azure_vanguard");
+            Require(enemy != null, "Runtime tuning verification requires an enemy fixture.");
+
+            SkillDefinition skill = ScriptableObject.CreateInstance<SkillDefinition>();
+            CharacterDefinition tuned = ScriptableObject.CreateInstance<CharacterDefinition>();
+            try
+            {
+                skill.Configure(
+                    "runtime_tuning_skill",
+                    "Runtime Tuning Skill",
+                    SkillCategory.Damage,
+                    SkillTargetMode.SingleEnemy,
+                    1f,
+                    0f,
+                    700,
+                    0.1f,
+                    1,
+                    "Verifier-only skill with a cost below the authored Rage cap.");
+                tuned.Configure(
+                    "runtime_tuning_probe",
+                    "Runtime Tuning Probe",
+                    CharacterRole.Ranged,
+                    Rarity.R,
+                    Color.white,
+                    100000f,
+                    10f,
+                    1000f,
+                    1f,
+                    7.25f,
+                    2.5f,
+                    777,
+                    700,
+                    45,
+                    skill);
+                tuned.ConfigureActiveSkills(skill, skill);
+                Require(Mathf.Approximately(tuned.AttackRange, 7.25f),
+                    "CharacterDefinition discarded an authored attack range.");
+
+                var simulation = new BattleSimulation(new BattleContext(
+                    new BattleTeam(new[] { tuned }),
+                    new BattleTeam(new[] { enemy }),
+                    17,
+                    0.1f,
+                    0.1f));
+                BattleResult result = simulation.Run();
+                BattleUnitState runtime = result.PlayerUnits[0];
+                Require(Mathf.Approximately(runtime.AttackRange, 7.25f) &&
+                        runtime.MaxRage == 777 &&
+                        runtime.RagePerAttack == 700 &&
+                        runtime.RageWhenHit == 45,
+                    "BattleUnitState did not snapshot authored range and Rage values.");
+                MethodInfo gainRage = typeof(BattleUnitState).GetMethod(
+                    "GainRage",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                MethodInfo spendRage = typeof(BattleUnitState).GetMethod(
+                    "SpendUltimateRage",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                PropertyInfo canCast = typeof(BattleUnitState).GetProperty(
+                    "CanCastUltimate",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(gainRage != null && spendRage != null && canCast != null,
+                    "Verifier could not access the internal Rage contract.");
+                int rageBeforeProbe = runtime.CurrentRage;
+                int gained = (int)gainRage.Invoke(runtime, new object[] { runtime.MaxRage });
+                bool ready = (bool)canCast.GetValue(runtime);
+                int spent = (int)spendRage.Invoke(runtime, null);
+                Require(gained == runtime.MaxRage - rageBeforeProbe && ready && spent == skill.RageCost &&
+                        runtime.CurrentRage == runtime.MaxRage - skill.RageCost,
+                    "Ultimate readiness or Rage spending ignored the linked SkillDefinition cost.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(tuned);
+                UnityEngine.Object.DestroyImmediate(skill);
+            }
         }
 
         private static bool PrefabUsesShader(GameObject prefab, string shaderName)
@@ -638,6 +838,12 @@ namespace GenericGachaRPG.Editor
                 $"Database must define exactly {TeamFormationState.RequiredMemberCount} starter characters.");
             Require(string.Equals(database.StarterCharacterIds[0], "ur_cosmic_slime", StringComparison.Ordinal),
                 "Cosmic Slime must occupy the first default formation slot.");
+            for (int i = 0; i < database.StarterCharacterIds.Count; i++)
+            {
+                CharacterDefinition starter = database.GetCharacter(database.StarterCharacterIds[i]);
+                Require(HasAcquisitionSource(starter, AcquisitionSource.Starter),
+                    $"Starter character '{database.StarterCharacterIds[i]}' has no starter acquisition record.");
+            }
             Require(state.OwnedCharacters.Count >= TeamFormationState.RequiredMemberCount,
                 "Default state does not own enough characters for a battle.");
             Require(state.TeamFormation != null && state.TeamFormation.IsComplete,

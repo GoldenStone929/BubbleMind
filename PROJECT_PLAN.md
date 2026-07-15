@@ -1,7 +1,7 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v2.4-character-archive-and-card-art<br>
-> 当前状态：20 格 3v5 战斗基线保持通过；角色主从详情页、七张原创 2D 卡面、抽卡卡面揭示、五槽卡面编队、统一视觉令牌与可随包分发中文 UI 字体已完成，Generate、PlayMode、Windows 构建与真实窗口抽卡均通过<br>
+> 计划版本：v2.5-reference-atlas-and-content-template<br>
+> 当前状态：阶段 6.7 已完成；清洁室系统图谱、七角色内容 Profile、角色页 Combat/Archive/Growth、角色级战斗参数消费、连续生成幂等、最终 PlayMode、Windows 构建与 1600x900 真实窗口检查全部通过<br>
 > 最近更新：2026-07-15
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文
 > 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
@@ -57,7 +57,7 @@ PROJECT_PLAN.md
 - Render Pipeline：URP `17.5.0`
 - 项目起点是新建的 Unity URP 模板；P0 内容现已完整落在 `Assets/_Game`。
 - 已生成自定义游戏脚本、七名角色（六名标准池角色与一名 UR 限定坦克样板）、十项技能资产、抽卡池、本地存档、五槽编队、固定 3v5 自动战斗、完整 UI、演示场景和编辑器工具。
-- 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity` 与 Windows 独立版 `Builds/Windows/GenericGachaRPGDemo.exe`。
+- 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity`；当前 Windows 独立版统一输出为 `Builds/Windows/BubbleMind.exe`。
 - 当前项目已在 `GenericGachaRPG` 内建立本地 Git/Git LFS 仓库；`main` 初始基线提交为 `27ac1da`。用户已于 2026-07-14 明确授权把该仓库推送到 `https://github.com/GoldenStone929/BubbleMind.git`；其他远端、构建发布或外部服务仍需另行授权。
 - Unity Editor 当前可能处于打开状态。不要强制关闭 Unity，也不要在项目被打开时另启会冲突的第二个 Editor 实例。
 - 项目位于 OneDrive。实施时只操作真正需要的源文件，避免修改 `Library`、`Temp`、`Logs` 等生成目录，并留意同步与导入延迟。
@@ -332,6 +332,19 @@ P0 至少支持三类通用技能效果：
 - 单体伤害
 - 多目标伤害
 - 治疗
+
+### 6.7 清洁室系统图谱与原创角色内容模板
+
+本阶段把外部只读研究、通用架构规律和 BubbleMind 原创实现分开，形成可长期扩展的角色与系统模板：
+
+- 参考事实必须登记来源、观察状态、置信度和保留策略；没有直接证据的内容保持未知。
+- `analysis/architecture/` 只读资料不能直接成为运行时依赖，也不能把外部专有角色、数值、文案、布局或协议带入仓库。
+- 清洁室知识库覆盖 36 个中性系统模块，记录页面、系统、实体、状态权威和关系；BubbleMind 映射单独维护。
+- 每个原创角色使用稳定 `characterId` 连接身份、卡面、战斗定义、完整能力档案、养成阶段、获取来源和原创性证明。
+- `CharacterContentProfile` 只补充内容档案；`CharacterDefinition`、玩家实例状态、服务和战斗快照继续各自承担明确权威职责。
+- 角色页必须能区分运行时战斗槽、完整能力档案和养成/获取信息；数据不在 UI 中重复硬编码。
+- 生成器与验证器必须允许未来新增角色、技能和卡池内容，避免把当前 7 角色/10 技能误当成永久上限。
+- 完成条件包括首轮与最终 Generate、PlayMode、生成器幂等、Windows Build、真实窗口视觉和差异审查；上一轮 Build 不能替代本轮证据。
 
 ---
 
@@ -654,12 +667,12 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 - `README_START_HERE.md`。
 - 架构摘要、Clean-room 可追溯说明和 Demo 限制。
 - 编译、Play Mode、自动化全流程与 Windows Build 验证记录。
-- `Builds/Windows/GenericGachaRPGDemo.exe` 及其 Unity 运行支持文件。
+- `Builds/Windows/BubbleMind.exe` 及其 Unity 运行支持文件。
 
 完成条件：
 
 - 用户只需打开 `Assets/_Game/Scenes/GachaRPGDemo.unity` 并点击 Play。
-- 或直接运行 `Builds/Windows/GenericGachaRPGDemo.exe`。
+- 或直接运行 `Builds/Windows/BubbleMind.exe`。
 - 完整流程可重复试玩。
 - 不得用“代码已写但未编译”或“场景未生成”宣称完成。
 
@@ -815,7 +828,7 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.4 已同步角色档案、原创卡面、抽卡揭示与 UI 视觉系统里程碑 | 2026-07-15 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.5 已同步清洁室系统图谱、原创角色内容模板及分阶段验证门槛 | 2026-07-15 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
 | 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 七角色/三技能/一组六角色标准抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-14 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
@@ -823,13 +836,14 @@ Agent 实际 Play Mode 验证：是 / 否
 | 阶段 4：表现与场景 | 已完成 | 角色、UI、VFX、Generator、Scene | 程序化角色、运行时 UI、表现层及场景已在 Unity Play Mode 实测 | 2026-07-13 |
 | 阶段 5：P0 验证与试玩 | 已完成 | 可重复试玩的完整流程与 Windows Build | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS`；详见 `VerificationReport.md` | 2026-07-13 |
 | 长期制作基础设施 | 已完成（清理待授权） | 本地 Git/LFS、`AGENTS.md`、StudioOps、项目级 `.codex/config.toml`、嵌入式隔离 Unity MCP、隔离 uv/Python 与 Editor Bootstrap | 48 工具离线协议复测、`UNITY_MCP_SMOKE_PASS`、P0/Play 回归与最终 Windows 构建均通过；项目外残留详见 `VerificationReport.md` | 2026-07-14 |
-| 阶段 6：P1 | 进行中 | 首个地图、五人战斗、怒气/三技能与 UR 真实凝胶样板已完成；正式角色动画、十连、碎片、升级仍延期 | `StudioOps/MILESTONES/2026-07-14_RAGE_THREE_SKILL_AND_CATHERINE_REALISM.md` | 2026-07-14 |
+| 阶段 6：P1 | 进行中 | 首个地图、五人战斗、怒气/三技能、UR 真实凝胶、角色档案与内容模板已进入可复用阶段；正式角色动画、十连、碎片、升级仍延期 | `StudioOps/CURRENT_MILESTONE.md` | 2026-07-15 |
 | 阶段 6.1：五人射程战斗与史莱姆重制 | 已完成 | 五槽/5v5、攻击距离、持续位置与锁敌、1.6 倍回放、六材质黑洞史莱姆及紧凑战斗 UI | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS` 与真实 1920×1080 窗口核验 | 2026-07-14 |
 | 阶段 6.2：柔和漫画地图与元素测试史莱姆 | 已完成 | 水火土风雷五套基础史莱姆、柔和漫画星渊观测台、限定黑洞动画与统一视觉集成 | GPT Image 设定底稿、五系 Blender/FBX/Prefab、几何审计、PlayMode、Windows Build 与双分辨率实机核验均完成 | 2026-07-14 |
 | 阶段 6.3：Catherine 满级技能与 UR 视觉重制 | 已完成 | 满级三技能/领域/觉醒、大招全体拉拽与击飞、10×HP/0.1×ATK 测试敌人、UR Blend Shapes、Slime Toon Shader 与原创黑洞 VFX | `GenerateCompile3.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 均通过；D3D11 无 Shader error，1920×1080 / 1280×720 实机逐帧确认吸附、坍缩与击飞 | 2026-07-14 |
 | 阶段 6.4：怒气、三技能轮转与 Catherine 真实凝胶升级 | 已完成 | 0–1000 怒气制、槽位 1 大招、槽位 2 / 3 错峰 10 秒轮转、职业射程 1 / 5 与最大射程停位；Catherine 真实凝胶材质、纯黑核心、19,000 面轮廓和三点布光 | `Artifacts/CatherineRealism/RageGenerate4.log`、`RagePlaySmoke.log`、`RageWindowsBuild.log` 均通过；D3D11 构建 114,033,256 bytes / 24.1s，1920×1080 与 3440×1392 级宽屏实机检查及黑洞吸附截图确认 | 2026-07-14 |
 | 阶段 6.5：20 格 3v5 职业测试与刺客切后排 | 已完成 | 五槽存档保留；20 格战场、射程 2 / 10、Catherine 击退 5、固定坦克/射手/刺客对五敌、Ember 5 / 15 秒同后排目标瞬移与持续锁定 | `Artifacts/ThreeVsFiveRange/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 均通过；D3D11 构建 114,042,024 bytes / 58.6s，1922×1112 捕获窗口完成首页、Formation、战斗、结算检查 | 2026-07-14 |
 | 阶段 6.6：角色档案、2D 卡面与 UI 重制 | 已完成 | 角色主从详情页、七张原创竖版卡面、抽卡结果揭示、五槽卡面编队、Noto Sans CJK SC 与清洁室 UI 知识库 | `Artifacts/CharacterPage/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 全部通过；最终 Windows 窗口确认 3,000 初始水晶、真实单抽 2D 卡面与重置 | 2026-07-15 |
+| 阶段 6.7：参考系统图谱与角色内容模板 | 已完成 | 三层清洁室知识库、36 系统/25 页面/27 实体/89 关系、七角色 `CharacterContentProfile`、角色页 Combat/Archive/Growth、Profile 归属/连续逐级参数/来源/战斗参数验证 | 终审后的 `GenerateTriggerCompile.log`、`PlaySmokeOwnershipFinal.log`、`WindowsBuildOwnershipFinal.log` 全部通过；四文件连续生成哈希一致，1600x900 独立窗口完成首页、角色三模式与 Recruitment 检查，最终包重新打开在首页 | 2026-07-15 |
 
 状态仅使用：`未开始 / 进行中 / 修复中 / 已完成 / 阻塞`。
 
@@ -886,6 +900,12 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-14 | 职业射程改为 Tank / Assassin = 1、其余 = 5，并把 Catherine 升级为真实凝胶灯光样板 | 用户要求单位停在最大攻击距离，同时认为 Catherine 仍欠缺真实体积与灯光质感 | 移动模拟停在自身射程边界；UR 模型重建为 19,000 面不对称凝胶体、纯黑事件视界与体积吸积结构，战斗场景使用主光/补光/轮廓光三点布光 |
 | 2026-07-14 | 用 20 格主轴取代无比例参照的 1 / 5 射程；当前部署改为固定 3v5，但保留五槽存档 | 用户希望明确战场总长，并指定我方坦克、射手、刺客三人对五敌 | Tank / Assassin 射程 2，其余角色射程 10；Catherine 击退 5；玩家战斗名单与 Formation 存档解耦，UI 明确说明测试部署 |
 | 2026-07-14 | Ember Striker 技能槽 2 固定为第 5 秒后排切入 | 用户要求刺客瞬移到敌方后排并立即开始攻击 | 新增 `Backline Shift`、确定性后排选择与 `UnitTeleported` 事件；瞬移后持续锁定目标直到死亡 |
+| 2026-07-15 | 清洁室知识库采用“证据与覆盖 → 通用规律 → BubbleMind 原创映射”三层结构 | 用户要求长期记录页面、角色、技能、系统连接和 `analysis` 资料，同时项目必须避免复刻外部专有内容 | 参考观察、推断和原创决定分别维护；36 个模块均有覆盖/置信度，未知项不得自动升级为事实或需求 |
+| 2026-07-15 | 参考游戏保持开启，省电模式不通过关闭或重登绕过 | 用户明确表示登录困难，并只授权只读查看 | 此前页面观察继续作为有限证据；本轮未恢复的页面保持未知，不购买、抽卡、养成、改队、保存或进入战斗 |
+| 2026-07-15 | `CharacterContentProfile` 作为角色补充档案，不取代身份、实例状态或战斗权威 | 角色页面需要表达主动、被动、领域、觉醒、逐级参数、解锁和获取，而现有三槽战斗定义不足以承载完整内容 | 以稳定 `characterId` 连接 Profile；运行时技能仍由 `SkillDefinition`/战斗快照消费，养成与拥有状态留在玩家实例服务 |
+| 2026-07-15 | 大招消耗以 `SkillDefinition.RageCost` 为权威，并按实际成本扣除 | 角色级怒气上限需要支持非满额大招，不能把“释放大招”等同于无条件清空怒气 | 验证器要求大招成本为正且不超过角色 `MaxRage`；当前常用 1000/1000 会归零，模板同时覆盖非满额消费 |
+| 2026-07-15 | 生成器采用稳定 ID 合并并保护人工档案 | 长期内容生产不能把当前七角色/十技能当成永久上限，也不能在重生成时抹去作者修改 | 必需资产同 ID 更新，数据库额外角色、技能与卡池保留；已有非空 Profile 不被默认模板覆盖 |
+| 2026-07-15 | Profile 保存防误挂归属外键，逐级表必须连续 | 共享技能的角色可能误换 Profile；只校验首末等级会让缺级表伪装成完整数据 | `ownerCharacterId` 必须匹配 `CharacterDefinition.Id`，但不成为第二身份权威；等级记录必须从 Lv.1 连续到 MaxLevel |
 
 ---
 

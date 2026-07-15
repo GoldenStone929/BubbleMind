@@ -154,6 +154,88 @@ namespace GenericGachaRPG
             Require(CountDescendantsWithPrefix("CollectionScreen", "SkillCard_") == 3,
                 "Character detail page does not expose exactly three skill cards.");
 
+            ClickActiveButton("CharacterTab_Archive");
+            yield return null;
+            for (int page = 0; page < 4; page++)
+            {
+                ClickActiveButton("CharacterDetailNext");
+                yield return null;
+            }
+
+            Text archiveHeader = FindComponentInChildrenByName<Text>(
+                FindSceneObject("SkillCard_1"),
+                "Body");
+            Text archiveEffect = FindComponentInChildrenByName<Text>(
+                FindSceneObject("SkillCard_3"),
+                "Body");
+            Require(archiveHeader != null &&
+                    archiveHeader.text.IndexOf("Star Rage", StringComparison.Ordinal) >= 0 &&
+                    archiveHeader.text.IndexOf("DOMAIN", StringComparison.Ordinal) >= 0,
+                $"Character archive did not expose Catherine's Domain. Text='{archiveHeader?.text ?? "<missing>"}'.");
+            Require(archiveEffect != null &&
+                    archiveEffect.text.IndexOf("Lv.9", StringComparison.Ordinal) >= 0,
+                $"Character archive did not expose Domain rank details. Text='{archiveEffect?.text ?? "<missing>"}'.");
+            ClickActiveButton("CharacterDetailNext");
+            yield return null;
+            Require(archiveHeader.text.IndexOf("Singularity Awakening", StringComparison.Ordinal) >= 0 &&
+                    archiveHeader.text.IndexOf("AWAKENING", StringComparison.Ordinal) >= 0,
+                $"Character archive did not expose Catherine's Awakening. Text='{archiveHeader.text}'.");
+            ClickActiveButton("CharacterDetailNext");
+            yield return null;
+            Require(archiveHeader.text.IndexOf("Gravity Strike", StringComparison.Ordinal) >= 0 &&
+                    archiveHeader.text.IndexOf("BASIC", StringComparison.Ordinal) >= 0,
+                $"Character archive next-page wrap failed. Text='{archiveHeader.text}'.");
+            ClickActiveButton("CharacterDetailPrevious");
+            yield return null;
+            Require(archiveHeader.text.IndexOf("Singularity Awakening", StringComparison.Ordinal) >= 0,
+                $"Character archive previous-page wrap failed. Text='{archiveHeader.text}'.");
+
+            ClickActiveButton("CharacterTab_Growth");
+            yield return null;
+            Text growthAcquisition = FindComponentInChildrenByName<Text>(
+                FindSceneObject("SkillCard_2"),
+                "Body");
+            Text growthSummary = FindComponentInChildrenByName<Text>(
+                FindSceneObject("SkillCard_3"),
+                "Body");
+            Require(growthAcquisition != null &&
+                    growthAcquisition.text.IndexOf("Limited Signal", StringComparison.Ordinal) >= 0 &&
+                    growthAcquisition.text.IndexOf("DUPLICATES", StringComparison.Ordinal) >= 0,
+                $"Character growth tab did not expose acquisition rules. Text='{growthAcquisition?.text ?? "<missing>"}'.");
+            Require(growthSummary != null &&
+                    growthSummary.text.IndexOf("PROGRESSION & AWAKENING", StringComparison.Ordinal) >= 0 &&
+                    growthSummary.text.IndexOf("Two-stage awakening", StringComparison.Ordinal) >= 0,
+                $"Character growth tab did not expose progression details. Text='{growthSummary?.text ?? "<missing>"}'.");
+            Text growthHeader = FindComponentInChildrenByName<Text>(
+                FindSceneObject("SkillCard_1"),
+                "Body");
+            ClickActiveButton("CharacterDetailNext");
+            yield return null;
+            Require(growthHeader != null &&
+                    growthHeader.text.IndexOf("PROGRESSION 2 /", StringComparison.Ordinal) >= 0,
+                $"Character growth next-page navigation failed. Text='{growthHeader?.text ?? "<missing>"}'.");
+            ClickActiveButton("CharacterDetailPrevious");
+            yield return null;
+            Require(growthHeader.text.IndexOf("PROGRESSION 1 /", StringComparison.Ordinal) >= 0,
+                $"Character growth previous-page navigation failed. Text='{growthHeader.text}'.");
+
+            ClickActiveButton("Card_gold_ranger");
+            yield return null;
+            Require(detailName.text.IndexOf("Gold Ranger", StringComparison.Ordinal) >= 0 &&
+                    growthAcquisition.text.IndexOf("Standard Signal", StringComparison.Ordinal) >= 0,
+                "Character growth tab did not refresh for a standard character profile.");
+            ClickActiveButton("Card_ur_cosmic_slime");
+            yield return null;
+
+            ClickActiveButton("CharacterTab_Combat");
+            yield return null;
+            Text combatUltimate = FindComponentInChildrenByName<Text>(
+                FindSceneObject("SkillCard_1"),
+                "Body");
+            Require(combatUltimate != null &&
+                    combatUltimate.text.IndexOf("Infinite Void", StringComparison.Ordinal) >= 0,
+                $"Character combat tab did not restore the runtime kit. Text='{combatUltimate?.text ?? "<missing>"}'.");
+
             ClickActiveButton("BackButton");
             yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
             AssertOnlyScreenActive("HomeScreen");

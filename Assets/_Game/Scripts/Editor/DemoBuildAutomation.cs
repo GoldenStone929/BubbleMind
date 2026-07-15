@@ -9,7 +9,7 @@ namespace GenericGachaRPG.Editor
     public static class DemoBuildAutomation
     {
         public const string BuildPassMarker = "[GenericGachaRPG][WINDOWS_BUILD_PASS_20260713]";
-        public const string OutputPath = "Builds/Windows/GenericGachaRPGDemo.exe";
+        public const string OutputPath = "Builds/Windows/BubbleMind.exe";
 
         [MenuItem("Tools/Generic Gacha RPG/Build Windows Demo _F6", priority = 20)]
         public static void BuildWindowsDemo()

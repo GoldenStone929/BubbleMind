@@ -1,0 +1,164 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa1902e63add53d4fb087b0a22e74996, type: 3}
+  m_Name: Profile_violet_arcanist
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterContentProfile
+  ownerCharacterId: violet_arcanist
+  schemaVersion: 1.0
+  contentVersion: 2026.07.15
+  approvalStatus: 2
+  title: Stormglass Arcanist
+  element: 5
+  faction: Abyssal Observatory
+  keywords:
+  - mage
+  - area
+  - burst
+  maxLevel: 60
+  progressionSummary: Static authoring template only; the current save keeps Level
+    and Copies without upgrade commands.
+  awakeningSummary: Awakening is documented as a future content gate and does not
+    alter the P0 simulation.
+  progressionStages:
+  - track: 0
+    requiredValue: 0
+    levelCap: 1
+    title: Signal Registered
+    summary: Unlocks the archive card, portrait, and base combat definition.
+  - track: 1
+    requiredValue: 1
+    levelCap: 20
+    title: Field Calibration
+    summary: Base statistics and the three current runtime abilities are active.
+  - track: 2
+    requiredValue: 1
+    levelCap: 40
+    title: Resonance Channel
+    summary: Reserved template stage for rank materials and passive activation.
+  - track: 4
+    requiredValue: 1
+    levelCap: 60
+    title: Awakened Signal
+    summary: Reserved template stage for future awakening effects and presentation
+      assets.
+  abilities:
+  - abilityId: violet_arcanist_basic
+    kind: 0
+    runtimeSlot: 0
+    runtimeSkill: {fileID: 0}
+    displayName: Resonant Strike
+    summary: A role-aware basic attack that uses the character's authored range and
+      tempo.
+    triggerSummary: Repeats after the attack interval when a valid target is in range.
+    targetSummary: Current locked target.
+    effectSummary: Deals physical damage and builds Rage on hit.
+    unlockLevel: 1
+    maxLevel: 1
+    tags: 257
+    ranks:
+    - level: 1
+      summary: Base combat pattern available.
+      values: []
+  - abilityId: violet_arcanist_ultimate
+    kind: 1
+    runtimeSlot: 1
+    runtimeSkill: {fileID: 11400000, guid: 365dd5f3fffec934798fd7cb7de20e3e, type: 2}
+    displayName: Spectrum Nova
+    summary: A wide spectrum blast that hits every opponent.
+    triggerSummary: Automatically casts when Rage reaches 1000.
+    targetSummary: AllEnemies
+    effectSummary: A wide spectrum blast that hits every opponent.
+    unlockLevel: 1
+    maxLevel: 1
+    tags: 641
+    ranks:
+    - level: 1
+      summary: Current demo tuning.
+      values:
+      - key: power
+        value: 128
+        unit: 2
+  - abilityId: violet_arcanist_skill2
+    kind: 2
+    runtimeSlot: 2
+    runtimeSkill: {fileID: 11400000, guid: 1a8c43d035cd70e468d069cd29b642c6, type: 2}
+    displayName: Tactical Impact
+    summary: Automatic skill slot 2. Cast at 5 seconds, then every 10 seconds.
+    triggerSummary: Automatically casts at 5 seconds, then every 10 seconds.
+    targetSummary: SingleEnemy
+    effectSummary: Automatic skill slot 2. Cast at 5 seconds, then every 10 seconds.
+    unlockLevel: 1
+    maxLevel: 1
+    tags: 5
+    ranks:
+    - level: 1
+      summary: Current demo tuning.
+      values:
+      - key: power
+        value: 110
+        unit: 2
+  - abilityId: violet_arcanist_skill3
+    kind: 2
+    runtimeSlot: 3
+    runtimeSkill: {fileID: 11400000, guid: d18bdc81a9102954081a7c5fadbeac6f, type: 2}
+    displayName: Tactical Wave
+    summary: Automatic skill slot 3. Cast at 10 seconds, then every 10 seconds.
+    triggerSummary: Automatically casts at 10 seconds, then every 10 seconds.
+    targetSummary: AllEnemies
+    effectSummary: Automatic skill slot 3. Cast at 10 seconds, then every 10 seconds.
+    unlockLevel: 1
+    maxLevel: 1
+    tags: 129
+    ranks:
+    - level: 1
+      summary: Current demo tuning.
+      values:
+      - key: power
+        value: 72
+        unit: 2
+  - abilityId: violet_arcanist_resonance
+    kind: 3
+    runtimeSlot: 0
+    runtimeSkill: {fileID: 0}
+    displayName: Lightning Resonance
+    summary: Archive-ready passive slot reserved for future progression content.
+    triggerSummary: Passive while deployed after its progression gate is met.
+    targetSummary: Self and compatible allies.
+    effectSummary: Carries elemental and role synergy tags without changing the current
+      demo battle.
+    unlockLevel: 20
+    maxLevel: 1
+    tags: 16
+    ranks:
+    - level: 1
+      summary: Template hook; no runtime modifier in this milestone.
+      values: []
+  acquisition:
+  - source: 1
+    label: Standard Signal
+    availability: Standard Signal recruitment and demo starter access.
+    duplicateRule: Duplicates are counted in the current local demo state.
+  - source: 0
+    label: Demo Starter
+    availability: Granted in a fresh local demo save for formation testing.
+    duplicateRule: Not applicable to the initial grant.
+  synergyTags:
+  - lightning
+  - mage
+  counterTags:
+  - control_pressure
+  - formation_spacing
+  originalText: 1
+  independentlyAuthoredNumbers: 1
+  artSourceRecord: ART-UI-CHARACTER-PORTRAITS-001
+  authoringNotes: Original BubbleMind profile generated from the reusable content
+    template.
