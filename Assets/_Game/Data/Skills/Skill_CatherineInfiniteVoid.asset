@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b4e8a204c946544aa93808e975b5029, type: 3}
+  m_Name: Skill_CatherineInfiniteVoid
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.SkillDefinition
+  id: catherine_infinite_void
+  displayName: 'Imaginary Mass: Infinite Void'
+  description: 'Max-level 960% base AoE: charge, transform, pull, multi-hit, collapse,
+    and launch.'
+  category: 0
+  targetMode: 1
+  damageMultiplier: 9.6
+  healingMultiplier: 0
+  energyCost: 0
+  hitTiming: 0.6
+  targetCount: 5

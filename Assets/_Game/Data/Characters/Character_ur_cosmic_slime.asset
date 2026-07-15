@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Character_ur_cosmic_slime
   m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.CharacterDefinition
   id: ur_cosmic_slime
-  displayName: Abyssal Slime
-  description: A limited singularity tank that advances first and anchors the frontline.
+  displayName: Catherine Yuki
+  description: A max-level limited singularity tank with Imaginary Mass and Infinite
+    Void.
   role: 0
   rarity: 4
   isLimited: 1
@@ -30,4 +31,4 @@ MonoBehaviour:
   maxEnergy: 100
   energyPerAttack: 24
   energyWhenHit: 12
-  skill: {fileID: 11400000, guid: 365dd5f3fffec934798fd7cb7de20e3e, type: 2}
+  skill: {fileID: 11400000, guid: 5c3f09408bca7a44088f944a7be020df, type: 2}

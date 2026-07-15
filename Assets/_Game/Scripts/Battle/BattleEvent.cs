@@ -17,10 +17,12 @@ namespace GenericGachaRPG
             BattleUnitState target,
             float amount,
             float healthAfter,
+            float maxHealthAfter,
             int energyAfter,
             string skillId,
             BattleOutcome outcome,
             Vector3 actorPositionAfter,
+            Vector3 targetPositionAfter,
             float duration)
         {
             Sequence = sequence;
@@ -35,10 +37,12 @@ namespace GenericGachaRPG
             TargetSlot = target?.SlotIndex ?? -1;
             Amount = amount;
             HealthAfter = healthAfter;
+            MaxHealthAfter = maxHealthAfter;
             EnergyAfter = energyAfter;
             SkillId = skillId;
             Outcome = outcome;
             ActorPositionAfter = actorPositionAfter;
+            TargetPositionAfter = targetPositionAfter;
             Duration = duration;
         }
 
@@ -66,6 +70,8 @@ namespace GenericGachaRPG
 
         public float HealthAfter { get; }
 
+        public float MaxHealthAfter { get; }
+
         public int EnergyAfter { get; }
 
         public string SkillId { get; }
@@ -73,6 +79,8 @@ namespace GenericGachaRPG
         public BattleOutcome Outcome { get; }
 
         public Vector3 ActorPositionAfter { get; }
+
+        public Vector3 TargetPositionAfter { get; }
 
         public float Duration { get; }
     }

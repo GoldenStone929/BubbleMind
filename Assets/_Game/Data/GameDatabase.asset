@@ -31,5 +31,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d843ee4797671fe40b8d12b770d35bea, type: 2}
   - {fileID: 11400000, guid: 365dd5f3fffec934798fd7cb7de20e3e, type: 2}
   - {fileID: 11400000, guid: 17b836a77c79f734392ed2c9b55d63ca, type: 2}
+  - {fileID: 11400000, guid: 7de4d33b278235c48affa3a2855a2cef, type: 2}
+  - {fileID: 11400000, guid: 5f0c27c80804241428542c1d5108ef7e, type: 2}
+  - {fileID: 11400000, guid: c2eb7f10f92ab734ca1a1c136629f59b, type: 2}
+  - {fileID: 11400000, guid: 5c3f09408bca7a44088f944a7be020df, type: 2}
   gachaBanners:
   - {fileID: 11400000, guid: 57b4391235427d9419c17b060ba4ca73, type: 2}

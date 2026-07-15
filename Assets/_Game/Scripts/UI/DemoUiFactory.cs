@@ -96,7 +96,7 @@ namespace GenericGachaRPG
                 Image veil = CreatePanel(
                     "BackdropVeil",
                     background.transform,
-                    new Color(0.01f, 0.014f, 0.022f, 0.56f),
+                    new Color(0.018f, 0.028f, 0.035f, 0.42f),
                     Vector2.zero,
                     Vector2.one,
                     Vector2.zero,

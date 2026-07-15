@@ -27,7 +27,7 @@ F8  Tools > Generic Gacha RPG > Open Demo Scene
 F6  Tools > Generic Gacha RPG > Build Windows Demo
 ```
 
-生成器可以重复运行，会校正七名角色、星渊吞噬体 Prefab、星渊观测台材质、三个技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
+生成器可以重复运行，会校正七名角色、五套元素基础史莱姆 Prefab、星渊吞噬体 Prefab、柔和漫画星渊观测台、三个技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
 
 Windows 独立版已经生成在：
 
@@ -43,8 +43,8 @@ Builds/Windows/GenericGachaRPGDemo.exe
 
 ## 当前内容
 
-- 七名角色：六名原创程序化占位角色，以及首个 Blender/URP 正式样板“星渊吞噬体”。
-- 原创 16:9 战斗地图“星渊观测台”，同时作为首页与实战视觉基准。
+- 七名角色：六名标准角色使用水、火、土、风、雷五套 Blender 基础史莱姆，首位限定 UR 为“星渊吞噬体”。
+- 原创柔和漫画风 16:9 战斗地图“星渊观测台”，同时作为首页与实战视觉基准。
 - 全局稀有度顺序为 R / SR / SSR / SP / UR；标准池当前包含 R / SR / SSR，首位限定角色为 UR 且不进入标准池。
 - 收藏页、严格五人编队，以及角色卡上的攻击距离和移动速度。
 - 固定 Tick、Seed 可复现的 5v5 自动战斗；单位持续锁定存活目标，进入自身射程后留在前线，目标死亡后才按当前位置重选。

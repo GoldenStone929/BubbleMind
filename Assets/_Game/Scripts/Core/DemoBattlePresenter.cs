@@ -13,7 +13,7 @@ namespace GenericGachaRPG
     /// </summary>
     public sealed class DemoBattlePresenter : MonoBehaviour
     {
-        private const float PlaybackSpeed = 1.6f;
+        private const float PlaybackSpeed = 1.25f;
         private const string ArenaBackdropResource = "AbyssalObservatory_Concept";
         private const string ArenaBackdropMaterialResource = "MAT_AbyssalObservatoryBackdrop";
 
@@ -28,6 +28,24 @@ namespace GenericGachaRPG
 
         public bool IsRunning => replayRoutine != null;
         public BattleResult LastResult => lastResult;
+
+        public bool TryGetPresentedHealth(
+            string runtimeId,
+            out float currentHealth,
+            out float maxHealth)
+        {
+            if (!string.IsNullOrEmpty(runtimeId) &&
+                units.TryGetValue(runtimeId, out UnitPresentation unit))
+            {
+                currentHealth = unit.Health;
+                maxHealth = unit.MaxHealth;
+                return true;
+            }
+
+            currentHealth = 0f;
+            maxHealth = 0f;
+            return false;
+        }
 
         public event Action<BattleResult> BattleCompleted;
 
@@ -62,7 +80,9 @@ namespace GenericGachaRPG
                 new BattleTeam(enemyCharacters),
                 seed,
                 BattleContext.DefaultTickDuration,
-                72f);
+                72f,
+                CatherineYukiBattleKit.DemoEnemyHealthMultiplier,
+                CatherineYukiBattleKit.DemoEnemyAttackMultiplier);
             lastResult = new BattleSimulation(context).Run();
             screen?.HideResult();
             screen?.SetBattleStatus(0f, "AUTO BATTLE START");
@@ -156,11 +176,18 @@ namespace GenericGachaRPG
                         Vector3 targetPosition = target == null ? actor.View.transform.position : target.View.transform.position;
                         actor.View.FaceTarget(targetPosition);
                         actor.View.PlaySkill(targetPosition);
-                        SpawnSkillPulse(actor, target);
-                        string skillName = actor.Definition.Skill == null
-                            ? "Skill"
-                            : actor.Definition.Skill.DisplayName;
-                        screen?.SetBattleStatus(battleEvent.Time, $"{actor.Definition.DisplayName} • {skillName}");
+                        if (!PlayCatherineSkillVfx(actor, targetPosition, battleEvent.SkillId))
+                        {
+                            SpawnSkillPulse(actor, target);
+                        }
+                        string skillName = CatherineYukiBattleKit.GetDisplayName(battleEvent.SkillId);
+                        if (string.IsNullOrEmpty(skillName))
+                        {
+                            skillName = actor.Definition.Skill == null
+                                ? "Skill"
+                                : actor.Definition.Skill.DisplayName;
+                        }
+                        screen?.SetBattleStatus(battleEvent.Time, $"{actor.Definition.DisplayName} - {skillName}");
                     }
 
                     break;
@@ -168,8 +195,9 @@ namespace GenericGachaRPG
                 case BattleEventType.DamageApplied:
                     if (target != null)
                     {
+                        target.MaxHealth = Mathf.Max(target.MaxHealth, battleEvent.MaxHealthAfter);
                         target.Health = battleEvent.HealthAfter;
-                        target.Bar.SetHealth(target.Health, target.Definition.MaxHealth);
+                        target.Bar.SetHealth(target.Health, target.MaxHealth);
                         Vector3 source = actor == null ? target.View.transform.position - target.View.transform.forward : actor.View.transform.position;
                         target.View.PlayHit(source);
                         DamageNumberView.SpawnDamage(GetNumberPosition(target), battleEvent.Amount, false, worldRoot);
@@ -180,8 +208,9 @@ namespace GenericGachaRPG
                 case BattleEventType.HealingApplied:
                     if (target != null)
                     {
+                        target.MaxHealth = Mathf.Max(target.MaxHealth, battleEvent.MaxHealthAfter);
                         target.Health = battleEvent.HealthAfter;
-                        target.Bar.SetHealth(target.Health, target.Definition.MaxHealth);
+                        target.Bar.SetHealth(target.Health, target.MaxHealth);
                         DamageNumberView.SpawnHealing(GetNumberPosition(target), battleEvent.Amount, worldRoot);
                         SpawnHealPulse(target);
                     }
@@ -209,6 +238,81 @@ namespace GenericGachaRPG
                         }
 
                         screen?.SetBattleStatus(battleEvent.Time, $"{target.Definition.DisplayName} defeated");
+                    }
+
+                    break;
+
+                case BattleEventType.UnitPulled:
+                    if (target != null)
+                    {
+                        target.View.MoveRootTo(
+                            battleEvent.TargetPositionAfter,
+                            battleEvent.Duration / PlaybackSpeed);
+                        SpawnControlPulse(target, new Color(0.40f, 0.10f, 0.82f, 1f), 1.55f);
+                    }
+
+                    break;
+
+                case BattleEventType.UnitKnockedUp:
+                    if (target != null)
+                    {
+                        StartCoroutine(AnimateKnockUp(
+                            target.View.transform,
+                            battleEvent.TargetPositionAfter,
+                            battleEvent.Duration / PlaybackSpeed));
+                    }
+
+                    break;
+
+                case BattleEventType.DebuffApplied:
+                    if (target != null)
+                    {
+                        SpawnControlPulse(target, new Color(0.76f, 0.20f, 0.92f, 1f), 1.15f);
+                    }
+
+                    break;
+
+                case BattleEventType.StatusApplied:
+                    if (actor != null &&
+                        CatherineYukiBattleKit.IsCatherine(actor.Definition.Id) &&
+                        !string.Equals(
+                            battleEvent.SkillId,
+                            CatherineYukiBattleKit.SuperArmorStatusId,
+                            StringComparison.Ordinal))
+                    {
+                        CatherineSkillVfxController vfx =
+                            actor.View.GetComponent<CatherineSkillVfxController>();
+                        vfx?.PlayStackGain(Mathf.RoundToInt(battleEvent.Amount));
+                    }
+                    else if (target != null &&
+                        string.Equals(
+                            battleEvent.SkillId,
+                            CatherineYukiBattleKit.SuperArmorStatusId,
+                            StringComparison.Ordinal))
+                    {
+                        SpawnControlPulse(target, new Color(1f, 0.78f, 0.24f, 1f), 1.28f);
+                    }
+
+                    break;
+
+                case BattleEventType.UltimatePhase:
+                    PresentUltimatePhase(battleEvent, actor, target);
+                    break;
+
+                case BattleEventType.UnitRevived:
+                    if (target != null)
+                    {
+                        target.View.ResetView();
+                        target.MaxHealth = Mathf.Max(target.MaxHealth, battleEvent.MaxHealthAfter);
+                        target.Health = battleEvent.HealthAfter;
+                        target.Bar.SetHealth(target.Health, target.MaxHealth, true);
+                        if (target.View.HealthBar != null)
+                        {
+                            target.View.HealthBar.gameObject.SetActive(true);
+                        }
+
+                        SpawnControlPulse(target, new Color(0.90f, 0.70f, 1f, 1f), 1.8f);
+                        screen?.SetBattleStatus(battleEvent.Time, "Catherine Yuki revived");
                     }
 
                     break;
@@ -262,9 +366,9 @@ namespace GenericGachaRPG
 
         private void BuildAbyssalObservatory(Texture2D backdropTexture, Material backdropTemplate)
         {
-            Material stone = CreateMaterial("ObservatoryStone", new Color(0.055f, 0.065f, 0.085f, 1f), 0.18f, 0.42f);
-            Material trim = CreateMaterial("ObservatoryTrim", new Color(0.33f, 0.23f, 0.11f, 1f), 0.72f, 0.52f);
-            Material energy = CreateMaterial("ObservatoryEnergy", new Color(0.06f, 0.68f, 0.86f, 0.76f), 0.12f, 0.82f, true);
+            Material stone = CreateMaterial("ObservatoryStone", new Color(0.34f, 0.45f, 0.48f, 1f), 0f, 0.16f);
+            Material trim = CreateMaterial("ObservatoryTrim", new Color(0.76f, 0.62f, 0.34f, 1f), 0.04f, 0.22f);
+            Material energy = CreateMaterial("ObservatoryEnergy", new Color(0.20f, 0.72f, 0.70f, 0.58f), 0f, 0.24f, true);
             Material backdrop = CreateBackdropMaterial(backdropTexture, backdropTemplate);
 
             GameObject backdropObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -297,34 +401,34 @@ namespace GenericGachaRPG
                 for (int slot = 0; slot < BattleRules.TeamSize; slot++)
                 {
                     Vector3 position = BattleRules.GetSlotPosition(side, slot);
-                    position.y = 0.035f;
+                    position.y = 0.018f;
                     GameObject marker = CreateArenaCylinder(
                         side == BattleTeamSide.Player ? $"PlayerMarker_{slot}" : $"EnemyMarker_{slot}",
                         position,
-                        new Vector3(0.78f, 0.014f, 0.78f),
+                        new Vector3(0.66f, 0.008f, 0.66f),
                         energy);
                     marker.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
                 }
             }
 
-            Vector3[] ruinPositions =
+            Vector3[] ornamentPositions =
             {
-                new Vector3(-6.15f, 0.72f, 3.25f),
-                new Vector3(-4.85f, 0.48f, 3.72f),
-                new Vector3(4.85f, 0.48f, 3.72f),
-                new Vector3(6.15f, 0.72f, 3.25f)
+                new Vector3(-7.20f, 0.26f, 3.80f),
+                new Vector3(-6.55f, 0.16f, 4.55f),
+                new Vector3(6.55f, 0.16f, 4.55f),
+                new Vector3(7.20f, 0.26f, 3.80f)
             };
 
-            for (int i = 0; i < ruinPositions.Length; i++)
+            for (int i = 0; i < ornamentPositions.Length; i++)
             {
-                GameObject ruin = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                ruin.name = $"RuinMonolith_{i}";
-                ruin.transform.SetParent(worldRoot, false);
-                ruin.transform.position = ruinPositions[i];
-                ruin.transform.localScale = new Vector3(0.52f, i % 2 == 0 ? 1.65f : 1.15f, 0.52f);
-                ruin.transform.rotation = Quaternion.Euler(0f, i < 2 ? -12f : 12f, i % 2 == 0 ? 3f : -3f);
-                ruin.GetComponent<Renderer>().sharedMaterial = i % 2 == 0 ? trim : stone;
-                RemoveCollider(ruin);
+                GameObject ornament = CreateArenaCylinder(
+                    $"EdgePlinth_{i}",
+                    ornamentPositions[i],
+                    new Vector3(0.34f, i % 2 == 0 ? 0.26f : 0.16f, 0.34f),
+                    i % 2 == 0 ? trim : stone);
+                Renderer ornamentRenderer = ornament.GetComponent<Renderer>();
+                ornamentRenderer.shadowCastingMode = ShadowCastingMode.Off;
+                ornamentRenderer.receiveShadows = false;
             }
         }
 
@@ -446,14 +550,16 @@ namespace GenericGachaRPG
             barObject.transform.SetParent(barAnchor, false);
             WorldBarView bar = barObject.AddComponent<WorldBarView>();
             bar.SetTargetCamera(battleCamera);
-            bar.SetHealth(definition.MaxHealth, definition.MaxHealth, true);
+            float runtimeMaxHealth = definition.MaxHealth *
+                                     (enemy ? CatherineYukiBattleKit.DemoEnemyHealthMultiplier : 1f);
+            bar.SetHealth(runtimeMaxHealth, runtimeMaxHealth, true);
             bar.SetEnergy(0f, definition.MaxEnergy, true);
             bar.SetColors(
                 enemy ? new Color(1f, 0.30f, 0.25f, 1f) : new Color(0.22f, 0.94f, 0.45f, 1f),
                 new Color(0.22f, 0.66f, 1f, 1f));
 
             CreateWorldName(barAnchor, definition.DisplayName, enemy ? DemoUiFactory.Danger : DemoUiFactory.Accent);
-            units[runtimeId] = new UnitPresentation(definition, view, bar);
+            units[runtimeId] = new UnitPresentation(definition, view, bar, runtimeMaxHealth);
         }
 
         private CharacterView CreateAuthoredCharacter(
@@ -509,14 +615,155 @@ namespace GenericGachaRPG
                 1.15f));
         }
 
+        private void SpawnControlPulse(UnitPresentation target, Color color, float scale)
+        {
+            StartCoroutine(AnimatePulse(
+                target.View.transform.position + Vector3.up * 0.88f,
+                color,
+                0.44f,
+                scale));
+        }
+
+        private static bool PlayCatherineSkillVfx(
+            UnitPresentation actor,
+            Vector3 targetPosition,
+            string skillId)
+        {
+            if (actor == null || !CatherineYukiBattleKit.IsCatherine(actor.Definition.Id))
+            {
+                return false;
+            }
+
+            CatherineSkillVfxController vfx =
+                actor.View.GetComponent<CatherineSkillVfxController>();
+            if (vfx == null)
+            {
+                return false;
+            }
+
+            CosmicSlimeVisualController visual =
+                actor.View.GetComponent<CosmicSlimeVisualController>();
+
+            switch (skillId)
+            {
+                case CatherineYukiBattleKit.Skill1Id:
+                    visual?.PlayStretch(0.58f);
+                    vfx.PlaySkill1LineBreak(targetPosition);
+                    return true;
+                case CatherineYukiBattleKit.Skill2Id:
+                    visual?.PlayDance(0.29f);
+                    vfx.PlaySkill2Dance(targetPosition);
+                    return true;
+                case CatherineYukiBattleKit.Skill3Id:
+                    visual?.PlaySquash(0.52f);
+                    vfx.PlayDebuff(targetPosition);
+                    return true;
+                case CatherineYukiBattleKit.UltimateId:
+                case CatherineYukiBattleKit.DeathUltimateId:
+                    Action<CatherineUltimateVfxStage> stageCallback = visual == null
+                        ? null
+                        : visual.PresentUltimateStage;
+                    vfx.PlayUltimatePull(
+                        (IReadOnlyList<Transform>)null,
+                        onStageChanged: stageCallback);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private void PresentUltimatePhase(
+            BattleEvent battleEvent,
+            UnitPresentation actor,
+            UnitPresentation target)
+        {
+            if (actor == null)
+            {
+                return;
+            }
+
+            bool hasAuthoredUltimateVfx =
+                actor.View.GetComponent<CatherineSkillVfxController>() != null;
+
+            if (string.Equals(
+                    battleEvent.SkillId,
+                    CatherineYukiBattleKit.UltimateChargePhaseId,
+                    StringComparison.Ordinal))
+            {
+                if (!hasAuthoredUltimateVfx)
+                {
+                    SpawnControlPulse(actor, new Color(0.62f, 0.28f, 1f, 1f), 2.1f);
+                }
+                screen?.SetBattleStatus(battleEvent.Time, "Infinite Void charging");
+            }
+            else if (string.Equals(
+                         battleEvent.SkillId,
+                         CatherineYukiBattleKit.UltimateTransformPhaseId,
+                         StringComparison.Ordinal))
+            {
+                if (!hasAuthoredUltimateVfx)
+                {
+                    SpawnControlPulse(actor, new Color(0.16f, 0.02f, 0.30f, 1f), 2.8f);
+                }
+                screen?.SetBattleStatus(battleEvent.Time, "Catherine becomes Infinite Void");
+            }
+            else if (string.Equals(
+                         battleEvent.SkillId,
+                         CatherineYukiBattleKit.UltimateCollapsePhaseId,
+                         StringComparison.Ordinal))
+            {
+                if (!hasAuthoredUltimateVfx)
+                {
+                    SpawnControlPulse(actor, new Color(0.88f, 0.62f, 1f, 1f), 3.5f);
+                }
+                screen?.SetBattleStatus(battleEvent.Time, "Infinite Void collapse");
+            }
+        }
+
+        private static IEnumerator AnimateKnockUp(
+            Transform target,
+            Vector3 destination,
+            float duration)
+        {
+            if (target == null)
+            {
+                yield break;
+            }
+
+            Vector3 start = target.position;
+            float safeDuration = Mathf.Max(0.08f, duration);
+            float elapsed = 0f;
+            while (elapsed < safeDuration && target != null)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / safeDuration);
+                Vector3 position = Vector3.LerpUnclamped(start, destination, t);
+                position.y += Mathf.Sin(t * Mathf.PI) * 1.15f;
+                target.position = position;
+                yield return null;
+            }
+
+            if (target != null)
+            {
+                target.position = destination;
+            }
+        }
+
         private IEnumerator AnimatePulse(Vector3 position, Color color, float duration, float maximumScale)
         {
-            GameObject pulse = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            GameObject pulse = GameObject.CreatePrimitive(PrimitiveType.Quad);
             pulse.name = "SkillPulse";
             pulse.transform.SetParent(worldRoot, true);
             pulse.transform.position = position;
             pulse.transform.localScale = Vector3.one * 0.12f;
-            Material material = CreateMaterial("Pulse", color, 0f, 0.9f, true);
+            if (battleCamera != null)
+            {
+                pulse.transform.rotation = Quaternion.LookRotation(
+                    (battleCamera.transform.position - position).normalized,
+                    Vector3.up);
+            }
+
+            Material material = CreatePulseMaterial(color);
             pulse.GetComponent<Renderer>().sharedMaterial = material;
             Collider collider = pulse.GetComponent<Collider>();
             if (collider != null)
@@ -529,9 +776,21 @@ namespace GenericGachaRPG
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                pulse.transform.localScale = Vector3.one * Mathf.Lerp(0.12f, maximumScale, 1f - Mathf.Pow(1f - t, 3f));
-                color.a = 1f - t;
-                SetMaterialColor(material, color);
+                float readableScale = maximumScale * 0.72f;
+                pulse.transform.localScale = Vector3.one * Mathf.Lerp(
+                    0.12f,
+                    readableScale,
+                    1f - Mathf.Pow(1f - t, 3f));
+                if (material.HasProperty("_Progress"))
+                {
+                    material.SetFloat("_Progress", t);
+                    material.SetFloat("_Opacity", (1f - t) * 0.72f);
+                }
+                else
+                {
+                    color.a = (1f - t) * 0.5f;
+                    SetMaterialColor(material, color);
+                }
                 yield return null;
             }
 
@@ -661,6 +920,32 @@ namespace GenericGachaRPG
             return material;
         }
 
+        private Material CreatePulseMaterial(Color color)
+        {
+            Shader shader = Shader.Find("BubbleMind/Black Hole VFX");
+            if (shader == null)
+            {
+                color.a = 0.5f;
+                return CreateMaterial("Pulse", color, 0f, 0.2f, true);
+            }
+
+            Material material = new Material(shader) { name = "Pulse" };
+            material.SetFloat("_Mode", 2f);
+            material.SetColor("_CoreColor", new Color(0f, 0f, 0f, 0f));
+            material.SetColor("_InnerColor", color);
+            material.SetColor("_OuterColor", Color.Lerp(color, Color.white, 0.28f));
+            material.SetColor("_AccentColor", Color.Lerp(color, Color.white, 0.55f));
+            material.SetFloat("_Radius", 0.34f);
+            material.SetFloat("_RingWidth", 0.075f);
+            material.SetFloat("_Softness", 0.065f);
+            material.SetFloat("_Speed", 1.6f);
+            material.SetFloat("_Intensity", 1.25f);
+            material.SetFloat("_Progress", 0f);
+            material.SetFloat("_Opacity", 0.72f);
+            runtimeMaterials.Add(material);
+            return material;
+        }
+
         private static void SetMaterialColor(Material material, Color color)
         {
             if (material == null)
@@ -693,18 +978,24 @@ namespace GenericGachaRPG
 
         private sealed class UnitPresentation
         {
-            public UnitPresentation(CharacterDefinition definition, CharacterView view, WorldBarView bar)
+            public UnitPresentation(
+                CharacterDefinition definition,
+                CharacterView view,
+                WorldBarView bar,
+                float maxHealth)
             {
                 Definition = definition;
                 View = view;
                 Bar = bar;
-                Health = definition.MaxHealth;
+                MaxHealth = maxHealth;
+                Health = maxHealth;
                 Energy = 0;
             }
 
             public CharacterDefinition Definition { get; }
             public CharacterView View { get; }
             public WorldBarView Bar { get; }
+            public float MaxHealth { get; set; }
             public float Health { get; set; }
             public int Energy { get; set; }
         }

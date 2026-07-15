@@ -12,7 +12,9 @@ namespace GenericGachaRPG
         internal BattleUnitState(
             CharacterDefinition definition,
             BattleTeamSide side,
-            int slotIndex)
+            int slotIndex,
+            float healthMultiplier = 1f,
+            float attackMultiplier = 1f)
         {
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             Side = side;
@@ -21,8 +23,9 @@ namespace GenericGachaRPG
 
             CharacterId = definition.Id ?? string.Empty;
             DisplayName = definition.DisplayName ?? CharacterId;
-            MaxHealth = SanitizePositive(definition.MaxHealth, 1f);
-            Attack = SanitizeNonNegative(definition.Attack);
+            MaxHealth = SanitizePositive(definition.MaxHealth * healthMultiplier, 1f);
+            BaseMaxHealth = MaxHealth;
+            Attack = SanitizeNonNegative(definition.Attack * attackMultiplier);
             Defense = SanitizeNonNegative(definition.Defense);
             AttackInterval = SanitizePositive(definition.AttackInterval, BattleContext.DefaultTickDuration);
             AttackRange = SanitizePositive(
@@ -50,6 +53,7 @@ namespace GenericGachaRPG
             CharacterId = source.CharacterId;
             DisplayName = source.DisplayName;
             MaxHealth = source.MaxHealth;
+            BaseMaxHealth = source.BaseMaxHealth;
             Attack = source.Attack;
             Defense = source.Defense;
             AttackInterval = source.AttackInterval;
@@ -78,7 +82,9 @@ namespace GenericGachaRPG
 
         public int SlotIndex { get; }
 
-        public float MaxHealth { get; }
+        public float MaxHealth { get; private set; }
+
+        public float BaseMaxHealth { get; }
 
         public float Attack { get; }
 
@@ -153,6 +159,35 @@ namespace GenericGachaRPG
             var previousHealth = CurrentHealth;
             CurrentHealth = Math.Min(MaxHealth, CurrentHealth + requestedHealing);
             return CurrentHealth - previousHealth;
+        }
+
+        internal float Revive(float requestedHealth)
+        {
+            if (IsAlive || requestedHealth <= 0f)
+            {
+                return 0f;
+            }
+
+            CurrentHealth = Math.Min(MaxHealth, requestedHealth);
+            return CurrentHealth;
+        }
+
+        internal float ConvertStacksToMaxHealth(int stackCount, float maxHealthRatioPerStack)
+        {
+            if (!IsAlive || stackCount <= 0 || maxHealthRatioPerStack <= 0f)
+            {
+                return 0f;
+            }
+
+            float addedMaxHealth = BaseMaxHealth * maxHealthRatioPerStack * stackCount;
+            if (float.IsNaN(addedMaxHealth) || float.IsInfinity(addedMaxHealth) || addedMaxHealth <= 0f)
+            {
+                return 0f;
+            }
+
+            MaxHealth += addedMaxHealth;
+            CurrentHealth = Math.Min(MaxHealth, CurrentHealth + addedMaxHealth);
+            return addedMaxHealth;
         }
 
         internal int GainEnergy(int requestedEnergy)

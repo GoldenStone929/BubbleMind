@@ -17,6 +17,8 @@ namespace GenericGachaRPG.Editor
         private const string BlackCoreMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_BlackCore.mat";
         private const string OrbitMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_Orbit.mat";
         private const string OrbitTrimMaterialPath = MaterialFolder + "/MAT_UR_CosmicSlime_OrbitTrim.mat";
+        private const string SlimeToonShaderName = "BubbleMind/Slime Toon";
+        private const string BlackHoleVfxShaderName = "BubbleMind/Black Hole VFX";
 
         public static GameObject EnsureAssets()
         {
@@ -24,20 +26,8 @@ namespace GenericGachaRPG.Editor
             EnsureFolder("Assets/_Game/Prefabs/Characters");
             ConfigureModelImporter();
 
-            Material shell = EnsureMaterial(
-                ShellMaterialPath,
-                new Color(0.004f, 0.0005f, 0.014f, 0.82f),
-                new Color(0.025f, 0.002f, 0.075f, 1f) * 0.24f,
-                0f,
-                0.90f,
-                true);
-            Material nebula = EnsureMaterial(
-                NebulaMaterialPath,
-                new Color(0.008f, 0.0005f, 0.025f, 1f),
-                new Color(0.07f, 0.004f, 0.20f, 1f) * 0.34f,
-                0f,
-                0.62f,
-                false);
+            Material shell = EnsureSlimeMaterial(ShellMaterialPath, false);
+            Material nebula = EnsureSlimeMaterial(NebulaMaterialPath, true);
             Material core = EnsureMaterial(
                 CoreMaterialPath,
                 new Color(0.86f, 0.72f, 1f, 1f),
@@ -78,10 +68,19 @@ namespace GenericGachaRPG.Editor
             {
                 CharacterView view = root.AddComponent<CharacterView>();
                 root.AddComponent<CosmicSlimeVisualController>();
+                CatherineSkillVfxController skillVfxController = root.AddComponent<CatherineSkillVfxController>();
 
                 Transform modelRoot = new GameObject("ModelRoot").transform;
                 modelRoot.SetParent(root.transform, false);
                 GameObject model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
+                if (PrefabUtility.IsPartOfPrefabInstance(model))
+                {
+                    PrefabUtility.UnpackPrefabInstance(
+                        model,
+                        PrefabUnpackMode.Completely,
+                        InteractionMode.AutomatedAction);
+                }
+
                 model.name = "UR_CosmicSlime_Model";
                 model.transform.SetParent(modelRoot, false);
                 model.transform.localPosition = Vector3.zero;
@@ -89,7 +88,10 @@ namespace GenericGachaRPG.Editor
                 model.transform.localRotation = Quaternion.Euler(0f, -34f, 0f);
                 model.transform.localScale = Vector3.one * 0.92f;
 
+                ConvertBlendShapeMeshes(model);
                 AssignMaterials(model, shell, nebula, core, blackCore, orbit, orbitTrim);
+                ValidateAnimatedHierarchy(model, blackCore);
+                ValidateBlendShapes(model);
 
                 Transform rightHand = FindDescendant(model.transform, "RightHandSocket") ??
                                       CreateSocket(modelRoot, "RightHand", new Vector3(0.72f, 0.68f, 0f));
@@ -104,6 +106,13 @@ namespace GenericGachaRPG.Editor
                 Transform health = CreateSocket(root.transform, "HealthBar", new Vector3(0f, 2.35f, 0f));
 
                 view.ConfigureSockets(modelRoot, rightHand, leftHand, skill, projectile, ground, target, health);
+                Shader vfxShader = Shader.Find(BlackHoleVfxShaderName);
+                if (vfxShader == null)
+                {
+                    throw new InvalidOperationException($"Required shader '{BlackHoleVfxShaderName}' is unavailable.");
+                }
+
+                skillVfxController.Configure(view.SkillVfx, view.ModelRoot, null, vfxShader);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             }
             finally
@@ -113,6 +122,47 @@ namespace GenericGachaRPG.Editor
 
             AssetDatabase.SaveAssets();
             return AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+        }
+
+        public static void LogModelDiagnostics()
+        {
+            GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            if (model == null)
+            {
+                Debug.LogError($"[BubbleMind] Missing model at '{ModelPath}'.");
+                return;
+            }
+
+            Component[] components = model.GetComponentsInChildren<Component>(true);
+            for (int i = 0; i < components.Length; i++)
+            {
+                if (components[i] is SkinnedMeshRenderer skinned)
+                {
+                    Mesh mesh = skinned.sharedMesh;
+                    Debug.Log($"[BubbleMind] SKINNED {skinned.name}: mesh={mesh?.name}, shapes={DescribeBlendShapes(mesh)}");
+                }
+                else if (components[i] is MeshFilter filter)
+                {
+                    Mesh mesh = filter.sharedMesh;
+                    Debug.Log($"[BubbleMind] FILTER {filter.name}: mesh={mesh?.name}, shapes={DescribeBlendShapes(mesh)}");
+                }
+            }
+        }
+
+        private static string DescribeBlendShapes(Mesh mesh)
+        {
+            if (mesh == null || mesh.blendShapeCount == 0)
+            {
+                return "none";
+            }
+
+            string[] names = new string[mesh.blendShapeCount];
+            for (int i = 0; i < mesh.blendShapeCount; i++)
+            {
+                names[i] = mesh.GetBlendShapeName(i);
+            }
+
+            return string.Join(",", names);
         }
 
         private static void ConfigureModelImporter()
@@ -181,6 +231,73 @@ namespace GenericGachaRPG.Editor
             }
 
             ConfigureSurface(material, transparent);
+            material.enableInstancing = true;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        private static Material EnsureSlimeMaterial(string path, bool internalLayer)
+        {
+            Shader shader = Shader.Find(SlimeToonShaderName);
+            if (shader == null)
+            {
+                throw new InvalidOperationException($"Required shader '{SlimeToonShaderName}' is unavailable.");
+            }
+
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else if (material.shader != shader)
+            {
+                material.shader = shader;
+            }
+
+            material.SetColor("_BaseColor", Color.white);
+            material.SetColor("_TopColor", internalLayer
+                ? new Color(0.34f, 0.10f, 0.62f, 1f)
+                : new Color(0.16f, 0.055f, 0.32f, 1f));
+            material.SetColor("_BottomColor", internalLayer
+                ? new Color(0.045f, 0.006f, 0.12f, 1f)
+                : new Color(0.012f, 0.002f, 0.035f, 1f));
+            material.SetColor("_ShadowColor", internalLayer
+                ? new Color(0.22f, 0.10f, 0.38f, 1f)
+                : new Color(0.16f, 0.075f, 0.27f, 1f));
+            material.SetColor("_InnerColor", internalLayer
+                ? new Color(0.44f, 0.16f, 0.80f, 1f)
+                : new Color(0.20f, 0.055f, 0.42f, 1f));
+            material.SetColor("_FresnelColor", internalLayer
+                ? new Color(0.72f, 0.38f, 1f, 1f)
+                : new Color(0.63f, 0.42f, 0.94f, 1f));
+            material.SetColor("_HighlightColor", new Color(0.95f, 0.86f, 1f, 1f));
+            material.SetColor("_StarColor", internalLayer
+                ? new Color(0.70f, 0.84f, 1f, 1f)
+                : new Color(0.88f, 0.72f, 1f, 1f));
+            material.SetFloat("_GradientOffset", internalLayer ? 0.30f : 0.38f);
+            material.SetFloat("_GradientScale", internalLayer ? 1.10f : 0.92f);
+            material.SetFloat("_ShadowThreshold", internalLayer ? 0.44f : 0.50f);
+            material.SetFloat("_ShadowSoftness", 0.095f);
+            material.SetFloat("_InnerStrength", internalLayer ? 0.62f : 0.38f);
+            material.SetFloat("_ThicknessStrength", internalLayer ? 0.58f : 0.48f);
+            material.SetFloat("_FresnelPower", internalLayer ? 2.4f : 3.1f);
+            material.SetFloat("_FresnelStrength", internalLayer ? 0.72f : 0.58f);
+            material.SetFloat("_HighlightThreshold", internalLayer ? 0.82f : 0.86f);
+            material.SetFloat("_HighlightSoftness", 0.065f);
+            material.SetFloat("_HighlightStrength", internalLayer ? 0.92f : 0.76f);
+            material.SetFloat("_StarDensity", internalLayer ? 0.22f : 0.10f);
+            material.SetFloat("_StarScale", internalLayer ? 25f : 19f);
+            material.SetFloat("_StarStrength", internalLayer ? 1.45f : 0.82f);
+            material.SetFloat("_StarSpeed", internalLayer ? 2.3f : 1.6f);
+            material.SetFloat("_Opacity", internalLayer ? 0.94f : 1f);
+            material.SetFloat("_VfxDarken", 0f);
+            material.SetFloat("_VfxDissolve", 0f);
+            material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            material.DisableKeyword("_ALPHAMODULATE_ON");
+            material.SetOverrideTag("RenderType", "TransparentCutout");
+            material.renderQueue = (int)RenderQueue.AlphaTest;
             material.enableInstancing = true;
             EditorUtility.SetDirty(material);
             return material;
@@ -276,6 +393,145 @@ namespace GenericGachaRPG.Editor
                 }
 
                 renderers[i].sharedMaterials = slots;
+            }
+        }
+
+        private static void ConvertBlendShapeMeshes(GameObject model)
+        {
+            MeshFilter[] filters = model.GetComponentsInChildren<MeshFilter>(true);
+            int converted = 0;
+            for (int i = 0; i < filters.Length; i++)
+            {
+                MeshFilter filter = filters[i];
+                Mesh mesh = filter.sharedMesh;
+                MeshRenderer sourceRenderer = filter.GetComponent<MeshRenderer>();
+                if (mesh == null || mesh.blendShapeCount == 0 || sourceRenderer == null)
+                {
+                    continue;
+                }
+
+                Material[] materials = sourceRenderer.sharedMaterials;
+                GameObject host = filter.gameObject;
+                bool rendererEnabled = sourceRenderer.enabled;
+                ShadowCastingMode shadowCastingMode = sourceRenderer.shadowCastingMode;
+                bool receiveShadows = sourceRenderer.receiveShadows;
+                LightProbeUsage lightProbeUsage = sourceRenderer.lightProbeUsage;
+                ReflectionProbeUsage reflectionProbeUsage = sourceRenderer.reflectionProbeUsage;
+                Transform probeAnchor = sourceRenderer.probeAnchor;
+                bool allowOcclusion = sourceRenderer.allowOcclusionWhenDynamic;
+                uint renderingLayerMask = sourceRenderer.renderingLayerMask;
+
+                UnityEngine.Object.DestroyImmediate(sourceRenderer);
+                UnityEngine.Object.DestroyImmediate(filter);
+
+                SkinnedMeshRenderer skinned = host.AddComponent<SkinnedMeshRenderer>();
+                skinned.sharedMesh = mesh;
+                skinned.sharedMaterials = materials;
+                skinned.localBounds = mesh.bounds;
+                skinned.updateWhenOffscreen = true;
+                skinned.enabled = rendererEnabled;
+                skinned.shadowCastingMode = shadowCastingMode;
+                skinned.receiveShadows = receiveShadows;
+                skinned.lightProbeUsage = lightProbeUsage;
+                skinned.reflectionProbeUsage = reflectionProbeUsage;
+                skinned.probeAnchor = probeAnchor;
+                skinned.allowOcclusionWhenDynamic = allowOcclusion;
+                skinned.renderingLayerMask = renderingLayerMask;
+                converted++;
+            }
+
+            if (converted < 2)
+            {
+                throw new InvalidOperationException(
+                    $"Cosmic Slime requires two blend-shape renderers; converted {converted}.");
+            }
+        }
+
+        private static void ValidateAnimatedHierarchy(GameObject model, Material blackCore)
+        {
+            Transform eventHorizon = FindDescendant(model.transform, "SingularityCore");
+            Transform accretionDisk = FindDescendant(model.transform, "SingularityAccretion");
+            Transform lowerOrbit = FindDescendant(model.transform, "OrbitRig_Lower");
+            Transform upperOrbit = FindDescendant(model.transform, "OrbitRig_Upper");
+            if (eventHorizon == null || accretionDisk == null || lowerOrbit == null || upperOrbit == null)
+            {
+                throw new InvalidOperationException("Cosmic Slime animation hierarchy is incomplete.");
+            }
+
+            int spiralCount = 0;
+            Transform[] descendants = model.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < descendants.Length; i++)
+            {
+                if (descendants[i].name.StartsWith("AccretionSpiral_", StringComparison.Ordinal))
+                {
+                    spiralCount++;
+                }
+            }
+
+            if (spiralCount < 2)
+            {
+                throw new InvalidOperationException("Cosmic Slime requires multiple accretion spirals for phased animation.");
+            }
+
+            Renderer eventHorizonRenderer = eventHorizon.GetComponent<Renderer>();
+            if (eventHorizonRenderer == null || Array.IndexOf(eventHorizonRenderer.sharedMaterials, blackCore) < 0)
+            {
+                throw new InvalidOperationException("Cosmic Slime event horizon must use the shared black-core material.");
+            }
+
+            Color blackBase = blackCore.HasProperty("_BaseColor")
+                ? blackCore.GetColor("_BaseColor")
+                : blackCore.GetColor("_Color");
+            Color blackEmission = blackCore.HasProperty("_EmissionColor")
+                ? blackCore.GetColor("_EmissionColor")
+                : Color.black;
+            if (blackBase.maxColorComponent > 0.001f || blackEmission.maxColorComponent > 0.001f)
+            {
+                throw new InvalidOperationException("Cosmic Slime event horizon material must remain pure black.");
+            }
+        }
+
+        private static void ValidateBlendShapes(GameObject model)
+        {
+            string[] required = { "IdleBreath", "Squash", "Stretch", "UltimateCollapse" };
+            SkinnedMeshRenderer[] renderers = model.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            int completeRendererCount = 0;
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                Mesh mesh = renderers[rendererIndex].sharedMesh;
+                if (mesh == null || mesh.blendShapeCount == 0)
+                {
+                    continue;
+                }
+
+                bool complete = true;
+                for (int requiredIndex = 0; requiredIndex < required.Length; requiredIndex++)
+                {
+                    bool found = false;
+                    for (int shapeIndex = 0; shapeIndex < mesh.blendShapeCount; shapeIndex++)
+                    {
+                        string shapeName = mesh.GetBlendShapeName(shapeIndex);
+                        if (string.Equals(shapeName, required[requiredIndex], StringComparison.Ordinal) ||
+                            shapeName.EndsWith("." + required[requiredIndex], StringComparison.Ordinal))
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    complete &= found;
+                }
+
+                if (complete)
+                {
+                    completeRendererCount++;
+                }
+            }
+
+            if (completeRendererCount == 0)
+            {
+                throw new InvalidOperationException(
+                    "Cosmic Slime FBX must expose IdleBreath, Squash, Stretch, and UltimateCollapse blend shapes.");
             }
         }
 

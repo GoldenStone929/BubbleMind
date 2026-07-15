@@ -95,7 +95,7 @@ namespace GenericGachaRPG.Editor
 
         private static bool HasCompleteGeneratedContent(GameDatabase database)
         {
-            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 3)
+            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 7)
             {
                 return false;
             }
@@ -137,12 +137,21 @@ namespace GenericGachaRPG.Editor
 
             CharacterDefinition cosmicSlime = database.GetCharacter("ur_cosmic_slime");
             SkillDefinition spectrumNova = database.GetSkill("spectrum_nova");
+            SkillDefinition catherineUltimate = database.GetSkill(CatherineYukiBattleKit.UltimateId);
             return cosmicSlime != null &&
                    cosmicSlime.Role == CharacterRole.Guardian &&
                    cosmicSlime.Rarity == Rarity.UR &&
                    cosmicSlime.IsLimited &&
                    cosmicSlime.AttackRange <= BattleRules.GuardianAttackRange + BattleRules.RangeEpsilon &&
                    cosmicSlime.CharacterPrefab != null &&
+                   cosmicSlime.CharacterPrefab.GetComponent<CatherineSkillVfxController>() != null &&
+                   cosmicSlime.Skill == catherineUltimate &&
+                   HasBasicSlimePrefab(database, "azure_vanguard", BasicSlimeElement.Water) &&
+                   HasBasicSlimePrefab(database, "ember_striker", BasicSlimeElement.Fire) &&
+                   HasBasicSlimePrefab(database, "verdant_medic", BasicSlimeElement.Wind) &&
+                   HasBasicSlimePrefab(database, "violet_arcanist", BasicSlimeElement.Lightning) &&
+                   HasBasicSlimePrefab(database, "gold_ranger", BasicSlimeElement.Earth) &&
+                   HasBasicSlimePrefab(database, "cyan_warden", BasicSlimeElement.Water) &&
                    HasRarity(database, "azure_vanguard", Rarity.R) &&
                    HasRarity(database, "ember_striker", Rarity.R) &&
                    HasRarity(database, "verdant_medic", Rarity.SR) &&
@@ -161,13 +170,37 @@ namespace GenericGachaRPG.Editor
                    spectrumNova != null &&
                    spectrumNova.TargetMode == SkillTargetMode.AllEnemies &&
                    spectrumNova.TargetCount == BattleRules.TeamSize &&
-                   database.GetSkill("restore_wave") != null;
+                   database.GetSkill("restore_wave") != null &&
+                   database.GetSkill(CatherineYukiBattleKit.Skill1Id) != null &&
+                   database.GetSkill(CatherineYukiBattleKit.Skill2Id) != null &&
+                   database.GetSkill(CatherineYukiBattleKit.Skill3Id) != null &&
+                   catherineUltimate != null &&
+                   Mathf.Approximately(
+                       catherineUltimate.DamageMultiplier,
+                       CatherineYukiBattleKit.UltimateBaseDamageMultiplier);
         }
 
         private static bool HasRarity(GameDatabase database, string characterId, Rarity expectedRarity)
         {
             CharacterDefinition character = database.GetCharacter(characterId);
             return character != null && character.Rarity == expectedRarity && !character.IsLimited;
+        }
+
+        private static bool HasBasicSlimePrefab(
+            GameDatabase database,
+            string characterId,
+            BasicSlimeElement expectedElement)
+        {
+            CharacterDefinition character = database.GetCharacter(characterId);
+            if (character == null ||
+                !BasicElementSlimeAssetBuilder.IsExpectedPrefab(character.CharacterPrefab, expectedElement))
+            {
+                return false;
+            }
+
+            BasicSlimeVisualController visualController =
+                character.CharacterPrefab.GetComponent<BasicSlimeVisualController>();
+            return visualController != null && visualController.Element == expectedElement;
         }
 
         private static bool IsFinitePositive(float value)
@@ -190,6 +223,12 @@ namespace GenericGachaRPG.Editor
         private static GameDatabase GenerateContentIfNeeded()
         {
             GameObject cosmicSlimePrefab = CosmicSlimeAssetBuilder.EnsureAssets();
+            BasicElementSlimeAssetBuilder.EnsureAssets();
+            GameObject waterSlimePrefab = BasicElementSlimeAssetBuilder.GetPrefab(BasicSlimeElement.Water);
+            GameObject fireSlimePrefab = BasicElementSlimeAssetBuilder.GetPrefab(BasicSlimeElement.Fire);
+            GameObject earthSlimePrefab = BasicElementSlimeAssetBuilder.GetPrefab(BasicSlimeElement.Earth);
+            GameObject windSlimePrefab = BasicElementSlimeAssetBuilder.GetPrefab(BasicSlimeElement.Wind);
+            GameObject lightningSlimePrefab = BasicElementSlimeAssetBuilder.GetPrefab(BasicSlimeElement.Lightning);
             SkillDefinition strikeSkill = GetOrCreateAsset<SkillDefinition>(
                 $"{SkillFolder}/Skill_PulseStrike.asset",
                 out _);
@@ -238,7 +277,80 @@ namespace GenericGachaRPG.Editor
                 "Restores the ally with the lowest health ratio.");
             EditorUtility.SetDirty(healSkill);
 
-            var skills = new List<SkillDefinition> { strikeSkill, novaSkill, healSkill };
+            SkillDefinition catherineSkill1 = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_CatherineWindWheelBreak.asset",
+                out _);
+            catherineSkill1.Configure(
+                CatherineYukiBattleKit.Skill1Id,
+                "Wind Wheel: Break",
+                SkillCategory.Damage,
+                SkillTargetMode.AllEnemies,
+                CatherineYukiBattleKit.Skill1DamageMultiplier,
+                0f,
+                0,
+                CatherineYukiBattleKit.Skill1HitDelay,
+                BattleRules.TeamSize,
+                "Max-level line break: pierces defenses and knocks targets up.");
+            EditorUtility.SetDirty(catherineSkill1);
+
+            SkillDefinition catherineSkill2 = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_CatherineWindWheelDance.asset",
+                out _);
+            catherineSkill2.Configure(
+                CatherineYukiBattleKit.Skill2Id,
+                "Wind Wheel: Dance",
+                SkillCategory.Damage,
+                SkillTargetMode.SingleEnemy,
+                CatherineYukiBattleKit.Skill2HitDamageMultiplier * 2f,
+                CatherineYukiBattleKit.Skill2HealingFromDamageMultiplier,
+                0,
+                CatherineYukiBattleKit.Skill2SecondHitDelay,
+                1,
+                "Max-level two-hit charge with damage-based healing, Taunt, and Super Armor.");
+            EditorUtility.SetDirty(catherineSkill2);
+
+            SkillDefinition catherineSkill3 = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_CatherineStarRage.asset",
+                out _);
+            catherineSkill3.Configure(
+                CatherineYukiBattleKit.Skill3Id,
+                "Star Rage",
+                SkillCategory.Damage,
+                SkillTargetMode.AllEnemies,
+                0f,
+                0f,
+                0,
+                CatherineYukiBattleKit.Skill3HitDelay,
+                BattleRules.TeamSize,
+                "Max-level domain test: applies gravity debuff and gains Imaginary Mass.");
+            EditorUtility.SetDirty(catherineSkill3);
+
+            SkillDefinition catherineUltimate = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_CatherineInfiniteVoid.asset",
+                out _);
+            catherineUltimate.Configure(
+                CatherineYukiBattleKit.UltimateId,
+                "Imaginary Mass: Infinite Void",
+                SkillCategory.Damage,
+                SkillTargetMode.AllEnemies,
+                CatherineYukiBattleKit.UltimateBaseDamageMultiplier,
+                0f,
+                0,
+                CatherineYukiBattleKit.UltimateChargeDuration,
+                BattleRules.TeamSize,
+                "Max-level 960% base AoE: charge, transform, pull, multi-hit, collapse, and launch.");
+            EditorUtility.SetDirty(catherineUltimate);
+
+            var skills = new List<SkillDefinition>
+            {
+                strikeSkill,
+                novaSkill,
+                healSkill,
+                catherineSkill1,
+                catherineSkill2,
+                catherineSkill3,
+                catherineUltimate
+            };
             var characters = new List<CharacterDefinition>
             {
                 CreateCharacter(
@@ -254,7 +366,8 @@ namespace GenericGachaRPG.Editor
                     1.45f,
                     3.2f,
                     strikeSkill,
-                    "A steady frontline defender."),
+                    "A steady frontline defender.",
+                    waterSlimePrefab),
                 CreateCharacter(
                     "ember_striker",
                     "Ember Striker",
@@ -268,7 +381,8 @@ namespace GenericGachaRPG.Editor
                     1.55f,
                     4.2f,
                     strikeSkill,
-                    "A fast close-range attacker."),
+                    "A fast close-range attacker.",
+                    fireSlimePrefab),
                 CreateCharacter(
                     "verdant_medic",
                     "Verdant Medic",
@@ -282,10 +396,11 @@ namespace GenericGachaRPG.Editor
                     4.4f,
                     3.0f,
                     healSkill,
-                    "A support unit that restores weakened allies."),
+                    "A support unit that restores weakened allies.",
+                    windSlimePrefab),
                 CreateCharacter(
                     "ur_cosmic_slime",
-                    "Abyssal Slime",
+                    "Catherine Yuki",
                     CharacterRole.Guardian,
                     Rarity.UR,
                     new Color(0.52f, 0.16f, 0.96f, 1f),
@@ -295,8 +410,8 @@ namespace GenericGachaRPG.Editor
                     1.52f,
                     1.45f,
                     3.3f,
-                    novaSkill,
-                    "A limited singularity tank that advances first and anchors the frontline.",
+                    catherineUltimate,
+                    "A max-level limited singularity tank with Imaginary Mass and Infinite Void.",
                     cosmicSlimePrefab,
                     true),
                 CreateCharacter(
@@ -312,7 +427,8 @@ namespace GenericGachaRPG.Editor
                     3.8f,
                     3.4f,
                     novaSkill,
-                    "A ranged caster with a team-wide burst."),
+                    "A ranged caster with a team-wide burst.",
+                    lightningSlimePrefab),
                 CreateCharacter(
                     "gold_ranger",
                     "Gold Ranger",
@@ -326,7 +442,8 @@ namespace GenericGachaRPG.Editor
                     4.6f,
                     3.8f,
                     strikeSkill,
-                    "A precise high-speed specialist."),
+                    "A precise high-speed specialist.",
+                    earthSlimePrefab),
                 CreateCharacter(
                     "cyan_warden",
                     "Cyan Warden",
@@ -340,7 +457,8 @@ namespace GenericGachaRPG.Editor
                     1.55f,
                     3.15f,
                     novaSkill,
-                    "A durable guardian with an area disruption skill.")
+                    "A durable guardian with an area disruption skill.",
+                    waterSlimePrefab)
             };
 
             GachaBannerDefinition banner = GetOrCreateAsset<GachaBannerDefinition>(

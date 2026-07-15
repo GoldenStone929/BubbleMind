@@ -541,12 +541,15 @@ namespace GenericGachaRPG
                 Vector2.zero,
                 Vector2.zero);
 
+            string progressionLabel = CatherineYukiBattleKit.IsCatherine(character.Id)
+                ? "MAX  |  MASS 30"
+                : "LV 1";
             Text body = DemoUiFactory.CreateText(
                 "Body",
                 card.transform,
                 unlocked
                     ? $"{character.DisplayName}\n{FormatCharacterTags(character)}\n" +
-                      $"LV 1  |  HP {character.MaxHealth:0}\nATK {character.Attack:0}  DEF {character.Defense:0}\n" +
+                      $"{progressionLabel}  |  HP {character.MaxHealth:0}\nATK {character.Attack:0}  DEF {character.Defense:0}\n" +
                       $"RNG {character.AttackRange:0.0}  •  MOVE {character.MoveSpeed:0.0}"
                     : character.IsLimited
                         ? "LIMITED SIGNAL\nNot in Standard Signal"

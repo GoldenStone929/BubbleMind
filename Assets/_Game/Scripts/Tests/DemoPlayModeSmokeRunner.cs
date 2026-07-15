@@ -73,6 +73,9 @@ namespace GenericGachaRPG
                 "DemoGameController has no GameDatabase.");
             Require(controller.Database.DefaultBanner != null,
                 "GameDatabase has no default gacha banner.");
+            RawImage homeEnvironment = FindDescendantComponent<RawImage>("HomeScreen", "EnvironmentBackdrop");
+            Require(homeEnvironment != null && homeEnvironment.texture != null,
+                "Home screen has no bound Abyssal Observatory artwork texture.");
 
             int homeCurrency = ReadIntegerText("HomeScreen", "Currency");
             ClickActiveButton("GachaButton");
@@ -160,9 +163,11 @@ namespace GenericGachaRPG
             yield return WaitFor(
                 () => FindSceneObject("AbyssalObservatory_Backdrop") != null &&
                       FindSceneObjectOfType<CosmicSlimeVisualController>() != null &&
+                      CountBattleComponents<CosmicSlimeVisualController>() == 1 &&
+                      CountBattleComponents<BasicSlimeVisualController>() == 9 &&
                       CountBattleUnits("P") == BattleRules.TeamSize &&
                       CountBattleUnits("E") == BattleRules.TeamSize,
-                "Abyssal Observatory and authored Cosmic Slime",
+                "Abyssal Observatory, one authored UR, and nine Basic Slimes",
                 StepTimeoutSeconds);
             GameObject backdrop = FindSceneObject("AbyssalObservatory_Backdrop");
             Renderer backdropRenderer = backdrop == null ? null : backdrop.GetComponent<Renderer>();
@@ -171,6 +176,11 @@ namespace GenericGachaRPG
                 "Abyssal Observatory backdrop has no runtime material.");
             Require(backdropRenderer.sharedMaterial.shader != null,
                 "Abyssal Observatory backdrop material has no runtime shader.");
+            Texture runtimeBackdropTexture = backdropRenderer.sharedMaterial.HasProperty("_BaseMap")
+                ? backdropRenderer.sharedMaterial.GetTexture("_BaseMap")
+                : backdropRenderer.sharedMaterial.mainTexture;
+            Require(runtimeBackdropTexture != null,
+                "Abyssal Observatory runtime material has no bound artwork texture.");
             CosmicSlimeVisualController cosmicSlimeController = FindSceneObjectOfType<CosmicSlimeVisualController>();
             GameObject cosmicSlime = cosmicSlimeController == null ? null : cosmicSlimeController.gameObject;
             Require(cosmicSlime != null,
@@ -179,21 +189,40 @@ namespace GenericGachaRPG
                 $"Cosmic Slime must occupy player slot 0; found '{cosmicSlime.name}'.");
             Require(cosmicSlime.GetComponentsInChildren<Renderer>(true).Length > 0,
                 "Player Cosmic Slime prefab has no visible renderer.");
+            Require(cosmicSlimeController.HasRequiredBlendShapes,
+                "Catherine Yuki runtime model is missing required Idle/Squash/Stretch/Ultimate blend shapes.");
+            CatherineSkillVfxController catherineVfx =
+                cosmicSlime.GetComponent<CatherineSkillVfxController>();
+            Require(catherineVfx != null,
+                "Catherine Yuki runtime prefab has no CatherineSkillVfxController.");
+            Require(Shader.Find("BubbleMind/Slime Toon") != null &&
+                    Shader.Find("BubbleMind/Black Hole VFX") != null,
+                "Catherine Yuki runtime shaders are unavailable.");
+            Require(GameObjectUsesShader(cosmicSlime, "BubbleMind/Slime Toon"),
+                "Catherine Yuki runtime shell does not use BubbleMind/Slime Toon.");
             Require(CountBattleUnits("P") == BattleRules.TeamSize &&
                     CountBattleUnits("E") == BattleRules.TeamSize,
                 "Battle did not instantiate complete five-unit teams.");
+            Require(CountBattleComponents<CosmicSlimeVisualController>() == 1,
+                "Battle must contain exactly one authored UR Cosmic Slime.");
+            Require(CountBattleComponents<BasicSlimeVisualController>() == 9,
+                "Battle must contain exactly nine authored Basic Slimes.");
+            Require(CountBattleComponents<ProceduralCharacterBuilder>() == 0,
+                "Battle unexpectedly used procedural humanoid fallback units.");
+            RequireVisibleBasicSlimes();
 
             CharacterView cosmicSlimeView = cosmicSlime.GetComponent<CharacterView>();
             Require(cosmicSlimeView != null, "Player Cosmic Slime has no CharacterView.");
             DemoBattlePresenter presenter = FindSceneObjectOfType<DemoBattlePresenter>();
             Require(presenter != null && presenter.LastResult != null,
                 "Battle presenter has no deterministic result to replay.");
-            BattleEvent firstTankAttack = VerifyTankTargetLockAndRetarget(presenter.LastResult);
+            VerifyDemoEnemyScalingAndCatherineKit(presenter);
+            BattleEvent firstTankAction = VerifyTankTargetLockAndRetarget(presenter.LastResult);
             Vector3 tankSpawnPosition = BattleRules.GetSlotPosition(BattleTeamSide.Player, 0);
             yield return WaitFor(
                 () => cosmicSlimeView.HasPerformedApproach &&
                       cosmicSlimeView.MaximumRootTravelDistance > 0.5f &&
-                      Vector3.Distance(cosmicSlimeView.transform.position, firstTankAttack.ActorPositionAfter) < 0.12f,
+                      Vector3.Distance(cosmicSlimeView.transform.position, firstTankAction.ActorPositionAfter) < 0.12f,
                 "player slot 0 tank reaches its first locked target",
                 BattleTimeoutSeconds);
             Require(cosmicSlimeView.HasPerformedApproach &&
@@ -439,12 +468,247 @@ namespace GenericGachaRPG
             return count;
         }
 
+        private static int CountBattleComponents<T>()
+            where T : Component
+        {
+            T[] components = UnityEngine.Object.FindObjectsByType<T>(FindObjectsInactive.Include);
+            int count = 0;
+            for (int i = 0; i < components.Length; i++)
+            {
+                T component = components[i];
+                if (component == null || !component.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                string objectName = component.gameObject.name;
+                if (objectName.Length >= 2 &&
+                    (objectName[0] == 'P' || objectName[0] == 'E') &&
+                    char.IsDigit(objectName[1]))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool GameObjectUsesShader(GameObject root, string shaderName)
+        {
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                Material[] materials = renderers[rendererIndex].sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                {
+                    Material material = materials[materialIndex];
+                    if (material != null &&
+                        material.shader != null &&
+                        string.Equals(material.shader.name, shaderName, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void RequireVisibleBasicSlimes()
+        {
+            BasicSlimeVisualController[] controllers =
+                UnityEngine.Object.FindObjectsByType<BasicSlimeVisualController>(FindObjectsInactive.Include);
+            int verified = 0;
+            for (int i = 0; i < controllers.Length; i++)
+            {
+                BasicSlimeVisualController controller = controllers[i];
+                if (controller == null || !controller.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                string objectName = controller.gameObject.name;
+                if (objectName.Length < 2 ||
+                    (objectName[0] != 'P' && objectName[0] != 'E') ||
+                    !char.IsDigit(objectName[1]))
+                {
+                    continue;
+                }
+
+                Require(controller.AnimatedDecorationCount > 0,
+                    $"Basic Slime '{objectName}' has no animated element decorations.");
+                Renderer[] renderers = controller.GetComponentsInChildren<Renderer>(false);
+                bool hasVisibleBounds = false;
+                for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+                {
+                    Renderer renderer = renderers[rendererIndex];
+                    if (renderer != null && renderer.enabled && renderer.bounds.size.sqrMagnitude > 0.01f)
+                    {
+                        hasVisibleBounds = true;
+                        break;
+                    }
+                }
+
+                Require(hasVisibleBounds,
+                    $"Basic Slime '{objectName}' has no enabled renderer with visible bounds.");
+                verified++;
+            }
+
+            Require(verified == 9, $"Expected to visually verify 9 Basic Slimes; found {verified}.");
+        }
+
+        private static void VerifyDemoEnemyScalingAndCatherineKit(DemoBattlePresenter presenter)
+        {
+            BattleResult result = presenter.LastResult;
+            Require(result != null, "Cannot verify Catherine kit without a battle result.");
+            Require(result.EnemyUnits.Count == BattleRules.TeamSize,
+                "Demo enemy runtime snapshot does not contain five units.");
+            for (int index = 0; index < result.EnemyUnits.Count; index++)
+            {
+                BattleUnitState enemy = result.EnemyUnits[index];
+                Require(Mathf.Approximately(
+                            enemy.MaxHealth,
+                            enemy.Definition.MaxHealth * CatherineYukiBattleKit.DemoEnemyHealthMultiplier),
+                    $"Enemy slot {index} is missing the demo 10x HP multiplier.");
+                Require(Mathf.Approximately(
+                            enemy.Attack,
+                            enemy.Definition.Attack * CatherineYukiBattleKit.DemoEnemyAttackMultiplier),
+                    $"Enemy slot {index} is missing the demo 0.1x ATK multiplier.");
+            }
+
+            Require(presenter.TryGetPresentedHealth("E0", out _, out float presentedEnemyMaxHealth),
+                "Presenter has no runtime health model for enemy slot 0.");
+            Require(Mathf.Approximately(presentedEnemyMaxHealth, result.EnemyUnits[0].MaxHealth),
+                "Enemy world-bar health model does not use the simulated 10x maximum HP.");
+
+            int skill1Index = -1;
+            int skill2Index = -1;
+            int skill3Index = -1;
+            int ultimateIndex = -1;
+            int ultimateCastCount = 0;
+            int pullCount = 0;
+            int ultimateDamageCount = 0;
+            bool skill1KnockUp = false;
+            bool skill2Healing = false;
+            bool skill2Taunt = false;
+            bool skill3Debuff = false;
+            bool transformAtFourTimes = false;
+            bool collapsed = false;
+            bool ultimateKnockUp = false;
+            for (int index = 0; index < result.Events.Count; index++)
+            {
+                BattleEvent battleEvent = result.Events[index];
+                if (!string.Equals(battleEvent.ActorRuntimeId, "P0", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (battleEvent.Type == BattleEventType.SkillCastStarted)
+                {
+                    if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill1Id, StringComparison.Ordinal) &&
+                        skill1Index < 0)
+                    {
+                        skill1Index = index;
+                    }
+                    else if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill2Id, StringComparison.Ordinal) &&
+                             skill2Index < 0)
+                    {
+                        skill2Index = index;
+                    }
+                    else if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.Skill3Id, StringComparison.Ordinal) &&
+                             skill3Index < 0)
+                    {
+                        skill3Index = index;
+                    }
+                    else if (string.Equals(battleEvent.SkillId, CatherineYukiBattleKit.UltimateId, StringComparison.Ordinal) &&
+                             battleEvent.Type == BattleEventType.SkillCastStarted)
+                    {
+                        ultimateCastCount++;
+                        if (ultimateIndex < 0)
+                        {
+                            ultimateIndex = index;
+                        }
+                    }
+                }
+
+                skill1KnockUp |= battleEvent.Type == BattleEventType.UnitKnockedUp &&
+                                 string.Equals(
+                                     battleEvent.SkillId,
+                                     CatherineYukiBattleKit.Skill1Id,
+                                     StringComparison.Ordinal);
+                skill2Healing |= battleEvent.Type == BattleEventType.HealingApplied &&
+                                 string.Equals(
+                                     battleEvent.SkillId,
+                                     CatherineYukiBattleKit.Skill2Id,
+                                     StringComparison.Ordinal);
+                skill2Taunt |= battleEvent.Type == BattleEventType.DebuffApplied &&
+                               string.Equals(
+                                   battleEvent.SkillId,
+                                   CatherineYukiBattleKit.TauntDebuffId,
+                                   StringComparison.Ordinal);
+                skill3Debuff |= battleEvent.Type == BattleEventType.DebuffApplied &&
+                                string.Equals(
+                                    battleEvent.SkillId,
+                                    CatherineYukiBattleKit.GravityDebuffId,
+                                    StringComparison.Ordinal);
+                if (battleEvent.Type == BattleEventType.UltimatePhase &&
+                    ultimateCastCount == 1 &&
+                    string.Equals(
+                        battleEvent.SkillId,
+                        CatherineYukiBattleKit.UltimateTransformPhaseId,
+                        StringComparison.Ordinal))
+                {
+                    transformAtFourTimes |= Mathf.Approximately(battleEvent.Amount, 4f);
+                }
+
+                collapsed |= ultimateCastCount == 1 &&
+                             battleEvent.Type == BattleEventType.UltimatePhase &&
+                             string.Equals(
+                                 battleEvent.SkillId,
+                                 CatherineYukiBattleKit.UltimateCollapsePhaseId,
+                                 StringComparison.Ordinal);
+                pullCount += ultimateCastCount == 1 &&
+                             battleEvent.Type == BattleEventType.UnitPulled &&
+                             string.Equals(
+                                 battleEvent.SkillId,
+                                 CatherineYukiBattleKit.UltimateId,
+                                 StringComparison.Ordinal)
+                    ? 1
+                    : 0;
+                ultimateDamageCount += ultimateCastCount == 1 &&
+                                       battleEvent.Type == BattleEventType.DamageApplied &&
+                                       string.Equals(
+                                           battleEvent.SkillId,
+                                           CatherineYukiBattleKit.UltimateId,
+                                           StringComparison.Ordinal)
+                    ? 1
+                    : 0;
+                ultimateKnockUp |= ultimateCastCount == 1 &&
+                                   battleEvent.Type == BattleEventType.UnitKnockedUp &&
+                                   string.Equals(
+                                       battleEvent.SkillId,
+                                       CatherineYukiBattleKit.UltimateId,
+                                       StringComparison.Ordinal);
+            }
+
+            Require(skill1Index >= 0 && skill2Index > skill1Index && skill3Index > skill2Index &&
+                    ultimateIndex > skill3Index,
+                "Catherine did not expose Skill 1, Skill 2, Skill 3, and Ultimate in order.");
+            Require(result.Events[ultimateIndex].Time < 20f,
+                "Catherine four-action test rotation did not complete within 20 seconds.");
+            Require(skill1KnockUp && skill2Healing && skill2Taunt && skill3Debuff,
+                "Catherine test skills are missing knock-up, hit/heal, Taunt, or debuff events.");
+            Require(transformAtFourTimes && collapsed && pullCount == BattleRules.TeamSize &&
+                    ultimateDamageCount >= CatherineYukiBattleKit.UltimateHitCount && ultimateKnockUp,
+                "Catherine ultimate is missing 4x transform, five pulls, continuous hits, collapse, or knock-up.");
+        }
+
         private static BattleEvent VerifyTankTargetLockAndRetarget(BattleResult result)
         {
             var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
             var tankTargets = new HashSet<string>(StringComparer.Ordinal);
             string lockedTarget = null;
-            BattleEvent firstAttack = null;
+            BattleEvent firstAction = null;
 
             for (int i = 0; i < result.Events.Count; i++)
             {
@@ -472,20 +736,22 @@ namespace GenericGachaRPG
 
                 lockedTarget = battleEvent.TargetRuntimeId;
                 tankTargets.Add(lockedTarget);
-                if (firstAttack == null && battleEvent.Type == BattleEventType.BasicAttackStarted)
+                if (firstAction == null &&
+                    (battleEvent.Type == BattleEventType.BasicAttackStarted ||
+                     battleEvent.Type == BattleEventType.SkillCastStarted))
                 {
-                    firstAttack = battleEvent;
+                    firstAction = battleEvent;
                 }
             }
 
-            Require(firstAttack != null, "Player tank has no basic attack event after approaching.");
+            Require(firstAction != null, "Player tank has no action event after approaching.");
             Require(tankTargets.Count >= 2,
                 "Player tank never locked a second target after its first target was defeated.");
             Require(Vector3.Distance(
                     result.PlayerUnits[0].CurrentPosition,
                     BattleRules.GetSlotPosition(BattleTeamSide.Player, 0)) > 0.5f,
                 "Player tank simulation ended back at its formation spawn.");
-            return firstAttack;
+            return firstAction;
         }
 
         private static T FindDescendantComponent<T>(string rootName, string objectName)

@@ -15,7 +15,9 @@ namespace GenericGachaRPG
             BattleTeam enemyTeam,
             int seed,
             float tickDuration = DefaultTickDuration,
-            float maxDuration = DefaultMaxDuration)
+            float maxDuration = DefaultMaxDuration,
+            float enemyHealthMultiplier = 1f,
+            float enemyAttackMultiplier = 1f)
         {
             PlayerTeam = playerTeam ?? throw new ArgumentNullException(nameof(playerTeam));
             EnemyTeam = enemyTeam ?? throw new ArgumentNullException(nameof(enemyTeam));
@@ -30,6 +32,20 @@ namespace GenericGachaRPG
                 throw new ArgumentOutOfRangeException(nameof(maxDuration), "Maximum duration must be finite and positive.");
             }
 
+            if (!IsFinitePositive(enemyHealthMultiplier))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(enemyHealthMultiplier),
+                    "Enemy health multiplier must be finite and positive.");
+            }
+
+            if (!IsFiniteNonNegative(enemyAttackMultiplier))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(enemyAttackMultiplier),
+                    "Enemy attack multiplier must be finite and non-negative.");
+            }
+
             var requestedTickCount = CeilingTickCount(maxDuration, tickDuration);
             if (requestedTickCount > int.MaxValue)
             {
@@ -40,6 +56,8 @@ namespace GenericGachaRPG
             TickDuration = tickDuration;
             MaxDuration = maxDuration;
             MaxTickCount = Math.Max(1, (int)requestedTickCount);
+            EnemyHealthMultiplier = enemyHealthMultiplier;
+            EnemyAttackMultiplier = enemyAttackMultiplier;
         }
 
         public BattleTeam PlayerTeam { get; }
@@ -54,9 +72,18 @@ namespace GenericGachaRPG
 
         public int MaxTickCount { get; }
 
+        public float EnemyHealthMultiplier { get; }
+
+        public float EnemyAttackMultiplier { get; }
+
         private static bool IsFinitePositive(float value)
         {
             return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static bool IsFiniteNonNegative(float value)
+        {
+            return value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         internal static double CeilingTickCount(float duration, float tickDuration)

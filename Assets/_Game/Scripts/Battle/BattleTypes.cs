@@ -24,6 +24,12 @@ namespace GenericGachaRPG
         EnergyChanged = 5,
         UnitDefeated = 6,
         BattleFinished = 7,
-        UnitMoved = 8
+        UnitMoved = 8,
+        UnitPulled = 9,
+        UnitKnockedUp = 10,
+        DebuffApplied = 11,
+        UltimatePhase = 12,
+        UnitRevived = 13,
+        StatusApplied = 14
     }
 }
