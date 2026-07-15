@@ -3,7 +3,7 @@
 ## High-Level Concepts Used
 
 - Data-driven characters, skills, formations and gacha banners.
-- Deterministic, position-driven 5v5 automated team battle.
+- Deterministic, position-driven asymmetric automated team battle.
 - Separate simulation, presentation, persistence and UI layers.
 - Shared character view and attachment-point contract.
 

@@ -96,7 +96,7 @@ namespace GenericGachaRPG.Editor
 
         private static bool HasCompleteGeneratedContent(GameDatabase database)
         {
-            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 9)
+            if (database == null || database.Characters.Count != 7 || database.Skills.Count != 10)
             {
                 return false;
             }
@@ -130,6 +130,24 @@ namespace GenericGachaRPG.Editor
                 return false;
             }
 
+            if (database.DemoPlayerBattleCharacterIds.Count != BattleRules.DemoPlayerTeamSize ||
+                !string.Equals(database.DemoPlayerBattleCharacterIds[0], "ur_cosmic_slime", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoPlayerBattleCharacterIds[1], "gold_ranger", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoPlayerBattleCharacterIds[2], "ember_striker", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (database.DemoEnemyBattleCharacterIds.Count != BattleRules.DemoEnemyTeamSize ||
+                !string.Equals(database.DemoEnemyBattleCharacterIds[0], "cyan_warden", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoEnemyBattleCharacterIds[1], "azure_vanguard", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoEnemyBattleCharacterIds[2], "violet_arcanist", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoEnemyBattleCharacterIds[3], "gold_ranger", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoEnemyBattleCharacterIds[4], "verdant_medic", System.StringComparison.Ordinal))
+            {
+                return false;
+            }
+
             for (int i = 0; i < banner.Entries.Count; i++)
             {
                 GachaPoolEntry entry = banner.Entries[i];
@@ -143,6 +161,7 @@ namespace GenericGachaRPG.Editor
             }
 
             CharacterDefinition cosmicSlime = database.GetCharacter("ur_cosmic_slime");
+            CharacterDefinition assassin = database.GetCharacter(AssassinBattleKit.CharacterId);
             SkillDefinition spectrumNova = database.GetSkill("spectrum_nova");
             SkillDefinition catherineUltimate = database.GetSkill(CatherineYukiBattleKit.UltimateId);
             return cosmicSlime != null &&
@@ -184,6 +203,10 @@ namespace GenericGachaRPG.Editor
                    database.GetSkill("timed_impact").RageCost == 0 &&
                    database.GetSkill("timed_wave") != null &&
                    database.GetSkill("timed_wave").RageCost == 0 &&
+                   database.GetSkill(AssassinBattleKit.BacklineShiftSkillId) != null &&
+                   assassin != null &&
+                   assassin.Skill2 ==
+                       database.GetSkill(AssassinBattleKit.BacklineShiftSkillId) &&
                    database.GetSkill(CatherineYukiBattleKit.Skill1Id) != null &&
                    database.GetSkill(CatherineYukiBattleKit.Skill2Id) != null &&
                    database.GetSkill(CatherineYukiBattleKit.Skill3Id) != null &&
@@ -322,6 +345,22 @@ namespace GenericGachaRPG.Editor
                 "Automatic skill slot 3. Cast at 10 seconds, then every 10 seconds.");
             EditorUtility.SetDirty(timedWaveSkill);
 
+            SkillDefinition assassinBacklineShift = GetOrCreateAsset<SkillDefinition>(
+                $"{SkillFolder}/Skill_AssassinBacklineShift.asset",
+                out _);
+            assassinBacklineShift.Configure(
+                AssassinBattleKit.BacklineShiftSkillId,
+                "Backline Shift",
+                SkillCategory.Damage,
+                SkillTargetMode.SingleEnemy,
+                1.1f,
+                0f,
+                0,
+                0.22f,
+                1,
+                "Teleports behind the deepest enemy backline unit, strikes, and keeps attacking it.");
+            EditorUtility.SetDirty(assassinBacklineShift);
+
             SkillDefinition catherineSkill1 = GetOrCreateAsset<SkillDefinition>(
                 $"{SkillFolder}/Skill_CatherineWindWheelBreak.asset",
                 out _);
@@ -393,6 +432,7 @@ namespace GenericGachaRPG.Editor
                 healSkill,
                 timedImpactSkill,
                 timedWaveSkill,
+                assassinBacklineShift,
                 catherineSkill1,
                 catherineSkill2,
                 catherineSkill3,
@@ -430,7 +470,7 @@ namespace GenericGachaRPG.Editor
                     BattleRules.MeleeAttackRange,
                     4.2f,
                     strikeSkill,
-                    timedImpactSkill,
+                    assassinBacklineShift,
                     timedWaveSkill,
                     "A fast close-range attacker.",
                     fireSlimePrefab),
@@ -547,10 +587,24 @@ namespace GenericGachaRPG.Editor
                 new[]
                 {
                     "ur_cosmic_slime",
+                    "gold_ranger",
                     "ember_striker",
                     "verdant_medic",
+                    "violet_arcanist"
+                },
+                new[]
+                {
+                    "ur_cosmic_slime",
+                    "gold_ranger",
+                    "ember_striker"
+                },
+                new[]
+                {
+                    "cyan_warden",
+                    "azure_vanguard",
                     "violet_arcanist",
-                    "gold_ranger"
+                    "gold_ranger",
+                    "verdant_medic"
                 },
                 characters,
                 skills,

@@ -3,7 +3,7 @@ using System;
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Complete deterministic input for a single 5v5 simulation.
+    /// Complete deterministic input for a bounded, asymmetric team simulation.
     /// </summary>
     public sealed class BattleContext
     {

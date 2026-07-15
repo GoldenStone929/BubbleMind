@@ -227,9 +227,10 @@ namespace GenericGachaRPG
                 return;
             }
 
-            List<CharacterDefinition> playerTeam = ResolveCharacters(draftFormation);
-            List<CharacterDefinition> enemyTeam = BuildEnemyTeam();
-            if (playerTeam.Count != BattleTeam.RequiredMemberCount || enemyTeam.Count != BattleTeam.RequiredMemberCount)
+            List<CharacterDefinition> playerTeam = ResolveCharacters(database.DemoPlayerBattleCharacterIds);
+            List<CharacterDefinition> enemyTeam = ResolveCharacters(database.DemoEnemyBattleCharacterIds);
+            if (playerTeam.Count != BattleRules.DemoPlayerTeamSize ||
+                enemyTeam.Count != BattleRules.DemoEnemyTeamSize)
             {
                 formationFeedback = "Battle content is incomplete. Run Generate or Repair Demo.";
                 ShowScreen(DemoScreen.Formation);
@@ -331,24 +332,6 @@ namespace GenericGachaRPG
                 }
             }
 
-            return result;
-        }
-
-        private List<CharacterDefinition> BuildEnemyTeam()
-        {
-            var result = new List<CharacterDefinition>(BattleTeam.RequiredMemberCount);
-            for (int i = database.Characters.Count - 1;
-                 i >= 0 && result.Count < BattleTeam.RequiredMemberCount;
-                 i--)
-            {
-                CharacterDefinition definition = database.Characters[i];
-                if (definition != null && !definition.IsLimited)
-                {
-                    result.Add(definition);
-                }
-            }
-
-            result.Reverse();
             return result;
         }
 

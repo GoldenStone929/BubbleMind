@@ -71,6 +71,8 @@ namespace GenericGachaRPG
         public const float GravityDebuffDuration = 5f;
         public const float TauntDuration = 4f;
         public const float SuperArmorDuration = 1.1f;
+        public const float WindWheelBreakKnockbackDistance = BattleRules.BattlefieldUnit * 5f;
+        public const float UltimateCollapseLaunchDistance = 1.3f;
 
         public static bool IsCatherine(string characterId)
         {

@@ -15,10 +15,20 @@ MonoBehaviour:
   startingCurrency: 3000
   starterCharacterIds:
   - ur_cosmic_slime
+  - gold_ranger
   - ember_striker
   - verdant_medic
   - violet_arcanist
+  demoPlayerBattleCharacterIds:
+  - ur_cosmic_slime
   - gold_ranger
+  - ember_striker
+  demoEnemyBattleCharacterIds:
+  - cyan_warden
+  - azure_vanguard
+  - violet_arcanist
+  - gold_ranger
+  - verdant_medic
   characters:
   - {fileID: 11400000, guid: d252b67e7af2e164a97012b7313d07a6, type: 2}
   - {fileID: 11400000, guid: 991533b0817edf946805777ee84c6ca9, type: 2}
@@ -33,6 +43,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 17b836a77c79f734392ed2c9b55d63ca, type: 2}
   - {fileID: 11400000, guid: 1a8c43d035cd70e468d069cd29b642c6, type: 2}
   - {fileID: 11400000, guid: d18bdc81a9102954081a7c5fadbeac6f, type: 2}
+  - {fileID: 11400000, guid: 7e753b3d6a0b6a8448f0546e45af00ff, type: 2}
   - {fileID: 11400000, guid: 7de4d33b278235c48affa3a2855a2cef, type: 2}
   - {fileID: 11400000, guid: 5f0c27c80804241428542c1d5108ef7e, type: 2}
   - {fileID: 11400000, guid: c2eb7f10f92ab734ca1a1c136629f59b, type: 2}

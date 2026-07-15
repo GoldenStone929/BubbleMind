@@ -5,11 +5,12 @@ using System.Collections.ObjectModel;
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Immutable, fixed-slot input for one side of a battle.
+    /// Immutable, bounded-slot input for one side of a battle.
     /// </summary>
     public sealed class BattleTeam
     {
-        public const int RequiredMemberCount = BattleRules.TeamSize;
+        public const int MaximumMemberCount = BattleRules.MaximumTeamSize;
+        public const int RequiredMemberCount = MaximumMemberCount;
 
         private readonly CharacterDefinition[] _members;
         private readonly ReadOnlyCollection<CharacterDefinition> _readOnlyMembers;
@@ -22,10 +23,10 @@ namespace GenericGachaRPG
             }
 
             var collectedMembers = new List<CharacterDefinition>(members);
-            if (collectedMembers.Count != RequiredMemberCount)
+            if (collectedMembers.Count < 1 || collectedMembers.Count > MaximumMemberCount)
             {
                 throw new ArgumentException(
-                    $"A battle team must contain exactly {RequiredMemberCount} members.",
+                    $"A battle team must contain between 1 and {MaximumMemberCount} members.",
                     nameof(members));
             }
 
@@ -42,6 +43,8 @@ namespace GenericGachaRPG
         }
 
         public IReadOnlyList<CharacterDefinition> Members => _readOnlyMembers;
+
+        public int Count => _members.Length;
 
         public CharacterDefinition this[int slot] => _members[slot];
     }

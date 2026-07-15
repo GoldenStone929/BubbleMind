@@ -10,12 +10,16 @@ namespace GenericGachaRPG
     {
         [Min(0), SerializeField] private int startingCurrency = 1000;
         [SerializeField] private List<string> starterCharacterIds = new List<string>();
+        [SerializeField] private List<string> demoPlayerBattleCharacterIds = new List<string>();
+        [SerializeField] private List<string> demoEnemyBattleCharacterIds = new List<string>();
         [SerializeField] private List<CharacterDefinition> characters = new List<CharacterDefinition>();
         [SerializeField] private List<SkillDefinition> skills = new List<SkillDefinition>();
         [SerializeField] private List<GachaBannerDefinition> gachaBanners = new List<GachaBannerDefinition>();
 
         public int StartingCurrency => startingCurrency;
         public IReadOnlyList<string> StarterCharacterIds => starterCharacterIds;
+        public IReadOnlyList<string> DemoPlayerBattleCharacterIds => demoPlayerBattleCharacterIds;
+        public IReadOnlyList<string> DemoEnemyBattleCharacterIds => demoEnemyBattleCharacterIds;
         public IReadOnlyList<CharacterDefinition> Characters => characters;
         public IReadOnlyList<SkillDefinition> Skills => skills;
         public IReadOnlyList<GachaBannerDefinition> GachaBanners => gachaBanners;
@@ -113,12 +117,20 @@ namespace GenericGachaRPG
         public void Configure(
             int initialCurrency,
             IEnumerable<string> starterIds,
+            IEnumerable<string> demoPlayerBattleIds,
+            IEnumerable<string> demoEnemyBattleIds,
             IEnumerable<CharacterDefinition> characterDefinitions,
             IEnumerable<SkillDefinition> skillDefinitions,
             IEnumerable<GachaBannerDefinition> banners)
         {
             startingCurrency = Mathf.Max(0, initialCurrency);
             starterCharacterIds = starterIds == null ? new List<string>() : new List<string>(starterIds);
+            demoPlayerBattleCharacterIds = demoPlayerBattleIds == null
+                ? new List<string>()
+                : new List<string>(demoPlayerBattleIds);
+            demoEnemyBattleCharacterIds = demoEnemyBattleIds == null
+                ? new List<string>()
+                : new List<string>(demoEnemyBattleIds);
             characters = characterDefinitions == null
                 ? new List<CharacterDefinition>()
                 : new List<CharacterDefinition>(characterDefinitions);
@@ -142,6 +154,16 @@ namespace GenericGachaRPG
             if (starterCharacterIds == null)
             {
                 starterCharacterIds = new List<string>();
+            }
+
+            if (demoPlayerBattleCharacterIds == null)
+            {
+                demoPlayerBattleCharacterIds = new List<string>();
+            }
+
+            if (demoEnemyBattleCharacterIds == null)
+            {
+                demoEnemyBattleCharacterIds = new List<string>();
             }
 
             if (characters == null)
@@ -170,6 +192,38 @@ namespace GenericGachaRPG
                 else
                 {
                     starterCharacterIds[i] = id;
+                }
+            }
+
+            var uniqueDemoBattleIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = demoPlayerBattleCharacterIds.Count - 1; i >= 0; i--)
+            {
+                string id = demoPlayerBattleCharacterIds[i] == null
+                    ? string.Empty
+                    : demoPlayerBattleCharacterIds[i].Trim();
+                if (string.IsNullOrEmpty(id) || !uniqueDemoBattleIds.Add(id))
+                {
+                    demoPlayerBattleCharacterIds.RemoveAt(i);
+                }
+                else
+                {
+                    demoPlayerBattleCharacterIds[i] = id;
+                }
+            }
+
+            var uniqueDemoEnemyIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = demoEnemyBattleCharacterIds.Count - 1; i >= 0; i--)
+            {
+                string id = demoEnemyBattleCharacterIds[i] == null
+                    ? string.Empty
+                    : demoEnemyBattleCharacterIds[i].Trim();
+                if (string.IsNullOrEmpty(id) || !uniqueDemoEnemyIds.Add(id))
+                {
+                    demoEnemyBattleCharacterIds.RemoveAt(i);
+                }
+                else
+                {
+                    demoEnemyBattleCharacterIds[i] = id;
                 }
             }
         }

@@ -242,7 +242,7 @@ namespace GenericGachaRPG
             currencyText.text = $"CRYSTALS  {currency:N0}";
             battleButton.interactable = validFormation;
             statusText.text = validFormation
-                ? "Your five-character team is ready."
+                ? "Five-slot roster saved. The 3v5 role test is ready."
                 : "Choose exactly five unlocked characters in Formation.";
             statusText.color = validFormation ? DemoUiFactory.Positive : DemoUiFactory.Warning;
         }
@@ -644,7 +644,7 @@ namespace GenericGachaRPG
             Text header = DemoUiFactory.CreateText(
                 "Header",
                 safe,
-                "FIVE-UNIT FORMATION",
+                "FIVE-UNIT ROSTER",
                 48,
                 TextAnchor.MiddleCenter,
                 DemoUiFactory.TextPrimary,
@@ -730,7 +730,7 @@ namespace GenericGachaRPG
             battleButton = DemoUiFactory.CreateButton(
                 "BattleButton",
                 safe,
-                "START 5v5 BATTLE",
+                "START 3v5 TEST",
                 new Color(0.78f, 0.24f, 0.23f, 1f),
                 () => battle?.Invoke());
             RectTransform battleRect = battleButton.GetComponent<RectTransform>();
@@ -769,7 +769,7 @@ namespace GenericGachaRPG
             }
 
             feedbackText.text = string.IsNullOrEmpty(feedback)
-                ? "Select exactly five unlocked characters. Click again to remove."
+                ? "Save five units. This test deploys Catherine, Gold Ranger, and Ember Striker."
                 : feedback;
             feedbackText.color = string.IsNullOrEmpty(feedback) ? DemoUiFactory.TextMuted : DemoUiFactory.Warning;
             battleButton.interactable = draftIds != null && draftIds.Count == TeamFormationState.RequiredMemberCount;

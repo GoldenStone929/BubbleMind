@@ -131,7 +131,7 @@ namespace GenericGachaRPG
                     cosmicCardBody.text.IndexOf("UR", StringComparison.Ordinal) >= 0 &&
                     cosmicCardBody.text.IndexOf("TANK", StringComparison.Ordinal) >= 0 &&
                     cosmicCardBody.text.IndexOf("LIMITED", StringComparison.Ordinal) >= 0 &&
-                    cosmicCardBody.text.IndexOf("RNG 1.0", StringComparison.Ordinal) >= 0 &&
+                    cosmicCardBody.text.IndexOf("RNG 2.0", StringComparison.Ordinal) >= 0 &&
                     cosmicCardBody.text.IndexOf("MOVE 3.3", StringComparison.Ordinal) >= 0,
                 $"Cosmic Slime collection tags are incomplete. Text='{cosmicCardBody?.text ?? "<missing>"}'.");
 
@@ -164,10 +164,10 @@ namespace GenericGachaRPG
                 () => FindSceneObject("AbyssalObservatory_Backdrop") != null &&
                       FindSceneObjectOfType<CosmicSlimeVisualController>() != null &&
                       CountBattleComponents<CosmicSlimeVisualController>() == 1 &&
-                      CountBattleComponents<BasicSlimeVisualController>() == 9 &&
-                      CountBattleUnits("P") == BattleRules.TeamSize &&
-                      CountBattleUnits("E") == BattleRules.TeamSize,
-                "Abyssal Observatory, one authored UR, and nine Basic Slimes",
+                      CountBattleComponents<BasicSlimeVisualController>() == 7 &&
+                      CountBattleUnits("P") == BattleRules.DemoPlayerTeamSize &&
+                      CountBattleUnits("E") == BattleRules.DemoEnemyTeamSize,
+                "Abyssal Observatory, one authored UR, and seven Basic Slimes in 3v5 combat",
                 StepTimeoutSeconds);
             GameObject backdrop = FindSceneObject("AbyssalObservatory_Backdrop");
             Renderer backdropRenderer = backdrop == null ? null : backdrop.GetComponent<Renderer>();
@@ -200,13 +200,13 @@ namespace GenericGachaRPG
                 "Catherine Yuki runtime shaders are unavailable.");
             Require(GameObjectUsesShader(cosmicSlime, "BubbleMind/Slime Toon"),
                 "Catherine Yuki runtime shell does not use BubbleMind/Slime Toon.");
-            Require(CountBattleUnits("P") == BattleRules.TeamSize &&
-                    CountBattleUnits("E") == BattleRules.TeamSize,
-                "Battle did not instantiate complete five-unit teams.");
+            Require(CountBattleUnits("P") == BattleRules.DemoPlayerTeamSize &&
+                    CountBattleUnits("E") == BattleRules.DemoEnemyTeamSize,
+                "Battle did not instantiate the complete 3-versus-5 teams.");
             Require(CountBattleComponents<CosmicSlimeVisualController>() == 1,
                 "Battle must contain exactly one authored UR Cosmic Slime.");
-            Require(CountBattleComponents<BasicSlimeVisualController>() == 9,
-                "Battle must contain exactly nine authored Basic Slimes.");
+            Require(CountBattleComponents<BasicSlimeVisualController>() == 7,
+                "Battle must contain exactly seven authored Basic Slimes.");
             Require(CountBattleComponents<ProceduralCharacterBuilder>() == 0,
                 "Battle unexpectedly used procedural humanoid fallback units.");
             RequireVisibleBasicSlimes();
@@ -217,11 +217,52 @@ namespace GenericGachaRPG
             DemoBattlePresenter presenter = FindSceneObjectOfType<DemoBattlePresenter>();
             Require(presenter != null && presenter.LastResult != null,
                 "Battle presenter has no deterministic result to replay.");
+            Require(presenter.LastResult.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize &&
+                    presenter.LastResult.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize &&
+                    string.Equals(
+                        presenter.LastResult.PlayerUnits[0].CharacterId,
+                        CatherineYukiBattleKit.CharacterId,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        presenter.LastResult.PlayerUnits[1].CharacterId,
+                        "gold_ranger",
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        presenter.LastResult.PlayerUnits[2].CharacterId,
+                        AssassinBattleKit.CharacterId,
+                        StringComparison.Ordinal),
+                "Playable battle roster must be P0 Catherine, P1 Gold Ranger, P2 Ember Striker versus five enemies.");
+            string[] expectedEnemyIds =
+            {
+                "cyan_warden",
+                "azure_vanguard",
+                "violet_arcanist",
+                "gold_ranger",
+                "verdant_medic"
+            };
+            CharacterRole[] expectedEnemyRoles =
+            {
+                CharacterRole.Tank,
+                CharacterRole.Tank,
+                CharacterRole.Mage,
+                CharacterRole.Ranged,
+                CharacterRole.Support
+            };
+            for (int index = 0; index < expectedEnemyIds.Length; index++)
+            {
+                Require(string.Equals(
+                            presenter.LastResult.EnemyUnits[index].CharacterId,
+                            expectedEnemyIds[index],
+                            StringComparison.Ordinal) &&
+                        presenter.LastResult.EnemyUnits[index].Role == expectedEnemyRoles[index],
+                    $"Runtime enemy slot E{index} has the wrong character or role.");
+            }
             Require(presenter.TryGetPresentedRage("P0", out int presentedRage, out int presentedMaxRage) &&
                     presentedRage >= 0 && presentedRage <= BattleRules.MaxRage &&
                     presentedMaxRage == BattleRules.MaxRage,
                 "Presenter has no valid 0..1000 Rage model for Catherine.");
             VerifyDemoEnemyScalingAndCatherineKit(presenter);
+            VerifyAssassinBacklineShift(presenter.LastResult);
             BattleEvent firstTankAction = VerifyTankTargetLockAndRetarget(presenter.LastResult);
             Vector3 tankSpawnPosition = BattleRules.GetSlotPosition(BattleTeamSide.Player, 0);
             yield return WaitFor(
@@ -559,7 +600,7 @@ namespace GenericGachaRPG
                 verified++;
             }
 
-            Require(verified == 9, $"Expected to visually verify 9 Basic Slimes; found {verified}.");
+            Require(verified == 7, $"Expected to visually verify 7 Basic Slimes; found {verified}.");
         }
 
         private static void VerifyRageWorldBars()
@@ -593,15 +634,18 @@ namespace GenericGachaRPG
                 verifiedLabels += 1;
             }
 
-            Require(verifiedLabels == BattleRules.TeamSize * 2,
-                $"Expected ten numeric Rage labels; found {verifiedLabels}.");
+            Require(verifiedLabels == BattleRules.DemoPlayerTeamSize + BattleRules.DemoEnemyTeamSize,
+                $"Expected eight numeric Rage labels; found {verifiedLabels}.");
         }
 
         private static void VerifyDemoEnemyScalingAndCatherineKit(DemoBattlePresenter presenter)
         {
             BattleResult result = presenter.LastResult;
             Require(result != null, "Cannot verify Catherine kit without a battle result.");
-            Require(result.EnemyUnits.Count == BattleRules.TeamSize,
+            VerifyWindWheelBreakDisplacement(result);
+            Require(result.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize,
+                "Demo player runtime snapshot does not contain three units.");
+            Require(result.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize,
                 "Demo enemy runtime snapshot does not contain five units.");
             for (int index = 0; index < result.EnemyUnits.Count; index++)
             {
@@ -710,10 +754,13 @@ namespace GenericGachaRPG
                 }
 
                 skill2KnockUp |= catherineActor && battleEvent.Type == BattleEventType.UnitKnockedUp &&
-                                 string.Equals(
-                                     battleEvent.SkillId,
-                                     CatherineYukiBattleKit.TimedSkill2Id,
-                                     StringComparison.Ordinal);
+                                  string.Equals(
+                                      battleEvent.SkillId,
+                                      CatherineYukiBattleKit.TimedSkill2Id,
+                                      StringComparison.Ordinal) &&
+                                  Mathf.Approximately(
+                                      battleEvent.Amount,
+                                      CatherineYukiBattleKit.WindWheelBreakKnockbackDistance);
                 skill3Healing |= catherineActor && battleEvent.Type == BattleEventType.HealingApplied &&
                                  string.Equals(
                                      battleEvent.SkillId,
@@ -813,18 +860,269 @@ namespace GenericGachaRPG
             Require(!activeStarRage && passiveMassGain,
                 "Star Rage must remain passive and gain mass from enemy active skills.");
             Require(skill2KnockUp && skill3Healing && skill3Taunt,
-                "Catherine timed skills are missing knock-up, healing, or Taunt events.");
+                "Catherine timed skills are missing five-grid knockback, healing, or Taunt events.");
             Require(rageFromAttack && rageFromDamage && fullRage && rageSpent && ultimateCast,
                 "Catherine Rage did not build from attacks/damage, reach 1000, clear, and cast the ultimate.");
-            Require(transformMatchesMass && collapsed && pullCount >= BattleRules.TeamSize &&
+            Require(transformMatchesMass && collapsed && pullCount >= BattleRules.DemoEnemyTeamSize &&
                     ultimateDamageCount >= CatherineYukiBattleKit.UltimateHitCount && ultimateKnockUp,
                 "Catherine ultimate is missing dynamic mass scaling, five pulls, continuous hits, collapse, or knock-up.");
+        }
+
+        private static void VerifyWindWheelBreakDisplacement(BattleResult result)
+        {
+            var positions = new Dictionary<string, Vector3>(StringComparer.Ordinal);
+            for (int slot = 0; slot < result.PlayerUnits.Count; slot++)
+            {
+                positions[$"P{slot}"] = BattleRules.GetSlotPosition(BattleTeamSide.Player, slot);
+            }
+
+            for (int slot = 0; slot < result.EnemyUnits.Count; slot++)
+            {
+                positions[$"E{slot}"] = BattleRules.GetSlotPosition(BattleTeamSide.Enemy, slot);
+            }
+
+            bool verified = false;
+            for (int index = 0; index < result.Events.Count; index++)
+            {
+                BattleEvent battleEvent = result.Events[index];
+                if ((battleEvent.Type == BattleEventType.UnitMoved ||
+                     battleEvent.Type == BattleEventType.UnitTeleported) &&
+                    !string.IsNullOrEmpty(battleEvent.ActorRuntimeId))
+                {
+                    positions[battleEvent.ActorRuntimeId] = battleEvent.ActorPositionAfter;
+                    continue;
+                }
+
+                if (battleEvent.Type != BattleEventType.UnitPulled &&
+                    battleEvent.Type != BattleEventType.UnitKnockedUp)
+                {
+                    continue;
+                }
+
+                if (battleEvent.Type == BattleEventType.UnitKnockedUp &&
+                    string.Equals(
+                        battleEvent.SkillId,
+                        CatherineYukiBattleKit.TimedSkill2Id,
+                        StringComparison.Ordinal))
+                {
+                    Vector3 actorPosition = default;
+                    Vector3 targetPosition = default;
+                    bool hasActorPosition = positions.TryGetValue(
+                        battleEvent.ActorRuntimeId,
+                        out actorPosition);
+                    bool hasTargetPosition = positions.TryGetValue(
+                        battleEvent.TargetRuntimeId,
+                        out targetPosition);
+                    Require(hasActorPosition &&
+                            hasTargetPosition &&
+                            battleEvent.TargetSide.HasValue,
+                        "Wind Wheel: Break has incomplete pre-event position data.");
+                    Vector3 expectedDestination = BattleRules.CalculateKnockbackDestination(
+                        actorPosition,
+                        targetPosition,
+                        battleEvent.TargetSide.Value,
+                        battleEvent.TargetSlot,
+                        CatherineYukiBattleKit.WindWheelBreakKnockbackDistance);
+                    float actualDistance = Vector3.Distance(
+                        targetPosition,
+                        battleEvent.TargetPositionAfter);
+                    Require(Vector3.Distance(
+                                expectedDestination,
+                                battleEvent.TargetPositionAfter) <= 0.001f &&
+                            actualDistance > BattleRules.RangeEpsilon &&
+                            actualDistance <=
+                            CatherineYukiBattleKit.WindWheelBreakKnockbackDistance +
+                            BattleRules.RangeEpsilon,
+                        "Wind Wheel: Break did not apply its five-grid boundary-clamped displacement.");
+                    verified = true;
+                }
+
+                if (!string.IsNullOrEmpty(battleEvent.TargetRuntimeId))
+                {
+                    positions[battleEvent.TargetRuntimeId] = battleEvent.TargetPositionAfter;
+                }
+            }
+
+            Require(verified,
+                "PlayMode observed no Wind Wheel: Break displacement to verify.");
+        }
+
+        private static void VerifyAssassinBacklineShift(BattleResult result)
+        {
+            Vector3 boundaryTarget = new Vector3(
+                BattleRules.BattlefieldHalfLength,
+                0f,
+                BattleRules.BattlefieldHalfDepth);
+            Vector3 boundaryLanding = AssassinBattleKit.CalculateBacklineDestination(
+                Vector3.zero,
+                boundaryTarget,
+                BattleTeamSide.Enemy);
+            Require(Mathf.Abs(
+                        Vector3.Distance(boundaryLanding, boundaryTarget) -
+                        AssassinBattleKit.TeleportDistance) <= 0.001f &&
+                    boundaryLanding.x <= BattleRules.BattlefieldHalfLength &&
+                    boundaryLanding.z <= BattleRules.BattlefieldHalfDepth,
+                "Backline Shift boundary fallback must keep two-grid separation inside the battlefield.");
+
+            var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
+            BattleEvent firstTeleport = null;
+            BattleUnitState teleportTarget = null;
+            bool continuedBasicAttacksOnLockedTarget = false;
+            bool firstTeleportTargetAlive = true;
+            bool secondShiftRetainedLivingTarget = false;
+            int teleportCount = 0;
+
+            for (int index = 0; index < result.Events.Count; index++)
+            {
+                BattleEvent battleEvent = result.Events[index];
+                if (battleEvent.Type == BattleEventType.UnitDefeated)
+                {
+                    defeatedUnits.Add(battleEvent.TargetRuntimeId);
+                    if (firstTeleport != null &&
+                        string.Equals(
+                            battleEvent.TargetRuntimeId,
+                            firstTeleport.TargetRuntimeId,
+                            StringComparison.Ordinal))
+                    {
+                        firstTeleportTargetAlive = false;
+                    }
+
+                    continue;
+                }
+
+                if (battleEvent.Type == BattleEventType.UnitRevived)
+                {
+                    defeatedUnits.Remove(battleEvent.TargetRuntimeId);
+                    if (firstTeleport != null &&
+                        string.Equals(
+                            battleEvent.TargetRuntimeId,
+                            firstTeleport.TargetRuntimeId,
+                            StringComparison.Ordinal))
+                    {
+                        firstTeleportTargetAlive = true;
+                    }
+
+                    continue;
+                }
+
+                bool isBacklineTeleport = battleEvent.Type == BattleEventType.UnitTeleported &&
+                                          string.Equals(
+                                              battleEvent.ActorRuntimeId,
+                                              "P2",
+                                              StringComparison.Ordinal) &&
+                                          string.Equals(
+                                              battleEvent.SkillId,
+                                              AssassinBattleKit.BacklineShiftSkillId,
+                                              StringComparison.Ordinal);
+                if (isBacklineTeleport)
+                {
+                    teleportCount++;
+                    Require(!defeatedUnits.Contains(battleEvent.TargetRuntimeId),
+                        "P2 Backline Shift targeted a defeated enemy.");
+
+                    if (firstTeleport == null)
+                    {
+                        firstTeleport = battleEvent;
+                        for (int targetIndex = 0; targetIndex < result.EnemyUnits.Count; targetIndex++)
+                        {
+                            BattleUnitState candidate = result.EnemyUnits[targetIndex];
+                            if (string.Equals(
+                                    candidate.RuntimeId,
+                                    battleEvent.TargetRuntimeId,
+                                    StringComparison.Ordinal))
+                            {
+                                teleportTarget = candidate;
+                                break;
+                            }
+                        }
+
+                        Require(teleportTarget != null &&
+                                (teleportTarget.Role == CharacterRole.Ranged ||
+                                 teleportTarget.Role == CharacterRole.Mage ||
+                                 teleportTarget.Role == CharacterRole.Support),
+                            "P2 Backline Shift did not target a living enemy backline role.");
+                        Require(Mathf.Abs(
+                                    battleEvent.Time - BattleRules.Skill2InitialCastTime) <=
+                                BattleContext.DefaultTickDuration + 0.001f,
+                            $"P2 first Backline Shift occurred at {battleEvent.Time:0.###}s instead of 5s.");
+                    }
+                    else if (firstTeleportTargetAlive)
+                    {
+                        Require(string.Equals(
+                                battleEvent.TargetRuntimeId,
+                                firstTeleport.TargetRuntimeId,
+                                StringComparison.Ordinal),
+                            "P2 changed Backline Shift targets before the first target was defeated.");
+                        secondShiftRetainedLivingTarget = true;
+                    }
+
+                    if (teleportCount == 2)
+                    {
+                        float expectedSecondTime = BattleRules.Skill2InitialCastTime +
+                                                   BattleRules.ActiveSkillCooldown;
+                        Require(Mathf.Abs(battleEvent.Time - expectedSecondTime) <=
+                                BattleContext.DefaultTickDuration + 0.001f,
+                            $"P2 second Backline Shift occurred at {battleEvent.Time:0.###}s instead of 15s.");
+                    }
+
+                    float teleportDistance = Vector3.Distance(
+                        battleEvent.ActorPositionAfter,
+                        battleEvent.TargetPositionAfter);
+                    Require(Mathf.Approximately(
+                                battleEvent.Amount,
+                                AssassinBattleKit.TeleportDistance) &&
+                            Mathf.Abs(teleportDistance - AssassinBattleKit.TeleportDistance) <= 0.001f,
+                        "P2 Backline Shift did not preserve two-grid separation from its target.");
+                    Require(battleEvent.ActorPositionAfter.x >=
+                            battleEvent.TargetPositionAfter.x - BattleRules.RangeEpsilon,
+                        "P2 Backline Shift did not land toward the enemy base side of its target.");
+                    continue;
+                }
+
+                if (firstTeleport == null ||
+                    !firstTeleportTargetAlive ||
+                    !string.Equals(battleEvent.ActorRuntimeId, "P2", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if ((battleEvent.Type == BattleEventType.UnitMoved ||
+                     battleEvent.Type == BattleEventType.BasicAttackStarted) &&
+                    !string.IsNullOrEmpty(battleEvent.TargetRuntimeId))
+                {
+                    Require(string.Equals(
+                            battleEvent.TargetRuntimeId,
+                            firstTeleport.TargetRuntimeId,
+                            StringComparison.Ordinal),
+                        $"P2 abandoned living Backline Shift target '{firstTeleport.TargetRuntimeId}'.");
+                }
+
+                if (battleEvent.Type == BattleEventType.BasicAttackStarted &&
+                    string.Equals(
+                        battleEvent.TargetRuntimeId,
+                        firstTeleport.TargetRuntimeId,
+                        StringComparison.Ordinal))
+                {
+                    Require(BattleRules.IsWithinAttackRange(
+                            battleEvent.ActorPositionAfter,
+                            battleEvent.TargetPositionAfter,
+                            BattleRules.MeleeAttackRange),
+                        "P2 did not continue attacking its Backline Shift target from melee range.");
+                    continuedBasicAttacksOnLockedTarget = true;
+                }
+            }
+
+            Require(firstTeleport != null,
+                "P2 emitted no Backline Shift teleport event at its first Skill 2 window.");
+            Require(continuedBasicAttacksOnLockedTarget,
+                "P2 did not keep its teleported backline target locked for a following basic attack.");
+            Require(teleportCount >= 2 && secondShiftRetainedLivingTarget,
+                "P2 did not retain its living backline target through the second Skill 2 window.");
         }
 
         private static BattleEvent VerifyTankTargetLockAndRetarget(BattleResult result)
         {
             var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
-            var tankTargets = new HashSet<string>(StringComparer.Ordinal);
             string lockedTarget = null;
             BattleEvent firstAction = null;
 
@@ -853,7 +1151,6 @@ namespace GenericGachaRPG
                 }
 
                 lockedTarget = battleEvent.TargetRuntimeId;
-                tankTargets.Add(lockedTarget);
                 if (firstAction == null &&
                     (battleEvent.Type == BattleEventType.BasicAttackStarted ||
                      battleEvent.Type == BattleEventType.SkillCastStarted))
@@ -871,8 +1168,6 @@ namespace GenericGachaRPG
             Require(Mathf.Abs(firstAttackDistance - BattleRules.MeleeAttackRange) <= 0.02f,
                 $"Player tank first attacked at distance {firstAttackDistance:0.###}; " +
                 $"expected maximum range {BattleRules.MeleeAttackRange:0.###}.");
-            Require(tankTargets.Count >= 2,
-                "Player tank never locked a second target after its first target was defeated.");
             Require(Vector3.Distance(
                     result.PlayerUnits[0].CurrentPosition,
                     BattleRules.GetSlotPosition(BattleTeamSide.Player, 0)) > 0.5f,

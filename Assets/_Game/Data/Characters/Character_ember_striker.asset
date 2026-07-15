@@ -25,11 +25,11 @@ MonoBehaviour:
   attack: 172
   defense: 29
   attackInterval: 1.12
-  attackRange: 1
+  attackRange: 2
   moveSpeed: 4.2
   maxRage: 1000
   ragePerAttack: 100
   rageWhenHit: 50
   skill: {fileID: 11400000, guid: d843ee4797671fe40b8d12b770d35bea, type: 2}
-  skill2: {fileID: 11400000, guid: 1a8c43d035cd70e468d069cd29b642c6, type: 2}
+  skill2: {fileID: 11400000, guid: 7e753b3d6a0b6a8448f0546e45af00ff, type: 2}
   skill3: {fileID: 11400000, guid: d18bdc81a9102954081a7c5fadbeac6f, type: 2}

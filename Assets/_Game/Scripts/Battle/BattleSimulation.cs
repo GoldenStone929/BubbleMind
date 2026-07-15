@@ -5,7 +5,7 @@ using UnityEngine;
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Headless, fixed-tick 5v5 auto-battle simulation. Run produces a complete
+    /// Headless, fixed-tick auto-battle simulation. Run produces a complete
     /// ordered event log that can be replayed by Unity presentation code later.
     /// </summary>
     public sealed class BattleSimulation
@@ -73,9 +73,9 @@ namespace GenericGachaRPG
 
         private readonly BattleContext _context;
         private readonly DeterministicRandom _random;
-        private readonly List<BattleUnitState> _playerUnits = new List<BattleUnitState>(BattleTeam.RequiredMemberCount);
-        private readonly List<BattleUnitState> _enemyUnits = new List<BattleUnitState>(BattleTeam.RequiredMemberCount);
-        private readonly List<BattleUnitState> _actionOrder = new List<BattleUnitState>(BattleTeam.RequiredMemberCount * 2);
+        private readonly List<BattleUnitState> _playerUnits = new List<BattleUnitState>(BattleTeam.MaximumMemberCount);
+        private readonly List<BattleUnitState> _enemyUnits = new List<BattleUnitState>(BattleTeam.MaximumMemberCount);
+        private readonly List<BattleUnitState> _actionOrder = new List<BattleUnitState>(BattleTeam.MaximumMemberCount * 2);
         private readonly List<BattleEvent> _events = new List<BattleEvent>();
         private readonly List<PendingBasicHit> _pendingBasicHits = new List<PendingBasicHit>();
         private readonly List<PendingSkillHit> _pendingSkillHits = new List<PendingSkillHit>();
@@ -91,6 +91,8 @@ namespace GenericGachaRPG
             new Dictionary<string, TauntState>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _controlledUntilTick =
             new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _assassinBacklineTargetIds =
+            new Dictionary<string, string>(StringComparer.Ordinal);
 
         private BattleResult _result;
         private long _nextEventSequence;
@@ -197,7 +199,7 @@ namespace GenericGachaRPG
             BattleTeamSide side,
             List<BattleUnitState> destination)
         {
-            for (var slot = 0; slot < BattleTeam.RequiredMemberCount; slot++)
+            for (var slot = 0; slot < team.Count; slot++)
             {
                 float healthMultiplier = side == BattleTeamSide.Enemy
                     ? _context.EnemyHealthMultiplier
@@ -316,6 +318,13 @@ namespace GenericGachaRPG
             }
 
             SkillDefinition skill = skill2Slot ? actor.Skill2 : actor.Skill3;
+            if (skill2Slot &&
+                skill != null &&
+                AssassinBattleKit.IsBacklineShift(actor.CharacterId, skill.Id))
+            {
+                return TryBeginAssassinBacklineShift(actor, skill);
+            }
+
             if (skill == null ||
                 (skill.Category == SkillCategory.Damage &&
                  (lockedTarget == null || !IsWithinAttackRange(actor, lockedTarget))))
@@ -331,6 +340,48 @@ namespace GenericGachaRPG
 
             CancelPendingBasicHits(actor);
             CastSkill(actor, skill, targets, false);
+            return true;
+        }
+
+        private bool TryBeginAssassinBacklineShift(
+            BattleUnitState actor,
+            SkillDefinition skill)
+        {
+            BattleUnitState target = null;
+            if (_assassinBacklineTargetIds.TryGetValue(actor.RuntimeId, out string retainedTargetId))
+            {
+                target = FindAliveOpponentByRuntimeId(actor, retainedTargetId);
+            }
+
+            if (target == null)
+            {
+                target = FindDeepestAliveBacklineOpponent(actor);
+            }
+
+            if (target == null)
+            {
+                return false;
+            }
+
+            _assassinBacklineTargetIds[actor.RuntimeId] = target.RuntimeId;
+            CancelPendingBasicHits(actor);
+            actor.LockTarget(target);
+            CastSkill(actor, skill, new List<BattleUnitState> { target }, false);
+
+            Vector3 destination = AssassinBattleKit.CalculateBacklineDestination(
+                actor.CurrentPosition,
+                target.CurrentPosition,
+                target.Side);
+            actor.SetCurrentPosition(destination);
+            Emit(
+                BattleEventType.UnitTeleported,
+                actor,
+                target,
+                AssassinBattleKit.TeleportDistance,
+                target.CurrentHealth,
+                target.CurrentEnergy,
+                skill.Id,
+                duration: AssassinBattleKit.TeleportPresentationDuration);
             return true;
         }
 
@@ -857,7 +908,11 @@ namespace GenericGachaRPG
                     target.CurrentEnergy,
                     CatherineYukiBattleKit.DefenseBreakDebuffId,
                     duration: CatherineYukiBattleKit.DefenseBreakDuration);
-                KnockUpTarget(pending.Actor, target, CatherineYukiBattleKit.Skill1Id, 0.72f);
+                KnockUpTarget(
+                    pending.Actor,
+                    target,
+                    CatherineYukiBattleKit.Skill1Id,
+                    CatherineYukiBattleKit.WindWheelBreakKnockbackDistance);
             }
         }
 
@@ -993,7 +1048,11 @@ namespace GenericGachaRPG
                 BattleUnitState target = pending.Targets[index];
                 if (target.IsAlive)
                 {
-                    KnockUpTarget(pending.Actor, target, skillId, 1.3f);
+                    KnockUpTarget(
+                        pending.Actor,
+                        target,
+                        skillId,
+                        CatherineYukiBattleKit.UltimateCollapseLaunchDistance);
                 }
             }
 
@@ -1280,16 +1339,12 @@ namespace GenericGachaRPG
                 return;
             }
 
-            Vector3 direction = target.CurrentPosition - actor.CurrentPosition;
-            direction.y = 0f;
-            if (direction.sqrMagnitude <= BattleRules.RangeEpsilon * BattleRules.RangeEpsilon)
-            {
-                float sideDirection = target.Side == BattleTeamSide.Player ? -1f : 1f;
-                float laneDirection = (target.SlotIndex - 2) * 0.32f;
-                direction = new Vector3(sideDirection, 0f, laneDirection);
-            }
-
-            Vector3 destination = target.CurrentPosition + direction.normalized * launchDistance;
+            Vector3 destination = BattleRules.CalculateKnockbackDestination(
+                actor.CurrentPosition,
+                target.CurrentPosition,
+                target.Side,
+                target.SlotIndex,
+                launchDistance);
             target.SetCurrentPosition(destination);
             _controlledUntilTick[target.RuntimeId] = AddTicksSafely(
                 _currentTick,
@@ -1460,6 +1515,53 @@ namespace GenericGachaRPG
             return selected;
         }
 
+        private BattleUnitState FindDeepestAliveBacklineOpponent(BattleUnitState actor)
+        {
+            List<BattleUnitState> opponents = actor.Side == BattleTeamSide.Player
+                ? _enemyUnits
+                : _playerUnits;
+            BattleUnitState selected = null;
+            bool selectedIsBacklineRole = false;
+            float selectedDepth = float.NegativeInfinity;
+            float selectedLaneDistance = float.PositiveInfinity;
+
+            for (int index = 0; index < opponents.Count; index++)
+            {
+                BattleUnitState candidate = opponents[index];
+                if (!candidate.IsAlive)
+                {
+                    continue;
+                }
+
+                bool isBacklineRole = candidate.Role == CharacterRole.Ranged ||
+                                      candidate.Role == CharacterRole.Mage ||
+                                      candidate.Role == CharacterRole.Support;
+                float depth = candidate.Side == BattleTeamSide.Enemy
+                    ? candidate.CurrentPosition.x
+                    : -candidate.CurrentPosition.x;
+                float laneDistance = Math.Abs(candidate.CurrentPosition.z - actor.CurrentPosition.z);
+                bool isBetter = selected == null ||
+                                (isBacklineRole && !selectedIsBacklineRole) ||
+                                (isBacklineRole == selectedIsBacklineRole &&
+                                 (depth > selectedDepth + BattleRules.RangeEpsilon ||
+                                  (Math.Abs(depth - selectedDepth) <= BattleRules.RangeEpsilon &&
+                                   (laneDistance < selectedLaneDistance - BattleRules.RangeEpsilon ||
+                                    (Math.Abs(laneDistance - selectedLaneDistance) <= BattleRules.RangeEpsilon &&
+                                     candidate.SlotIndex < selected.SlotIndex)))));
+                if (!isBetter)
+                {
+                    continue;
+                }
+
+                selected = candidate;
+                selectedIsBacklineRole = isBacklineRole;
+                selectedDepth = depth;
+                selectedLaneDistance = laneDistance;
+            }
+
+            return selected;
+        }
+
         private void UpdateTargetLocks()
         {
             for (var index = 0; index < _actionOrder.Count; index++)
@@ -1570,6 +1672,31 @@ namespace GenericGachaRPG
                 BattleUnitState candidate = opponents[index];
                 if (candidate.IsAlive &&
                     string.Equals(candidate.RuntimeId, actor.LockedTargetRuntimeId, StringComparison.Ordinal))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private BattleUnitState FindAliveOpponentByRuntimeId(
+            BattleUnitState actor,
+            string runtimeId)
+        {
+            if (actor == null || string.IsNullOrEmpty(runtimeId))
+            {
+                return null;
+            }
+
+            List<BattleUnitState> opponents = actor.Side == BattleTeamSide.Player
+                ? _enemyUnits
+                : _playerUnits;
+            for (int index = 0; index < opponents.Count; index++)
+            {
+                BattleUnitState candidate = opponents[index];
+                if (candidate.IsAlive &&
+                    string.Equals(candidate.RuntimeId, runtimeId, StringComparison.Ordinal))
                 {
                     return candidate;
                 }

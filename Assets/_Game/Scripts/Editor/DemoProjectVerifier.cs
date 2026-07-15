@@ -30,7 +30,7 @@ namespace GenericGachaRPG.Editor
             GameStateService gameState = VerifyDefaultSave(database);
             VerifySingleDraw(database, banner, gameState);
             VerifyFormation(database, gameState);
-            VerifyBattleDeterminism(database, gameState.State.TeamFormation.CharacterIds);
+            VerifyBattleDeterminism(database, database.DemoPlayerBattleCharacterIds);
             VerifySceneAndBuildSettings();
 
             Debug.Log(
@@ -45,8 +45,8 @@ namespace GenericGachaRPG.Editor
             Require(database.GachaBanners != null, "Database banner list is null.");
             Require(database.Characters.Count == 7,
                 $"Database must contain exactly 7 characters; found {database.Characters.Count}.");
-            Require(database.Skills.Count == 9,
-                $"Database must contain exactly 9 skills; found {database.Skills.Count}.");
+            Require(database.Skills.Count == 10,
+                $"Database must contain exactly 10 skills; found {database.Skills.Count}.");
 
             var characterIds = new HashSet<string>(StringComparer.Ordinal);
             int limitedCharacterCount = 0;
@@ -96,6 +96,56 @@ namespace GenericGachaRPG.Editor
 
             Require(limitedCharacterCount == 1,
                 $"Demo database must contain exactly one limited character; found {limitedCharacterCount}.");
+
+            Require(database.DemoPlayerBattleCharacterIds != null &&
+                    database.DemoPlayerBattleCharacterIds.Count == BattleRules.DemoPlayerTeamSize,
+                $"Demo battle roster must contain exactly {BattleRules.DemoPlayerTeamSize} player units.");
+            string[] expectedDemoPlayerIds =
+            {
+                CatherineYukiBattleKit.CharacterId,
+                "gold_ranger",
+                AssassinBattleKit.CharacterId
+            };
+            for (int index = 0; index < expectedDemoPlayerIds.Length; index++)
+            {
+                Require(string.Equals(
+                        database.DemoPlayerBattleCharacterIds[index],
+                        expectedDemoPlayerIds[index],
+                        StringComparison.Ordinal),
+                    $"Demo player slot P{index} must be '{expectedDemoPlayerIds[index]}'.");
+            }
+
+            string[] expectedDemoEnemyIds =
+            {
+                "cyan_warden",
+                "azure_vanguard",
+                "violet_arcanist",
+                "gold_ranger",
+                "verdant_medic"
+            };
+            CharacterRole[] expectedDemoEnemyRoles =
+            {
+                CharacterRole.Tank,
+                CharacterRole.Tank,
+                CharacterRole.Mage,
+                CharacterRole.Ranged,
+                CharacterRole.Support
+            };
+            Require(database.DemoEnemyBattleCharacterIds != null &&
+                    database.DemoEnemyBattleCharacterIds.Count == BattleRules.DemoEnemyTeamSize,
+                $"Demo battle roster must contain exactly {BattleRules.DemoEnemyTeamSize} enemy units.");
+            for (int index = 0; index < expectedDemoEnemyIds.Length; index++)
+            {
+                string expectedId = expectedDemoEnemyIds[index];
+                Require(string.Equals(
+                        database.DemoEnemyBattleCharacterIds[index],
+                        expectedId,
+                        StringComparison.Ordinal),
+                    $"Demo enemy slot E{index} must be '{expectedId}'.");
+                CharacterDefinition enemy = database.GetCharacter(expectedId);
+                Require(enemy != null && enemy.Role == expectedDemoEnemyRoles[index],
+                    $"Demo enemy slot E{index} must use role {expectedDemoEnemyRoles[index]}.");
+            }
 
             var skillIds = new HashSet<string>(StringComparer.Ordinal);
             for (int i = 0; i < database.Skills.Count; i++)
@@ -179,6 +229,16 @@ namespace GenericGachaRPG.Editor
                     cosmicSlime.Skill3 != null &&
                     string.Equals(cosmicSlime.Skill3.Id, CatherineYukiBattleKit.Skill2Id, StringComparison.Ordinal),
                 "Catherine Skill 2/3 slots must be Wind Wheel: Break and Wind Wheel: Dance.");
+
+            CharacterDefinition assassin = database.GetCharacter(AssassinBattleKit.CharacterId);
+            Require(assassin != null &&
+                    assassin.Role == CharacterRole.Assassin &&
+                    assassin.Skill2 != null &&
+                    string.Equals(
+                        assassin.Skill2.Id,
+                        AssassinBattleKit.BacklineShiftSkillId,
+                        StringComparison.Ordinal),
+                "Ember Striker must expose Backline Shift in skill slot 2.");
 
             RequireCharacterRarity(database, "azure_vanguard", Rarity.R);
             RequireCharacterRarity(database, "ember_striker", Rarity.R);
@@ -664,8 +724,11 @@ namespace GenericGachaRPG.Editor
             GameDatabase database,
             IReadOnlyList<string> playerCharacterIds)
         {
-            var playerCharacters = new List<CharacterDefinition>(BattleTeam.RequiredMemberCount);
-            for (int i = 0; i < BattleTeam.RequiredMemberCount; i++)
+            Require(playerCharacterIds != null &&
+                    playerCharacterIds.Count == BattleRules.DemoPlayerTeamSize,
+                $"Deterministic battle requires exactly {BattleRules.DemoPlayerTeamSize} demo player ids.");
+            var playerCharacters = new List<CharacterDefinition>(BattleRules.DemoPlayerTeamSize);
+            for (int i = 0; i < BattleRules.DemoPlayerTeamSize; i++)
             {
                 CharacterDefinition character = database.GetCharacter(playerCharacterIds[i]);
                 Require(character != null,
@@ -673,23 +736,24 @@ namespace GenericGachaRPG.Editor
                 playerCharacters.Add(character);
             }
 
-            var enemyCharacters = new List<CharacterDefinition>(BattleTeam.RequiredMemberCount);
-            for (int i = database.Characters.Count - 1;
-                 i >= 0 && enemyCharacters.Count < BattleTeam.RequiredMemberCount;
-                 i--)
+            var enemyCharacters = new List<CharacterDefinition>(BattleRules.DemoEnemyTeamSize);
+            Require(database.DemoEnemyBattleCharacterIds != null &&
+                    database.DemoEnemyBattleCharacterIds.Count == BattleRules.DemoEnemyTeamSize,
+                "Cannot build the deterministic enemy team without five authored demo ids.");
+            for (int i = 0; i < database.DemoEnemyBattleCharacterIds.Count; i++)
             {
-                CharacterDefinition character = database.Characters[i];
-                Require(character != null, $"Enemy battle character slot {i} is null.");
-                if (!character.IsLimited)
-                {
-                    enemyCharacters.Add(character);
-                }
+                string characterId = database.DemoEnemyBattleCharacterIds[i];
+                CharacterDefinition character = database.GetCharacter(characterId);
+                Require(character != null && !character.IsLimited,
+                    $"Cannot build enemy battle team from character '{characterId}'.");
+                enemyCharacters.Add(character);
             }
-
-            enemyCharacters.Reverse();
 
             var playerTeam = new BattleTeam(playerCharacters);
             var enemyTeam = new BattleTeam(enemyCharacters);
+            Require(playerTeam.Count == BattleRules.DemoPlayerTeamSize &&
+                    enemyTeam.Count == BattleRules.DemoEnemyTeamSize,
+                "BattleTeam must preserve the authored variable 3-versus-5 roster sizes.");
             var firstContext = new BattleContext(
                 playerTeam,
                 enemyTeam,
@@ -712,6 +776,38 @@ namespace GenericGachaRPG.Editor
                 secondContext).Run();
 
             Require(first != null && second != null, "Battle simulation returned a null result.");
+            Require(first.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize &&
+                    string.Equals(first.PlayerUnits[0].CharacterId, CatherineYukiBattleKit.CharacterId, StringComparison.Ordinal) &&
+                    string.Equals(first.PlayerUnits[1].CharacterId, "gold_ranger", StringComparison.Ordinal) &&
+                    string.Equals(first.PlayerUnits[2].CharacterId, AssassinBattleKit.CharacterId, StringComparison.Ordinal),
+                "Runtime demo roster must be P0 Catherine, P1 Gold Ranger, and P2 Ember Striker.");
+            Require(first.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize,
+                "Runtime demo enemy roster must contain five units.");
+            string[] expectedRuntimeEnemyIds =
+            {
+                "cyan_warden",
+                "azure_vanguard",
+                "violet_arcanist",
+                "gold_ranger",
+                "verdant_medic"
+            };
+            CharacterRole[] expectedRuntimeEnemyRoles =
+            {
+                CharacterRole.Tank,
+                CharacterRole.Tank,
+                CharacterRole.Mage,
+                CharacterRole.Ranged,
+                CharacterRole.Support
+            };
+            for (int index = 0; index < expectedRuntimeEnemyIds.Length; index++)
+            {
+                Require(string.Equals(
+                            first.EnemyUnits[index].CharacterId,
+                            expectedRuntimeEnemyIds[index],
+                            StringComparison.Ordinal) &&
+                        first.EnemyUnits[index].Role == expectedRuntimeEnemyRoles[index],
+                    $"Runtime enemy slot E{index} has the wrong character or role.");
+            }
             Require(first.Outcome != BattleOutcome.None, "Battle simulation did not reach an outcome.");
             Require(first.Outcome == second.Outcome,
                 $"Same-seed battle outcome diverged: {first.Outcome} vs {second.Outcome}.");
@@ -732,6 +828,7 @@ namespace GenericGachaRPG.Editor
             CompareUnitSnapshots(first.EnemyUnits, second.EnemyUnits, "enemy");
             VerifyDemoEnemyRuntimeScaling(first, enemyCharacters);
             VerifyCatherineMaxedKitEvents(first);
+            VerifyAssassinBacklineShift(first);
             VerifyBattleMovementRules(first, playerCharacters, enemyCharacters);
             VerifyCatherineDeathAwakening(database, playerCharacters);
         }
@@ -766,7 +863,9 @@ namespace GenericGachaRPG.Editor
             BattleResult result,
             IReadOnlyList<CharacterDefinition> enemyCharacters)
         {
-            Require(result.EnemyUnits.Count == BattleRules.TeamSize,
+            Require(result.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize,
+                "Demo player runtime snapshot does not contain three units.");
+            Require(result.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize,
                 "Demo enemy runtime snapshot does not contain five units.");
             for (int index = 0; index < result.EnemyUnits.Count; index++)
             {
@@ -906,7 +1005,9 @@ namespace GenericGachaRPG.Editor
                             CatherineYukiBattleKit.TimedSkill2Id,
                             StringComparison.Ordinal))
                     {
-                        timedSkill2KnockUp = true;
+                        timedSkill2KnockUp |= Mathf.Approximately(
+                            battleEvent.Amount,
+                            CatherineYukiBattleKit.WindWheelBreakKnockbackDistance);
                     }
                     else if (string.Equals(
                                  battleEvent.SkillId,
@@ -1038,7 +1139,7 @@ namespace GenericGachaRPG.Editor
             }
 
             Require(timedSkill2KnockUp,
-                "Catherine timed Skill 2 emitted no Wind Wheel: Break knock-up event.");
+                "Catherine timed Skill 2 emitted no five-grid Wind Wheel: Break knock-up event.");
             Require(timedSkill3Hits >= 2 && timedSkill3Healing && timedSkill3Taunt && timedSkill3SuperArmor,
                 "Catherine timed Skill 3 is missing two-hit, 140% recovery, Taunt, or Super Armor semantics.");
             Require(sawRageFromAttack && sawRageFromDamage && sawFullRage,
@@ -1047,7 +1148,7 @@ namespace GenericGachaRPG.Editor
                 "Catherine did not spend 1000 Rage to cast the slot-1 ultimate.");
             Require(ultimateCharge && ultimateTransform && ultimateScalingMatchesMass && ultimateCollapse,
                 "Catherine ultimate is missing charge, mass-scaled transform, or collapse phases.");
-            Require(ultimatePullCount >= BattleRules.TeamSize,
+            Require(ultimatePullCount >= BattleRules.DemoEnemyTeamSize,
                 $"Catherine ultimate must pull at least five living enemies; found {ultimatePullCount}.");
             Require(ultimateDamageEvents >= CatherineYukiBattleKit.UltimateHitCount,
                 "Catherine ultimate emitted fewer than four continuous damage beats.");
@@ -1141,6 +1242,179 @@ namespace GenericGachaRPG.Editor
             }
         }
 
+        private static void VerifyAssassinBacklineShift(BattleResult result)
+        {
+            Vector3 boundaryTarget = new Vector3(
+                BattleRules.BattlefieldHalfLength,
+                0f,
+                BattleRules.BattlefieldHalfDepth);
+            Vector3 boundaryLanding = AssassinBattleKit.CalculateBacklineDestination(
+                Vector3.zero,
+                boundaryTarget,
+                BattleTeamSide.Enemy);
+            Require(Mathf.Abs(
+                        Vector3.Distance(boundaryLanding, boundaryTarget) -
+                        AssassinBattleKit.TeleportDistance) <= 0.001f &&
+                    boundaryLanding.x <= BattleRules.BattlefieldHalfLength &&
+                    boundaryLanding.z <= BattleRules.BattlefieldHalfDepth,
+                "Backline Shift boundary fallback must keep two-grid separation inside the battlefield.");
+
+            var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
+            BattleEvent firstTeleport = null;
+            BattleUnitState teleportTarget = null;
+            bool continuedBasicAttacksOnLockedTarget = false;
+            bool firstTeleportTargetAlive = true;
+            bool secondShiftRetainedLivingTarget = false;
+            int teleportCount = 0;
+
+            for (int index = 0; index < result.Events.Count; index++)
+            {
+                BattleEvent battleEvent = result.Events[index];
+                if (battleEvent.Type == BattleEventType.UnitDefeated)
+                {
+                    defeatedUnits.Add(battleEvent.TargetRuntimeId);
+                    if (firstTeleport != null &&
+                        string.Equals(
+                            battleEvent.TargetRuntimeId,
+                            firstTeleport.TargetRuntimeId,
+                            StringComparison.Ordinal))
+                    {
+                        firstTeleportTargetAlive = false;
+                    }
+
+                    continue;
+                }
+
+                if (battleEvent.Type == BattleEventType.UnitRevived)
+                {
+                    defeatedUnits.Remove(battleEvent.TargetRuntimeId);
+                    if (firstTeleport != null &&
+                        string.Equals(
+                            battleEvent.TargetRuntimeId,
+                            firstTeleport.TargetRuntimeId,
+                            StringComparison.Ordinal))
+                    {
+                        firstTeleportTargetAlive = true;
+                    }
+
+                    continue;
+                }
+
+                bool isBacklineTeleport = battleEvent.Type == BattleEventType.UnitTeleported &&
+                                          string.Equals(
+                                              battleEvent.ActorRuntimeId,
+                                              "P2",
+                                              StringComparison.Ordinal) &&
+                                          string.Equals(
+                                              battleEvent.SkillId,
+                                              AssassinBattleKit.BacklineShiftSkillId,
+                                              StringComparison.Ordinal);
+                if (isBacklineTeleport)
+                {
+                    teleportCount++;
+                    Require(!defeatedUnits.Contains(battleEvent.TargetRuntimeId),
+                        "P2 Backline Shift targeted a defeated unit.");
+
+                    if (firstTeleport == null)
+                    {
+                        firstTeleport = battleEvent;
+                        for (int targetIndex = 0; targetIndex < result.EnemyUnits.Count; targetIndex++)
+                        {
+                            BattleUnitState candidate = result.EnemyUnits[targetIndex];
+                            if (string.Equals(
+                                    candidate.RuntimeId,
+                                    battleEvent.TargetRuntimeId,
+                                    StringComparison.Ordinal))
+                            {
+                                teleportTarget = candidate;
+                                break;
+                            }
+                        }
+
+                        Require(teleportTarget != null &&
+                                (teleportTarget.Role == CharacterRole.Ranged ||
+                                 teleportTarget.Role == CharacterRole.Mage ||
+                                 teleportTarget.Role == CharacterRole.Support),
+                            "P2 Backline Shift did not select a living enemy backline role.");
+                        Require(Mathf.Abs(
+                                    battleEvent.Time - BattleRules.Skill2InitialCastTime) <=
+                                BattleContext.DefaultTickDuration + 0.001f,
+                            $"P2 first Backline Shift occurred at {battleEvent.Time:0.###}s instead of 5s.");
+                    }
+                    else if (firstTeleportTargetAlive)
+                    {
+                        Require(string.Equals(
+                                battleEvent.TargetRuntimeId,
+                                firstTeleport.TargetRuntimeId,
+                                StringComparison.Ordinal),
+                            "P2 changed Backline Shift targets before the first target was defeated.");
+                        secondShiftRetainedLivingTarget = true;
+                    }
+
+                    if (teleportCount == 2)
+                    {
+                        float expectedSecondTime = BattleRules.Skill2InitialCastTime +
+                                                   BattleRules.ActiveSkillCooldown;
+                        Require(Mathf.Abs(battleEvent.Time - expectedSecondTime) <=
+                                BattleContext.DefaultTickDuration + 0.001f,
+                            $"P2 second Backline Shift occurred at {battleEvent.Time:0.###}s instead of 15s.");
+                    }
+
+                    float teleportDistance = Vector3.Distance(
+                        battleEvent.ActorPositionAfter,
+                        battleEvent.TargetPositionAfter);
+                    Require(Mathf.Approximately(
+                                battleEvent.Amount,
+                                AssassinBattleKit.TeleportDistance) &&
+                            Mathf.Abs(teleportDistance - AssassinBattleKit.TeleportDistance) <= 0.001f,
+                        "P2 Backline Shift did not preserve two-grid separation from its target.");
+                    Require(battleEvent.ActorPositionAfter.x >=
+                            battleEvent.TargetPositionAfter.x - BattleRules.RangeEpsilon,
+                        "P2 Backline Shift did not land toward the enemy base side of its target.");
+                    continue;
+                }
+
+                if (firstTeleport == null ||
+                    !firstTeleportTargetAlive ||
+                    !string.Equals(battleEvent.ActorRuntimeId, "P2", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if ((battleEvent.Type == BattleEventType.UnitMoved ||
+                     battleEvent.Type == BattleEventType.BasicAttackStarted) &&
+                    !string.IsNullOrEmpty(battleEvent.TargetRuntimeId))
+                {
+                    Require(string.Equals(
+                            battleEvent.TargetRuntimeId,
+                            firstTeleport.TargetRuntimeId,
+                            StringComparison.Ordinal),
+                        $"P2 abandoned living Backline Shift target '{firstTeleport.TargetRuntimeId}'.");
+                }
+
+                if (battleEvent.Type == BattleEventType.BasicAttackStarted &&
+                    string.Equals(
+                        battleEvent.TargetRuntimeId,
+                        firstTeleport.TargetRuntimeId,
+                        StringComparison.Ordinal))
+                {
+                    Require(BattleRules.IsWithinAttackRange(
+                            battleEvent.ActorPositionAfter,
+                            battleEvent.TargetPositionAfter,
+                            BattleRules.MeleeAttackRange),
+                        "P2 did not continue attacking its Backline Shift target from melee range.");
+                    continuedBasicAttacksOnLockedTarget = true;
+                }
+            }
+
+            Require(firstTeleport != null,
+                "P2 emitted no Backline Shift teleport event at its first Skill 2 window.");
+            Require(continuedBasicAttacksOnLockedTarget,
+                "P2 did not keep its teleported backline target locked for a following basic attack.");
+            Require(teleportCount >= 2 && secondShiftRetainedLivingTarget,
+                "P2 did not retain its living backline target through the second Skill 2 window.");
+        }
+
         private static void CompareUnitSnapshots(
             IReadOnlyList<BattleUnitState> left,
             IReadOnlyList<BattleUnitState> right,
@@ -1173,27 +1447,29 @@ namespace GenericGachaRPG.Editor
         {
             var definitions = new Dictionary<string, CharacterDefinition>(StringComparer.Ordinal);
             var positions = new Dictionary<string, Vector3>(StringComparer.Ordinal);
-            for (int slot = 0; slot < BattleTeam.RequiredMemberCount; slot++)
+            for (int slot = 0; slot < playerCharacters.Count; slot++)
             {
                 string playerId = $"P{slot}";
-                string enemyId = $"E{slot}";
                 definitions[playerId] = playerCharacters[slot];
-                definitions[enemyId] = enemyCharacters[slot];
                 positions[playerId] = BattleRules.GetSlotPosition(BattleTeamSide.Player, slot);
+            }
+
+            for (int slot = 0; slot < enemyCharacters.Count; slot++)
+            {
+                string enemyId = $"E{slot}";
+                definitions[enemyId] = enemyCharacters[slot];
                 positions[enemyId] = BattleRules.GetSlotPosition(BattleTeamSide.Enemy, slot);
             }
 
             var lockedTargets = new Dictionary<string, string>(StringComparer.Ordinal);
             var tauntExpiresAtTick = new Dictionary<string, int>(StringComparer.Ordinal);
             var defeatedUnits = new HashSet<string>(StringComparer.Ordinal);
-            var playerTankTargets = new HashSet<string>(StringComparer.Ordinal);
             Dictionary<string, Vector3> tickStartPositions = null;
             int activeTick = -1;
             int movementEventCount = 0;
             int playerTankMovementCount = 0;
             int playerTankActionCount = 0;
             bool verifiedPlayerTankRangeBoundary = false;
-            bool verifiedTauntExpiryRetarget = false;
 
             for (int index = 0; index < result.Events.Count; index++)
             {
@@ -1221,10 +1497,61 @@ namespace GenericGachaRPG.Editor
                 {
                     if (!string.IsNullOrEmpty(battleEvent.TargetRuntimeId))
                     {
+                        if (battleEvent.Type == BattleEventType.UnitKnockedUp)
+                        {
+                            Vector3 knockbackActorPosition = default;
+                            Vector3 knockbackTargetPosition = default;
+                            bool hasKnockbackActor = positions.TryGetValue(
+                                battleEvent.ActorRuntimeId,
+                                out knockbackActorPosition);
+                            bool hasKnockbackTarget = positions.TryGetValue(
+                                battleEvent.TargetRuntimeId,
+                                out knockbackTargetPosition);
+                            Require(hasKnockbackActor &&
+                                    hasKnockbackTarget &&
+                                    battleEvent.TargetSide.HasValue,
+                                $"Knockback event {index} has incomplete pre-event position data.");
+                            Vector3 expectedDestination = BattleRules.CalculateKnockbackDestination(
+                                knockbackActorPosition,
+                                knockbackTargetPosition,
+                                battleEvent.TargetSide.Value,
+                                battleEvent.TargetSlot,
+                                battleEvent.Amount);
+                            Require(Vector3.Distance(
+                                        expectedDestination,
+                                        battleEvent.TargetPositionAfter) <= 0.001f,
+                                $"Knockback event {index} did not apply its boundary-clamped displacement.");
+                            if (string.Equals(
+                                    battleEvent.SkillId,
+                                    CatherineYukiBattleKit.TimedSkill2Id,
+                                    StringComparison.Ordinal))
+                            {
+                                float actualDistance = Vector3.Distance(
+                                    knockbackTargetPosition,
+                                    battleEvent.TargetPositionAfter);
+                                Require(Mathf.Approximately(
+                                            battleEvent.Amount,
+                                            CatherineYukiBattleKit.WindWheelBreakKnockbackDistance) &&
+                                        actualDistance > BattleRules.RangeEpsilon &&
+                                        actualDistance <= battleEvent.Amount + BattleRules.RangeEpsilon,
+                                    "Wind Wheel: Break did not apply its five-grid request within battlefield bounds.");
+                            }
+                        }
+
                         positions[battleEvent.TargetRuntimeId] = battleEvent.TargetPositionAfter;
                         tickStartPositions[battleEvent.TargetRuntimeId] = battleEvent.TargetPositionAfter;
                     }
 
+                    continue;
+                }
+
+                if (battleEvent.Type == BattleEventType.UnitTeleported)
+                {
+                    Require(definitions.ContainsKey(battleEvent.ActorRuntimeId),
+                        $"Teleport event {index} has unknown actor '{battleEvent.ActorRuntimeId}'.");
+                    positions[battleEvent.ActorRuntimeId] = battleEvent.ActorPositionAfter;
+                    tickStartPositions[battleEvent.ActorRuntimeId] = battleEvent.ActorPositionAfter;
+                    lockedTargets[battleEvent.ActorRuntimeId] = battleEvent.TargetRuntimeId;
                     continue;
                 }
 
@@ -1272,7 +1599,7 @@ namespace GenericGachaRPG.Editor
                             Vector3.Distance(actorPositionBefore, targetPositionBefore) + 0.001f,
                         $"Actor '{battleEvent.ActorRuntimeId}' moved away from its locked target.");
 
-                    verifiedTauntExpiryRetarget |= VerifyTargetLock(
+                    VerifyTargetLock(
                         battleEvent.ActorRuntimeId,
                         battleEvent.TargetRuntimeId,
                         lockedTargets,
@@ -1284,7 +1611,6 @@ namespace GenericGachaRPG.Editor
                     if (string.Equals(battleEvent.ActorRuntimeId, "P0", StringComparison.Ordinal))
                     {
                         playerTankMovementCount++;
-                        playerTankTargets.Add(battleEvent.TargetRuntimeId);
                     }
 
                     continue;
@@ -1299,7 +1625,7 @@ namespace GenericGachaRPG.Editor
                         ? ResolveActiveSkill(actorDefinition, battleEvent.SkillId)
                         : null;
                     bool damagingAction = battleEvent.Type == BattleEventType.BasicAttackStarted ||
-                                          (actionSkill != null && actionSkill.Category == SkillCategory.Damage);
+                                           (actionSkill != null && actionSkill.Category == SkillCategory.Damage);
                     if (!damagingAction)
                     {
                         continue;
@@ -1307,25 +1633,45 @@ namespace GenericGachaRPG.Editor
 
                     Require(!defeatedUnits.Contains(battleEvent.TargetRuntimeId),
                         $"Actor '{battleEvent.ActorRuntimeId}' targeted defeated unit '{battleEvent.TargetRuntimeId}'.");
-                    verifiedTauntExpiryRetarget |= VerifyTargetLock(
-                        battleEvent.ActorRuntimeId,
-                        battleEvent.TargetRuntimeId,
-                        lockedTargets,
-                        tauntExpiresAtTick,
-                        defeatedUnits,
-                        battleEvent.Tick,
-                        index);
+                    bool isBacklineShift = battleEvent.Type == BattleEventType.SkillCastStarted &&
+                                           string.Equals(
+                                               battleEvent.ActorRuntimeId,
+                                               "P2",
+                                               StringComparison.Ordinal) &&
+                                           string.Equals(
+                                               battleEvent.SkillId,
+                                               AssassinBattleKit.BacklineShiftSkillId,
+                                               StringComparison.Ordinal);
+                    if (isBacklineShift)
+                    {
+                        lockedTargets[battleEvent.ActorRuntimeId] = battleEvent.TargetRuntimeId;
+                        tauntExpiresAtTick.Remove(battleEvent.ActorRuntimeId);
+                    }
+                    else
+                    {
+                        VerifyTargetLock(
+                            battleEvent.ActorRuntimeId,
+                            battleEvent.TargetRuntimeId,
+                            lockedTargets,
+                            tauntExpiresAtTick,
+                            defeatedUnits,
+                            battleEvent.Tick,
+                            index);
+                    }
                     Vector3 actorPosition = default;
                     Vector3 targetPosition = default;
                     Require(positions.TryGetValue(battleEvent.ActorRuntimeId, out actorPosition),
                         $"Action event {index} has an unknown actor position.");
                     Require(positions.TryGetValue(battleEvent.TargetRuntimeId, out targetPosition),
                         $"Action event {index} has an unknown target position.");
-                    Require(BattleRules.IsWithinAttackRange(
-                            actorPosition,
-                            targetPosition,
-                            actorDefinition.AttackRange),
-                        $"Actor '{battleEvent.ActorRuntimeId}' started a damage action outside attack range.");
+                    if (!isBacklineShift)
+                    {
+                        Require(BattleRules.IsWithinAttackRange(
+                                actorPosition,
+                                targetPosition,
+                                actorDefinition.AttackRange),
+                            $"Actor '{battleEvent.ActorRuntimeId}' started a damage action outside attack range.");
+                    }
 
                     if (!verifiedPlayerTankRangeBoundary &&
                         battleEvent.Type == BattleEventType.BasicAttackStarted &&
@@ -1351,7 +1697,6 @@ namespace GenericGachaRPG.Editor
 
                     if (string.Equals(battleEvent.ActorRuntimeId, "P0", StringComparison.Ordinal))
                     {
-                        playerTankTargets.Add(battleEvent.TargetRuntimeId);
                         playerTankActionCount++;
                     }
                 }
@@ -1362,10 +1707,8 @@ namespace GenericGachaRPG.Editor
             Require(playerTankActionCount > 0, "Player slot 0 tank never acted after entering range.");
             Require(verifiedPlayerTankRangeBoundary,
                 "Player slot 0 tank never performed a basic attack at its maximum range boundary.");
-            Require(verifiedTauntExpiryRetarget,
-                "No unit released Catherine's temporary Taunt lock after its configured duration.");
-            Require(playerTankTargets.Count >= 2,
-                "Player slot 0 tank never retargeted after its first locked target was defeated.");
+            Require(tauntExpiresAtTick.Count > 0,
+                "Battle emitted no Catherine Taunt lock to validate.");
             Require(Vector3.Distance(
                     result.PlayerUnits[0].CurrentPosition,
                     BattleRules.GetSlotPosition(BattleTeamSide.Player, 0)) > 0.5f,
@@ -1475,12 +1818,47 @@ namespace GenericGachaRPG.Editor
                 $"BattleRules.TeamSize must be 5; found {BattleRules.TeamSize}.");
             Require(TeamFormationState.RequiredMemberCount == BattleRules.TeamSize,
                 "Formation and battle team-size rules have diverged.");
-            Require(Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Tank), 1f) &&
-                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Assassin), 1f) &&
-                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Support), 5f) &&
-                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Ranged), 5f) &&
-                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Mage), 5f),
-                "Tank/Assassin range must be 1 and every other role range must be 5.");
+            Require(BattleTeam.MaximumMemberCount == BattleRules.MaximumTeamSize &&
+                    BattleRules.DemoPlayerTeamSize == 3 &&
+                    BattleRules.DemoEnemyTeamSize == 5,
+                "BattleTeam bounds or the demo 3-versus-5 roster sizes have diverged.");
+            Require(BattleRules.BattlefieldDivisionCount == 20 &&
+                    Mathf.Approximately(BattleRules.BattlefieldLength, 20f) &&
+                    Mathf.Approximately(BattleRules.BattlefieldUnit, 1f),
+                "Battlefield must remain a 20-unit length divided into 20 one-unit grids.");
+            Require(Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Tank), 2f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Assassin), 2f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Support), 10f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Ranged), 10f) &&
+                    Mathf.Approximately(BattleRules.GetDefaultAttackRange(CharacterRole.Mage), 10f),
+                "Tank/Assassin range must be 2/20 and every other role range must be 10/20.");
+            Require(Mathf.Approximately(
+                        CatherineYukiBattleKit.WindWheelBreakKnockbackDistance,
+                        5f),
+                "Catherine Wind Wheel: Break knockback must remain 5/20 battlefield length.");
+            Vector3 centerKnockbackTarget = new Vector3(1f, 0f, 0f);
+            Vector3 centerKnockbackDestination = BattleRules.CalculateKnockbackDestination(
+                Vector3.zero,
+                centerKnockbackTarget,
+                BattleTeamSide.Enemy,
+                0,
+                CatherineYukiBattleKit.WindWheelBreakKnockbackDistance);
+            Require(Mathf.Abs(
+                        Vector3.Distance(centerKnockbackTarget, centerKnockbackDestination) - 5f) <= 0.001f,
+                "Wind Wheel: Break must move an unobstructed target five grid units.");
+            Vector3 boundaryKnockbackTarget = new Vector3(
+                BattleRules.BattlefieldHalfLength,
+                0f,
+                0f);
+            Vector3 boundaryKnockbackDestination = BattleRules.CalculateKnockbackDestination(
+                new Vector3(BattleRules.BattlefieldHalfLength - 1f, 0f, 0f),
+                boundaryKnockbackTarget,
+                BattleTeamSide.Enemy,
+                0,
+                CatherineYukiBattleKit.WindWheelBreakKnockbackDistance);
+            Require(boundaryKnockbackDestination.x <= BattleRules.BattlefieldHalfLength &&
+                    Mathf.Approximately(boundaryKnockbackDestination.x, boundaryKnockbackTarget.x),
+                "Wind Wheel: Break must clamp rather than cross the battlefield boundary.");
             Require(BattleRules.MaxRage == 1000 &&
                     BattleRules.RagePerBasicAttackHit == 100 &&
                     BattleRules.RagePerDamageReceived == 50,
@@ -1503,8 +1881,14 @@ namespace GenericGachaRPG.Editor
                     (int)BattleEventType.DebuffApplied == 11 &&
                     (int)BattleEventType.UltimatePhase == 12 &&
                     (int)BattleEventType.UnitRevived == 13 &&
-                    (int)BattleEventType.StatusApplied == 14,
-                "Catherine events must be appended without changing existing serialized values.");
+                    (int)BattleEventType.StatusApplied == 14 &&
+                    (int)BattleEventType.UnitTeleported == 15,
+                "Battle events must be appended without changing existing serialized values.");
+            Require(string.Equals(
+                    AssassinBattleKit.BacklineShiftSkillId,
+                    "assassin_backline_shift",
+                    StringComparison.Ordinal),
+                "Assassin Backline Shift must preserve its stable skill id.");
         }
 
         private static void RequireCharacterRarity(

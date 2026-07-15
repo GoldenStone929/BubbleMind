@@ -25,7 +25,7 @@ MonoBehaviour:
   attack: 122
   defense: 34
   attackInterval: 1.34
-  attackRange: 5
+  attackRange: 10
   moveSpeed: 3
   maxRage: 1000
   ragePerAttack: 100

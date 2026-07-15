@@ -78,12 +78,12 @@ namespace GenericGachaRPG
             BattleScreenView battleScreen,
             int seed)
         {
-            if (playerCharacters == null || playerCharacters.Count != BattleTeam.RequiredMemberCount)
+            if (playerCharacters == null || playerCharacters.Count != BattleRules.DemoPlayerTeamSize)
             {
-                throw new ArgumentException("Player battle team must contain exactly five characters.", nameof(playerCharacters));
+                throw new ArgumentException("Player demo team must contain exactly three characters.", nameof(playerCharacters));
             }
 
-            if (enemyCharacters == null || enemyCharacters.Count != BattleTeam.RequiredMemberCount)
+            if (enemyCharacters == null || enemyCharacters.Count != BattleRules.DemoEnemyTeamSize)
             {
                 throw new ArgumentException("Enemy battle team must contain exactly five characters.", nameof(enemyCharacters));
             }
@@ -172,6 +172,22 @@ namespace GenericGachaRPG
                         actor.View.MoveRootTo(
                             battleEvent.ActorPositionAfter,
                             battleEvent.Duration / PlaybackSpeed);
+                    }
+
+                    break;
+
+                case BattleEventType.UnitTeleported:
+                    if (actor != null)
+                    {
+                        SpawnControlPulse(actor, new Color(0.98f, 0.26f, 0.12f, 1f), 1.35f);
+                        actor.View.MoveRootTo(
+                            battleEvent.ActorPositionAfter,
+                            battleEvent.Duration / PlaybackSpeed);
+                        if (target != null)
+                        {
+                            actor.View.FaceTarget(target.View.transform.position);
+                            SpawnControlPulse(target, new Color(1f, 0.58f, 0.16f, 1f), 1.15f);
+                        }
                     }
 
                     break;
@@ -353,7 +369,7 @@ namespace GenericGachaRPG
             worldRoot = rootObject.transform;
 
             BuildEnvironment();
-            for (int i = 0; i < BattleTeam.RequiredMemberCount; i++)
+            for (int i = 0; i < playerCharacters.Count; i++)
             {
                 CreateUnit(
                     $"P{i}",
@@ -362,6 +378,10 @@ namespace GenericGachaRPG
                     Quaternion.Euler(0f, 90f, 0f),
                     i,
                     false);
+            }
+
+            for (int i = 0; i < enemyCharacters.Count; i++)
+            {
                 CreateUnit(
                     $"E{i}",
                     enemyCharacters[i],
@@ -423,7 +443,10 @@ namespace GenericGachaRPG
             for (int sideIndex = 0; sideIndex < 2; sideIndex++)
             {
                 BattleTeamSide side = sideIndex == 0 ? BattleTeamSide.Player : BattleTeamSide.Enemy;
-                for (int slot = 0; slot < BattleRules.TeamSize; slot++)
+                int markerCount = side == BattleTeamSide.Player
+                    ? BattleRules.DemoPlayerTeamSize
+                    : BattleRules.DemoEnemyTeamSize;
+                for (int slot = 0; slot < markerCount; slot++)
                 {
                     Vector3 position = BattleRules.GetSlotPosition(side, slot);
                     position.y = 0.018f;
@@ -438,10 +461,10 @@ namespace GenericGachaRPG
 
             Vector3[] ornamentPositions =
             {
-                new Vector3(-7.20f, 0.26f, 3.80f),
-                new Vector3(-6.55f, 0.16f, 4.55f),
-                new Vector3(6.55f, 0.16f, 4.55f),
-                new Vector3(7.20f, 0.26f, 3.80f)
+                new Vector3(-9.45f, 0.26f, 3.80f),
+                new Vector3(-8.95f, 0.16f, 4.55f),
+                new Vector3(8.95f, 0.16f, 4.55f),
+                new Vector3(9.45f, 0.26f, 3.80f)
             };
 
             for (int i = 0; i < ornamentPositions.Length; i++)
@@ -504,14 +527,17 @@ namespace GenericGachaRPG
             floor.name = "ArenaFloor";
             floor.transform.SetParent(worldRoot, false);
             floor.transform.position = new Vector3(0f, -0.16f, 0f);
-            floor.transform.localScale = new Vector3(13.5f, 0.25f, 8f);
+            floor.transform.localScale = new Vector3(BattleRules.BattlefieldLength, 0.25f, 8f);
             floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
             RemoveCollider(floor);
 
             for (int sideIndex = 0; sideIndex < 2; sideIndex++)
             {
                 BattleTeamSide side = sideIndex == 0 ? BattleTeamSide.Player : BattleTeamSide.Enemy;
-                for (int slot = 0; slot < BattleRules.TeamSize; slot++)
+                int markerCount = side == BattleTeamSide.Player
+                    ? BattleRules.DemoPlayerTeamSize
+                    : BattleRules.DemoEnemyTeamSize;
+                for (int slot = 0; slot < markerCount; slot++)
                 {
                     Vector3 position = BattleRules.GetSlotPosition(side, slot);
                     position.y = 0.005f;

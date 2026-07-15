@@ -8,7 +8,7 @@
 
 ## 1. 用途与玩家视角
 
-- 游戏内用途：首个正式 3D 角色样板；进入收藏、默认编队首槽和现有 5v5 射程战斗。
+- 游戏内用途：首个正式 3D 角色样板；进入收藏、默认五槽编队首槽和现有固定 3v5 职业测试战斗。
 - 出现场景与典型屏幕占比：战斗中高度约占画面 12%–20%；收藏页允许近景旋转预览。
 - 必须传达的信息：UR 稀有度、宇宙/黑洞主题、沉重引力感、非人形凝胶生命、危险但可读。
 - 不在本资产范围内：完整限定池经济规则、商业发布权、整套角色阵容、付费皮肤、最终移动端优化。
@@ -86,7 +86,7 @@ CharacterRoot
 - 运行时连接：`CharacterDefinition.characterPrefab` 指向 Prefab；`DemoBattlePresenter` 优先实例化 Prefab，缺失时回退 `ProceduralCharacterBuilder`。
 - 数据：新增稳定 ID `ur_cosmic_slime`；现有 Generator 必须纳入该定义，重复运行不能把它移除。
 - UR 显示：全局稀有度为 `R -> SR -> SSR -> SP -> UR`；本角色显示 `UR / TANK / LIMITED`，进入默认编队但排除标准池。
-- 战斗数据：Catherine 为 Tank，攻击距离固定为 1；按移动速度接近到最大射程边界后留在前线，锁定目标死亡后才重新接近最近敌人。Assassin 同为 1，Support / Ranged / Mage 为 5。
+- 战斗数据：战场主轴为 20 格。Catherine 为 Tank，攻击距离固定为 2；按移动速度接近到最大射程边界后留在前线，锁定目标死亡后才重新接近最近敌人。Assassin 同为 2，Support / Ranged / Mage 为 10；`Wind Wheel: Break` 请求击退 5 格并受战场边界限制。
 
 ## 7. 满级战斗契约
 

@@ -1,83 +1,73 @@
-# 当前里程碑：怒气、三技能轮转与 Catherine 真实凝胶升级
+# 当前里程碑：20 格 3v5 职业测试与刺客后排切入
 
 > 状态：已完成（Generate/核心验证、PlayMode、Windows D3D11 与实机视觉检查均通过）
 > 开始日期：2026-07-14
 > 完成日期：2026-07-14
-> 角色资产 ID：`ART-CHAR-UR-COSMIC-SLIME-001`
-> 工作名：Catherine Yuki / 黑洞史莱姆
 > 长期范围权威：`../PROJECT_PLAN.md`
 
 ## 本轮用户目标
 
-- 建立统一怒气系统：上限 1000、初始 0，普攻命中和承受伤害都能积累怒气。
-- 把技能槽 1 固定为大招；技能槽 2 与 3 使用互相错开的自动释放节奏。
-- 让 Tank / Assassin 保持近战射程，其余职业在远程射程边界停位，不再无意义贴近。
-- Catherine 继续担任限定 UR 坦克；大招必须化为黑洞，吸附全部存活敌人后坍缩击飞。
-- 改善模型与灯光，使 Catherine 呈现更真实的深色凝胶厚度、纯黑核心和体积层次。
-- 保留敌方测试单位 `10× HP / 0.1× ATK`，让技能循环有足够观察时间。
+- 把战斗主轴统一划分为 20 格，避免使用缺少比例参照的 1 / 5 射程。
+- Tank / Assassin 使用 2 格攻击距离，其余职业使用 10 格攻击距离。
+- Catherine 的 `Wind Wheel: Break` 将目标击退 5 格。
+- 保留五槽编队，同时把当前测试战斗改为我方 3 人对敌方 5 人。
+- 我方固定包含射手、Catherine UR 坦克和刺客；刺客技能 2 必须切入敌方后排并开始攻击。
 
-## 战斗契约
+## 已锁定战斗契约
 
-### 怒气
+### 战场与射程
 
-- 所有普通单位以 `0 / 1000` 怒气开始战斗。
-- 普攻实际命中敌人时，攻击者获得 100 怒气。
-- 单位受到实际伤害时，受击者获得 50 怒气。
-- 技能槽 1 为大招；只有满 1000 怒气才可释放，释放后怒气清零。
-- 世界条显示 `RAGE current/1000`，表现层只读取模拟层事件。
+- 战场逻辑长度为 `20`，左右边界为 `-10 / +10`；所有出生、普通移动、击退与瞬移均限制在边界内。
+- Tank / Assassin 射程为 `2 / 20`，Support / Ranged / Mage 射程为 `10 / 20`。
+- 单位在最大射程边界停位；当前目标存活期间持续锁定，目标死亡后才重新选择最近目标。
+- Catherine 的技能槽 2 `Wind Wheel: Break` 请求沿受击者敌方方向击退 `5 / 20`；中心区域实际移动 5 格，接近地图边缘时由战场边界截断。
 
-### 三技能错峰轮转
+### 五槽存档与 3v5 部署
 
-- 技能槽 2 首次在战斗 5 秒释放，此后每 10 秒一次：5 / 15 / 25 秒……
-- 技能槽 3 首次在战斗 10 秒释放，此后每 10 秒一次：10 / 20 / 30 秒……
-- 两项定时技能不得在同一 Tick 同时释放，也不得用同 Tick 追赶错过的窗口。
-- 单位受控或暂时不满足施放条件时保留当前到期技能；只有实际施放成功后才推进该槽位的下一个 10 秒周期。
-- 本轮确定性验证战斗在 19.3 秒结束，因此实际观察到技能槽 2 在 5 / 15 秒、技能槽 3 在 10 秒释放；20 秒后的周期没有被这场战斗执行。
-- Catherine 的槽位映射为：技能槽 1 `Imaginary Mass: Infinite Void`，技能槽 2 `Wind Wheel: Break`，技能槽 3 `Wind Wheel: Dance`；`Star Rage` 保持被动领域规则。
+- `PlayerState` 的五槽编队、存档 schema 和 Formation UI 保持不变。
+- 本轮战斗部署与五槽存档独立，避免为了测试 3 人职业组合破坏既有五槽功能。
+- 我方固定顺序：`Catherine Yuki / Tank`、`Gold Ranger / Ranged`、`Ember Striker / Assassin`。
+- 敌方固定五人：`Cyan Warden / Tank`、`Azure Vanguard / Tank`、`Violet Arcanist / Mage`、`Gold Ranger / Ranged`、`Verdant Medic / Support`。
+- 敌方运行时实例继续使用 `10× HP / 0.1× ATK`，角色数据资产原值不变。
 
-### 射程与移动
+### 刺客后排切入
 
-- Tank / Assassin 的攻击距离为 1。
-- Support / Ranged / Mage 的攻击距离为 5。
-- 单位只移动到自身最大攻击距离边界，在射程内不继续贴近。
-- 当前目标存活期间持续锁定；目标死亡后，才按当前战场位置选择最近的新目标。
-- 敌方测试实例继续使用 `MaxHealth ×10` 与 `Attack ×0.1`，不修改角色资产原始数值。
+- Ember Striker 的技能槽 2 为 `Backline Shift`，按既有技能日程首次在第 5 秒释放。
+- 技能优先选择仍存活的 Ranged / Mage / Support 后排；按敌方基地深度、横向接近度和槽位确定性排序。
+- 刺客优先落在目标朝敌方基地一侧；若目标已经贴近边界，则沿 Z 轴选择有空间的一侧，始终保持 2 格分离且不越界。瞬移产生独立 `UnitTeleported` 事件，并以 110% ATK 命中。
+- 瞬移后持续锁定该后排目标并开始普攻；第 15 秒再次施放仍沿用存活目标，只有目标死亡后才重新选敌。
 
-## Catherine 视觉升级
+## UI 与视觉
 
-- Blender 主体升级为更宽、更低、更不对称的 19,000 面凝胶轮廓，保留 6 个稳定材质槽与 `IdleBreath / Squash / Stretch / UltimateCollapse` 四个 Blend Shapes。
-- 外壳使用近黑高密度凝胶语言：厚部更深、边缘受控发亮、正面保持实体感，避免玻璃球观感。
-- 胸腹核心为真正纯黑事件视界；白紫吸积盘、光子透镜与多层螺旋提供清晰体积深度。
-- 场景使用主光、补光和轮廓光三点布光，强化外壳体积、透明边缘与深色轮廓分离。
-- 大招 VFX 保留蓄力、化为黑洞、全体吸附、多段伤害、坍缩和击飞阶段；黑洞吸附已通过实机截图确认。
+- 首页明确显示五槽阵容已保存、3v5 职业测试已就绪。
+- Formation 保留五个槽位，主按钮改为 `START 3v5 TEST`，并说明实际部署 Catherine、Gold Ranger、Ember Striker。
+- 战斗镜头完整容纳 20 格主轴与八名单位；地图边缘装饰同步外移，避免遮挡出生位。
+- 真实 Windows 窗口检查确认首页、五槽编队、战斗和结算均无裁切；黑洞聚怪阶段因单位真实重叠会短暂出现姓名牌密集，列为后续碰撞/标签分离打磨项。
 
 ## 边界
 
-- 只写入 `GenericGachaRPG/`；`analysis/` 只读，不读取、运行或解包 XAPK/APK。
-- 本轮没有下载或购买新依赖、Unity 包、Shader 或 VFX 资产。
-- 付费 VFX/Toon 候选继续只作参考，未经费用和许可确认不得接入。
-- 当前仍是内部原型；模型相交、正式 Animator、碰撞分离与收藏页 3D 预览留待后续里程碑。
+- 只写入 `GenericGachaRPG/`；`analysis/` 保持只读，未读取、运行或解包任何 XAPK/APK。
+- 本轮没有下载、购买或引入新软件、Unity 包、Shader、VFX 或第三方运行依赖。
+- 当前部署名单是测试夹具，不是最终自由选人规则；自由三人部署、碰撞分离、分道/NavMesh 和标签避让留待后续里程碑。
 
 ## 完成状态
 
-- [x] 0–1000 怒气规则、普攻/受伤增怒与满怒大招清零。
-- [x] 三技能槽数据与 Catherine 槽位映射。
-- [x] 技能槽 2 / 3 的 5 秒错峰、10 秒周期与同 Tick 互斥。
-- [x] Tank / Assassin 射程 1、其余职业射程 5 与最大射程停位。
-- [x] 敌方 `10× HP / 0.1× ATK` 测试倍率回归。
-- [x] Catherine 19,000 面真实凝胶模型、纯黑核心、材质与三点布光。
-- [x] 嘲讽按 4 秒到期并重选目标，取消的大招阶段可正常触发败北结算，UR 外壳恢复阴影与深度通道。
-- [x] Generate/核心验证、PlayMode 冒烟与 Windows D3D11 构建。
-- [x] 1920×1080 与 3440×1392 级宽屏实机视觉检查，以及黑洞吸附截图确认。
+- [x] 20 格战场常量、出生位缩放与全部位移边界限制。
+- [x] Tank / Assassin 射程 2，其余职业射程 10，并回写七名角色资产。
+- [x] Catherine `Wind Wheel: Break` 击退 5 格。
+- [x] 五槽编队保留，运行时战斗改为固定 3v5。
+- [x] Ember 技能 2 后排选择、瞬移、命中与持续锁定。
+- [x] 数据库、生成器、表现层、UI、核心验证与 PlayMode 冒烟同步更新。
+- [x] Windows D3D11 构建及真实窗口首页、Formation、战斗、结算检查。
 
 ## 验证证据
 
 | 门槛 | 结果 | 证据与说明 |
 |---|---|---|
-| Blender 几何与 Shape Keys | 通过 | `Artifacts/UR_CosmicSlime/Blender/geometry_audit.json`：19,000 / 20,000 triangles、6 个材质、四个必需 Shape Keys 与全部视觉审计项通过 |
-| Generate / C# 编译 / 核心验证 | 通过 | `Artifacts/CatherineRealism/RageGenerate4.log` 出现 `[GenericGachaRPG][P0_VERIFY_PASS_20260713]` |
-| PlayMode 冒烟 | 通过 | `Artifacts/CatherineRealism/RagePlaySmoke.log` 出现 `[P0_PLAY_SMOKE_PASS_20260713]`；覆盖 UI、怒气条、技能轮转、射程与 Catherine 战斗契约 |
-| Windows D3D11 BuildPipeline | 通过 | `Artifacts/CatherineRealism/RageWindowsBuild.log` 出现 `[GenericGachaRPG][WINDOWS_BUILD_PASS_20260713]`；输出 114,033,256 bytes / 24.1s |
-| Windows 实机视觉 | 通过 | 1920×1080 与 3440×1392 级宽屏窗口完成画面检查；凝胶厚度、纯黑核心、三点布光和 UI 可读，黑洞吸附由截图确认 |
+| Generate / C# / 核心验证 | 通过 | `Artifacts/ThreeVsFiveRange/GenerateFinal.log` 出现 `[GenericGachaRPG][P0_VERIFY_PASS_20260713]`；验证 20 / 2 / 10 / 5 比例、3v5 名单、八单位、确定性事件、5 / 15 秒同目标切入与边界落点 |
+| PlayMode 冒烟 | 通过 | `Artifacts/ThreeVsFiveRange/PlaySmokeFinal.log` 出现 `[P0_PLAY_SMOKE_PASS_20260713]`；真实 UI 流程、八个怒气条、两次同目标瞬移、击退实际位移与 19.3 秒结算通过 |
+| Windows D3D11 BuildPipeline | 通过 | `Artifacts/ThreeVsFiveRange/WindowsBuildFinal.log` 出现 `[GenericGachaRPG][WINDOWS_BUILD_PASS_20260713]`；输出 `114,042,024` bytes / `58.6s` |
+| Windows 主程序 | 通过 | `Builds/Windows/GenericGachaRPGDemo.exe` 为 `667,648` bytes，SHA-256 `5AE0C84993C6BFF7D0F03166CAFD148CDEC61F67EC85B5D97600E04B2ABB26E4` |
+| 实机视觉 | 通过 | 1922×1112 捕获窗口检查：首页和五槽 Formation 文本完整；20 格战场无边缘裁切；3v5 胜利结算为 19.3 秒；程序最终留在首页 |
 
-完整记录：`MILESTONES/2026-07-14_RAGE_THREE_SKILL_AND_CATHERINE_REALISM.md`。
+完整记录：`MILESTONES/2026-07-14_THREE_VS_FIVE_RANGE_GRID_AND_ASSASSIN_SHIFT.md`。

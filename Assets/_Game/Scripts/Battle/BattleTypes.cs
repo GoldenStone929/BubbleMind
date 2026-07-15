@@ -30,6 +30,7 @@ namespace GenericGachaRPG
         DebuffApplied = 11,
         UltimatePhase = 12,
         UnitRevived = 13,
-        StatusApplied = 14
+        StatusApplied = 14,
+        UnitTeleported = 15
     }
 }

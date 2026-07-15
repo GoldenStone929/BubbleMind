@@ -7,12 +7,12 @@
 1. 在 Unity 打开本项目。
 2. 按 `F8`，或双击 `Assets/_Game/Scenes/GachaRPGDemo.unity`。
 3. 点击 Unity 顶部的 **Play**。
-4. 从主页依次体验抽卡、角色收藏、五人编队和 5v5 自动战斗。
+4. 从主页依次体验抽卡、角色收藏、五槽编队和当前 3v5 职业测试战斗。
 
 完整流程：
 
 ```text
-Home → 单抽 → Collection → Formation → 5v5 Battle → Result → Home / Restart
+Home → 单抽 → Collection → Formation → 3v5 Battle → Result → Home / Restart
 ```
 
 新存档拥有 3,000 Crystals 和五名初始角色。每次单抽消耗 100；`RESET DEMO DATA` 会恢复默认试玩状态。
@@ -27,7 +27,7 @@ F8  Tools > Generic Gacha RPG > Open Demo Scene
 F6  Tools > Generic Gacha RPG > Build Windows Demo
 ```
 
-生成器可以重复运行，会校正七名角色、五套元素基础史莱姆 Prefab、星渊吞噬体 Prefab、柔和漫画星渊观测台、三个技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
+生成器可以重复运行，会校正七名角色、五套元素基础史莱姆 Prefab、星渊吞噬体 Prefab、柔和漫画星渊观测台、十项技能、抽卡池和 Build Settings，并验证演示场景。验证器使用内存存档，不会污染玩家的 PlayerPrefs。
 
 Windows 独立版已经生成在：
 
@@ -47,7 +47,8 @@ Builds/Windows/GenericGachaRPGDemo.exe
 - 原创柔和漫画风 16:9 战斗地图“星渊观测台”，同时作为首页与实战视觉基准。
 - 全局稀有度顺序为 R / SR / SSR / SP / UR；标准池当前包含 R / SR / SSR，首位限定角色为 UR 且不进入标准池。
 - 收藏页、严格五人编队，以及角色卡上的攻击距离和移动速度。
-- 固定 Tick、Seed 可复现的 5v5 自动战斗；单位持续锁定存活目标，进入自身射程后留在前线，目标死亡后才按当前位置重选。
+- 固定 Tick、Seed 可复现的 3v5 自动战斗；我方固定为 Catherine 坦克、Gold Ranger 射手和 Ember Striker 刺客，敌方为五名测试单位。
+- 战场长度统一为 20 格；Tank / Assassin 射程 2 格，其余职业射程 10 格。Ember 的技能 2 在第 5 秒瞬移到敌方后排，第 15 秒再次施放时仍攻击同一存活目标。
 - 普攻、能量、单体伤害、群体伤害、治疗、死亡、超时和结果页。
 - JSON 本地存档、损坏恢复与一键 Reset。
 

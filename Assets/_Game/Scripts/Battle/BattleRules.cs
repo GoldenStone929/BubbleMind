@@ -10,7 +10,15 @@ namespace GenericGachaRPG
     /// </summary>
     public static class BattleRules
     {
-        public const int TeamSize = 5;
+        public const int MaximumTeamSize = 5;
+        public const int TeamSize = MaximumTeamSize;
+        public const int DemoPlayerTeamSize = 3;
+        public const int DemoEnemyTeamSize = 5;
+        public const int BattlefieldDivisionCount = 20;
+        public const float BattlefieldLength = 20f;
+        public const float BattlefieldUnit = BattlefieldLength / BattlefieldDivisionCount;
+        public const float BattlefieldHalfLength = BattlefieldLength * 0.5f;
+        public const float BattlefieldHalfDepth = 4f;
         public const int MaxRage = 1000;
         public const int RagePerBasicAttackHit = 100;
         public const int RagePerDamageReceived = 50;
@@ -19,8 +27,8 @@ namespace GenericGachaRPG
         public const float Skill3InitialCastTime = 10f;
         public const float ActiveSkillCooldown = 10f;
         public const float MinimumAttackRange = 0.1f;
-        public const float MeleeAttackRange = 1f;
-        public const float RangedAttackRange = 5f;
+        public const float MeleeAttackRange = BattlefieldUnit * 2f;
+        public const float RangedAttackRange = BattlefieldUnit * 10f;
         public const float TankMoveSpeed = 3.3f;
         public const float AssassinMoveSpeed = 3.7f;
         public const float SupportMoveSpeed = 3.1f;
@@ -37,20 +45,20 @@ namespace GenericGachaRPG
 
         private static readonly Vector3[] PlayerSlotPositions =
         {
-            new Vector3(-3.75f, 0f, 0f),
-            new Vector3(-4.2f, 0f, -1.45f),
-            new Vector3(-4.2f, 0f, 1.45f),
-            new Vector3(-4.35f, 0f, -2.9f),
-            new Vector3(-4.35f, 0f, 2.9f)
+            new Vector3(-7.5f, 0f, 0f),
+            new Vector3(-8.4f, 0f, -1.45f),
+            new Vector3(-8.4f, 0f, 1.45f),
+            new Vector3(-8.7f, 0f, -2.9f),
+            new Vector3(-8.7f, 0f, 2.9f)
         };
 
         private static readonly Vector3[] EnemySlotPositions =
         {
-            new Vector3(3.75f, 0f, 0f),
-            new Vector3(4.2f, 0f, -1.45f),
-            new Vector3(4.2f, 0f, 1.45f),
-            new Vector3(4.35f, 0f, -2.9f),
-            new Vector3(4.35f, 0f, 2.9f)
+            new Vector3(7.5f, 0f, 0f),
+            new Vector3(8.4f, 0f, -1.45f),
+            new Vector3(8.4f, 0f, 1.45f),
+            new Vector3(8.7f, 0f, -2.9f),
+            new Vector3(8.7f, 0f, 2.9f)
         };
 
         public static Vector3 GetSlotPosition(BattleTeamSide side, int slotIndex)
@@ -115,6 +123,33 @@ namespace GenericGachaRPG
         {
             float permittedDistance = Mathf.Max(MinimumAttackRange, attackRange) + RangeEpsilon;
             return (actorPosition - targetPosition).sqrMagnitude <= permittedDistance * permittedDistance;
+        }
+
+        public static Vector3 ClampToBattlefield(Vector3 position)
+        {
+            position.x = Mathf.Clamp(position.x, -BattlefieldHalfLength, BattlefieldHalfLength);
+            position.z = Mathf.Clamp(position.z, -BattlefieldHalfDepth, BattlefieldHalfDepth);
+            return position;
+        }
+
+        public static Vector3 CalculateKnockbackDestination(
+            Vector3 actorPosition,
+            Vector3 targetPosition,
+            BattleTeamSide targetSide,
+            int targetSlot,
+            float requestedDistance)
+        {
+            Vector3 direction = targetPosition - actorPosition;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= RangeEpsilon * RangeEpsilon)
+            {
+                float sideDirection = targetSide == BattleTeamSide.Player ? -1f : 1f;
+                float laneDirection = (targetSlot - 2) * 0.32f;
+                direction = new Vector3(sideDirection, 0f, laneDirection);
+            }
+
+            return ClampToBattlefield(
+                targetPosition + direction.normalized * Mathf.Max(0f, requestedDistance));
         }
     }
 }
