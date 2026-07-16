@@ -242,7 +242,7 @@ namespace GenericGachaRPG
             currencyText.text = $"CRYSTALS  {currency:N0}";
             battleButton.interactable = validFormation;
             statusText.text = validFormation
-                ? "Five-slot roster saved. The 3v5 role test is ready."
+                ? "Five-slot roster saved. Your full squad is ready for 5v5."
                 : "Choose exactly five unlocked characters in Formation.";
             statusText.color = validFormation ? DemoUiFactory.Positive : DemoUiFactory.Warning;
         }
@@ -730,7 +730,7 @@ namespace GenericGachaRPG
             battleButton = DemoUiFactory.CreateButton(
                 "BattleButton",
                 safe,
-                "START 3v5 TEST",
+                "START 5v5 BATTLE",
                 new Color(0.78f, 0.24f, 0.23f, 1f),
                 () => battle?.Invoke());
             RectTransform battleRect = battleButton.GetComponent<RectTransform>();
@@ -769,7 +769,7 @@ namespace GenericGachaRPG
             }
 
             feedbackText.text = string.IsNullOrEmpty(feedback)
-                ? "Save five units. This test deploys Catherine, Gold Ranger, and Ember Striker."
+                ? "Save five unique units. All five deploy directly into the local Pixel PvP trial."
                 : feedback;
             feedbackText.color = string.IsNullOrEmpty(feedback) ? DemoUiFactory.TextMuted : DemoUiFactory.Warning;
             battleButton.interactable = draftIds != null && draftIds.Count == TeamFormationState.RequiredMemberCount;
@@ -840,6 +840,11 @@ namespace GenericGachaRPG
         private string lastStatus = string.Empty;
 
         public BattleScreenView(Transform parent, Action restart, Action home)
+            : this(parent, restart, null, home)
+        {
+        }
+
+        public BattleScreenView(Transform parent, Action restart, Action world, Action home)
             : base(CreateRoot(parent))
         {
             RectTransform safe = DemoUiFactory.CreateStretchRect("SafeArea", Root.transform, 24f);
@@ -860,7 +865,17 @@ namespace GenericGachaRPG
                 safe,
                 "← EXIT",
                 new Color(0.06f, 0.075f, 0.10f, 0.94f),
-                () => home?.Invoke());
+                () =>
+                {
+                    if (world != null)
+                    {
+                        world.Invoke();
+                    }
+                    else
+                    {
+                        home?.Invoke();
+                    }
+                });
             RectTransform exitRect = exitButton.GetComponent<RectTransform>();
             exitRect.anchorMin = new Vector2(0.02f, 0.88f);
             exitRect.anchorMax = new Vector2(0.13f, 0.97f);
@@ -947,10 +962,33 @@ namespace GenericGachaRPG
                 DemoUiFactory.Accent,
                 () => restart?.Invoke());
             RectTransform restartRect = restartButton.GetComponent<RectTransform>();
-            restartRect.anchorMin = new Vector2(0.09f, 0.10f);
-            restartRect.anchorMax = new Vector2(0.46f, 0.30f);
-            restartRect.offsetMin = Vector2.zero;
-            restartRect.offsetMax = Vector2.zero;
+
+            if (world != null)
+            {
+                restartRect.anchorMin = new Vector2(0.06f, 0.10f);
+                restartRect.anchorMax = new Vector2(0.34f, 0.30f);
+                restartRect.offsetMin = Vector2.zero;
+                restartRect.offsetMax = Vector2.zero;
+
+                Button worldButton = DemoUiFactory.CreateButton(
+                    "WorldButton",
+                    panel.transform,
+                    "WORLD MAP",
+                    DemoUiFactory.Action,
+                    () => world.Invoke());
+                RectTransform worldRect = worldButton.GetComponent<RectTransform>();
+                worldRect.anchorMin = new Vector2(0.36f, 0.10f);
+                worldRect.anchorMax = new Vector2(0.64f, 0.30f);
+                worldRect.offsetMin = Vector2.zero;
+                worldRect.offsetMax = Vector2.zero;
+            }
+            else
+            {
+                restartRect.anchorMin = new Vector2(0.09f, 0.10f);
+                restartRect.anchorMax = new Vector2(0.46f, 0.30f);
+                restartRect.offsetMin = Vector2.zero;
+                restartRect.offsetMax = Vector2.zero;
+            }
 
             Button homeButton = DemoUiFactory.CreateButton(
                 "HomeButton",
@@ -959,8 +997,12 @@ namespace GenericGachaRPG
                 DemoUiFactory.SurfaceLight,
                 () => home?.Invoke());
             RectTransform homeRect = homeButton.GetComponent<RectTransform>();
-            homeRect.anchorMin = new Vector2(0.54f, 0.10f);
-            homeRect.anchorMax = new Vector2(0.91f, 0.30f);
+            homeRect.anchorMin = world == null
+                ? new Vector2(0.54f, 0.10f)
+                : new Vector2(0.66f, 0.10f);
+            homeRect.anchorMax = world == null
+                ? new Vector2(0.91f, 0.30f)
+                : new Vector2(0.94f, 0.30f);
             homeRect.offsetMin = Vector2.zero;
             homeRect.offsetMax = Vector2.zero;
             resultPanel.SetActive(false);
@@ -1002,6 +1044,22 @@ namespace GenericGachaRPG
             resultSummary.text =
                 $"Battle duration: {duration:0.0}s\n" +
                 (playerWon ? "Your formation held the line." : "Adjust your formation and try again.");
+        }
+
+        public void SetRewardSummary(StageRewardGrant grant)
+        {
+            if (grant == null || !grant.Victory || string.IsNullOrEmpty(grant.StageId))
+            {
+                return;
+            }
+
+            string clearLabel = grant.FirstClear ? "FIRST CLEAR" : "REPEAT CLEAR";
+            resultSummary.text +=
+                $"\n{clearLabel}  +{grant.Crystals} CRYSTAL  +{grant.Gold} GOLD  +{grant.Materials} ECHO GEL";
+            if (grant.RareMaterials > 0)
+            {
+                resultSummary.text += $"  +{grant.RareMaterials} VOID FRAGMENT";
+            }
         }
 
         private static GameObject CreateRoot(Transform parent)

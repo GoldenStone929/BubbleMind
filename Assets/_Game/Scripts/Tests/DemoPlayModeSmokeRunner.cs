@@ -10,6 +10,8 @@ namespace GenericGachaRPG
     public sealed class DemoPlayModeSmokeRunner : MonoBehaviour
     {
         public const string PassMarker = "[P0_PLAY_SMOKE_PASS_20260713]";
+        public const string PixelPassMarker = "[PIXEL_PVP_PLAY_SMOKE_PASS_20260715]";
+        public const string FullSystemPassMarker = "[FULL_SYSTEM_PLAY_SMOKE_PASS_20260715]";
         public const string FailMarker = "[P0_PLAY_SMOKE_FAIL_20260713]";
         public const string RuntimeActivationKey = "GenericGachaRPG.PlaySmoke.RuntimeActive";
 
@@ -23,7 +25,12 @@ namespace GenericGachaRPG
             "GachaScreen",
             "CollectionScreen",
             "FormationScreen",
-            "BattleScreen"
+            "BattleScreen",
+            "WorldScreen",
+            "InventoryScreen",
+            "MissionsScreen",
+            "SettingsScreen",
+            "FeatureLockedScreen"
         };
 
         private bool finished;
@@ -258,17 +265,28 @@ namespace GenericGachaRPG
                 "valid five-character formation and battle button",
                 StepTimeoutSeconds);
 
+            StageDefinition smokeStage = controller.Database.GetStage("stage_1_1");
+            Require(smokeStage != null, "Chapter 1-1 is unavailable for the progression smoke test.");
+            PlayerState stateBeforeStage = controller.CurrentPlayerState;
+            int energyBeforeStage = stateBeforeStage.Energy;
+            int crystalsBeforeStage = stateBeforeStage.Currency;
+            int goldBeforeStage = stateBeforeStage.Gold;
+            int echoGelBeforeStage = ReadInventoryAmount(stateBeforeStage, "echo_gel");
+            int winsBeforeStage = stateBeforeStage.BattleWins;
+            Require(!stateBeforeStage.IsStageCleared(smokeStage.Id),
+                "Temporary smoke save unexpectedly starts with Chapter 1-1 cleared.");
+
             ClickActiveButton("BattleButton");
             yield return WaitForScreen("BattleScreen", StepTimeoutSeconds);
             AssertOnlyScreenActive("BattleScreen");
             yield return WaitFor(
                 () => FindSceneObject("AbyssalObservatory_Backdrop") != null &&
-                      FindSceneObjectOfType<CosmicSlimeVisualController>() != null &&
-                      CountBattleComponents<CosmicSlimeVisualController>() == 1 &&
-                      CountBattleComponents<BasicSlimeVisualController>() == 7 &&
+                      FindPixelCharacter("P0", CatherineYukiBattleKit.CharacterId) != null &&
+                      CountBattleComponents<PixelCharacterVisual>() ==
+                          BattleRules.DemoPlayerTeamSize + BattleRules.DemoEnemyTeamSize &&
                       CountBattleUnits("P") == BattleRules.DemoPlayerTeamSize &&
                       CountBattleUnits("E") == BattleRules.DemoEnemyTeamSize,
-                "Abyssal Observatory, one authored UR, and seven Basic Slimes in 3v5 combat",
+                "Pixel Abyssal Observatory and ten Pixel2D units in 5v5 combat",
                 StepTimeoutSeconds);
             GameObject backdrop = FindSceneObject("AbyssalObservatory_Backdrop");
             Renderer backdropRenderer = backdrop == null ? null : backdrop.GetComponent<Renderer>();
@@ -282,35 +300,44 @@ namespace GenericGachaRPG
                 : backdropRenderer.sharedMaterial.mainTexture;
             Require(runtimeBackdropTexture != null,
                 "Abyssal Observatory runtime material has no bound artwork texture.");
-            CosmicSlimeVisualController cosmicSlimeController = FindSceneObjectOfType<CosmicSlimeVisualController>();
-            GameObject cosmicSlime = cosmicSlimeController == null ? null : cosmicSlimeController.gameObject;
+            Texture2D pixelBackdropTexture = runtimeBackdropTexture as Texture2D;
+            Require(pixelBackdropTexture != null &&
+                    pixelBackdropTexture.width == PixelCharacterVisual.VirtualWidth &&
+                    pixelBackdropTexture.height == PixelCharacterVisual.VirtualHeight &&
+                    pixelBackdropTexture.filterMode == FilterMode.Point,
+                "Runtime arena is not the 480x270 point-filtered Pixel2D backdrop.");
+            Camera battleCamera = Camera.main;
+            Require(battleCamera != null && battleCamera.orthographic,
+                "Pixel PvP battle camera must use an orthographic 2.5D projection.");
+
+            PixelCharacterVisual catherinePixel =
+                FindPixelCharacter("P0", CatherineYukiBattleKit.CharacterId);
+            GameObject cosmicSlime = catherinePixel == null ? null : catherinePixel.gameObject;
             Require(cosmicSlime != null,
-                "Player Cosmic Slime did not instantiate from the authored prefab.");
+                "Player Catherine did not instantiate from the Pixel2D presentation layer.");
             Require(cosmicSlime.name.StartsWith("P0_", StringComparison.Ordinal),
                 $"Cosmic Slime must occupy player slot 0; found '{cosmicSlime.name}'.");
-            Require(cosmicSlime.GetComponentsInChildren<Renderer>(true).Length > 0,
-                "Player Cosmic Slime prefab has no visible renderer.");
-            Require(cosmicSlimeController.HasRequiredBlendShapes,
-                "Catherine Yuki runtime model is missing required Idle/Squash/Stretch/Ultimate blend shapes.");
+            Require(catherinePixel.IsConfigured &&
+                    catherinePixel.BodyRenderer != null &&
+                    catherinePixel.BodyRenderer.sprite != null,
+                "Catherine Yuki Pixel2D body is missing or unconfigured.");
             CatherineSkillVfxController catherineVfx =
                 cosmicSlime.GetComponent<CatherineSkillVfxController>();
             Require(catherineVfx != null,
-                "Catherine Yuki runtime prefab has no CatherineSkillVfxController.");
-            Require(Shader.Find("BubbleMind/Slime Toon") != null &&
-                    Shader.Find("BubbleMind/Black Hole VFX") != null,
-                "Catherine Yuki runtime shaders are unavailable.");
-            Require(GameObjectUsesShader(cosmicSlime, "BubbleMind/Slime Toon"),
-                "Catherine Yuki runtime shell does not use BubbleMind/Slime Toon.");
+                "Catherine Yuki Pixel2D runtime view has no modern black-hole VFX bridge.");
+            Require(Shader.Find("BubbleMind/Black Hole VFX") != null,
+                "Catherine Yuki black-hole VFX shader is unavailable.");
             Require(CountBattleUnits("P") == BattleRules.DemoPlayerTeamSize &&
                     CountBattleUnits("E") == BattleRules.DemoEnemyTeamSize,
-                "Battle did not instantiate the complete 3-versus-5 teams.");
-            Require(CountBattleComponents<CosmicSlimeVisualController>() == 1,
-                "Battle must contain exactly one authored UR Cosmic Slime.");
-            Require(CountBattleComponents<BasicSlimeVisualController>() == 7,
-                "Battle must contain exactly seven authored Basic Slimes.");
+                "Battle did not instantiate the complete five-versus-five teams.");
+            Require(CountBattleComponents<PixelCharacterVisual>() == 10,
+                "Battle must contain exactly ten configured Pixel2D character views.");
+            Require(CountBattleComponents<CosmicSlimeVisualController>() == 0 &&
+                    CountBattleComponents<BasicSlimeVisualController>() == 0,
+                "Normal Pixel2D combat unexpectedly instantiated legacy 3D slime controllers.");
             Require(CountBattleComponents<ProceduralCharacterBuilder>() == 0,
                 "Battle unexpectedly used procedural humanoid fallback units.");
-            RequireVisibleBasicSlimes();
+            RequireVisiblePixelCharacters();
             VerifyRageWorldBars();
 
             CharacterView cosmicSlimeView = cosmicSlime.GetComponent<CharacterView>();
@@ -331,8 +358,16 @@ namespace GenericGachaRPG
                     string.Equals(
                         presenter.LastResult.PlayerUnits[2].CharacterId,
                         AssassinBattleKit.CharacterId,
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        presenter.LastResult.PlayerUnits[3].CharacterId,
+                        "verdant_medic",
+                        StringComparison.Ordinal) &&
+                    string.Equals(
+                        presenter.LastResult.PlayerUnits[4].CharacterId,
+                        "violet_arcanist",
                         StringComparison.Ordinal),
-                "Playable battle roster must be P0 Catherine, P1 Gold Ranger, P2 Ember Striker versus five enemies.");
+                "Playable battle roster must be Catherine plus Gold, Ember, Verdant, and Violet versus five enemies.");
             string[] expectedEnemyIds =
             {
                 "cyan_warden",
@@ -402,7 +437,178 @@ namespace GenericGachaRPG
                         || string.Equals(resultTitle.text, "TIME LIMIT", StringComparison.Ordinal)),
                 $"Battle result title is invalid: '{resultTitle?.text ?? "<missing>"}'.");
 
+            PlayerState stateAfterFirstClear = controller.CurrentPlayerState;
+            Require(presenter.LastResult.Outcome == BattleOutcome.PlayerVictory,
+                $"The authored Chapter 1-1 smoke battle must be a deterministic victory, got {presenter.LastResult.Outcome}.");
+            Require(stateAfterFirstClear.Energy == energyBeforeStage - smokeStage.EnergyCost,
+                "Starting Chapter 1-1 did not deduct its configured energy cost exactly once.");
+            Require(stateAfterFirstClear.IsStageCleared(smokeStage.Id) &&
+                    stateAfterFirstClear.BattleWins == winsBeforeStage + 1,
+                "Chapter 1-1 victory did not persist stage clear and battle-win progress.");
+            Require(stateAfterFirstClear.Currency == crystalsBeforeStage + smokeStage.FirstClearCrystalReward &&
+                    stateAfterFirstClear.Gold == goldBeforeStage + smokeStage.GoldReward &&
+                    ReadInventoryAmount(stateAfterFirstClear, "echo_gel") ==
+                        echoGelBeforeStage + smokeStage.MaterialReward,
+                "Chapter 1-1 first-clear rewards do not match the authored stage definition.");
+
+            BattleResult firstReplayResult = presenter.LastResult;
+            GameObject firstBattleWorld = FindSceneObject("BattleWorld");
+            Require(firstReplayResult != null && firstBattleWorld != null,
+                "Cannot verify Restart without the first deterministic result and BattleWorld.");
+            int energyBeforeRestart = stateAfterFirstClear.Energy;
+            int crystalsBeforeRestart = stateAfterFirstClear.Currency;
+            int goldBeforeRestart = stateAfterFirstClear.Gold;
+            int echoGelBeforeRestart = ReadInventoryAmount(stateAfterFirstClear, "echo_gel");
+            int winsBeforeRestart = stateAfterFirstClear.BattleWins;
+            ClickActiveButton("RestartButton");
+            yield return WaitFor(
+                () =>
+                {
+                    GameObject restartedWorld = FindSceneObject("BattleWorld");
+                    return resultPanel != null &&
+                           !resultPanel.activeInHierarchy &&
+                           restartedWorld != null &&
+                           restartedWorld != firstBattleWorld &&
+                           CountSceneObjectsNamed("BattleWorld") == 1 &&
+                           CountBattleComponents<PixelCharacterVisual>() == 10;
+                },
+                "a clean second 5v5 Pixel2D battle after Restart",
+                StepTimeoutSeconds);
+            BattleResult restartedResult = presenter.LastResult;
+            Require(restartedResult != null &&
+                    !ReferenceEquals(firstReplayResult, restartedResult) &&
+                    firstReplayResult.Outcome == restartedResult.Outcome &&
+                    firstReplayResult.Events.Count == restartedResult.Events.Count &&
+                    Mathf.Approximately(firstReplayResult.ElapsedTime, restartedResult.ElapsedTime),
+                "Restart did not create an equivalent clean deterministic battle result.");
+            yield return WaitFor(
+                () => resultPanel != null && resultPanel.activeInHierarchy,
+                "second battle result panel after Restart",
+                BattleTimeoutSeconds);
+
+            PlayerState stateAfterRepeatClear = controller.CurrentPlayerState;
+            Require(restartedResult.Outcome == BattleOutcome.PlayerVictory,
+                "The deterministic Restart battle did not preserve the Chapter 1-1 victory outcome.");
+            Require(stateAfterRepeatClear.Energy == energyBeforeRestart - smokeStage.EnergyCost,
+                "Restart did not deduct the stage energy cost exactly once.");
+            Require(stateAfterRepeatClear.Currency == crystalsBeforeRestart &&
+                    stateAfterRepeatClear.Gold == goldBeforeRestart + smokeStage.GoldReward &&
+                    ReadInventoryAmount(stateAfterRepeatClear, "echo_gel") ==
+                        echoGelBeforeRestart + smokeStage.MaterialReward &&
+                    stateAfterRepeatClear.BattleWins == winsBeforeRestart + 1,
+                "Repeat-clear rewards or progress do not match the authored economy rules.");
+
             ClickActiveButton("HomeButton");
+            yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("HomeScreen");
+
+            Text continueStage = FindDescendantComponent<Text>("HomeScreen", "CurrentStage");
+            Require(continueStage != null && continueStage.text.IndexOf("1-2", StringComparison.Ordinal) >= 0,
+                $"Home Continue did not advance to Chapter 1-2. Text='{continueStage?.text ?? "<missing>"}'.");
+            ClickActiveButton("ContinueStageButton");
+            yield return WaitForScreen("WorldScreen", StepTimeoutSeconds);
+            Text continuedStageTitle = FindDescendantComponent<Text>("WorldScreen", "StageTitle");
+            Require(continuedStageTitle != null &&
+                    continuedStageTitle.text.IndexOf("1-2", StringComparison.Ordinal) >= 0,
+                $"Home Continue opened a stale stage. Text='{continuedStageTitle?.text ?? "<missing>"}'.");
+            Button unlockedStage = FindActiveButton("StageNode_stage_1_2", false);
+            Require(unlockedStage != null && unlockedStage.interactable,
+                "Clearing Chapter 1-1 did not unlock the Chapter 1-2 world node.");
+            ClickActiveButton("HomeNavButton");
+            yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
+
+            GameObject appShell = FindSceneObject("AppShell");
+            Require(appShell != null && appShell.activeInHierarchy,
+                "Home does not expose the persistent application shell.");
+            Require(FindSceneObject("TopBar") != null && FindSceneObject("BottomNavigation") != null,
+                "Application shell is missing its resource bar or primary navigation.");
+
+            ClickActiveButton("WorldNavButton");
+            yield return WaitForScreen("WorldScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("WorldScreen");
+            Require(CountDescendantsWithPrefix("WorldScreen", "StageNode_stage_1_") == 3,
+                "World screen does not expose the three authored Chapter 1 stages.");
+            ClickActiveButton("StageNode_stage_1_1");
+            yield return null;
+            Text stageTitle = FindDescendantComponent<Text>("WorldScreen", "StageTitle");
+            Require(stageTitle != null && stageTitle.text.IndexOf("1-1", StringComparison.Ordinal) >= 0,
+                $"World stage detail did not select Chapter 1-1. Text='{stageTitle?.text ?? "<missing>"}'.");
+            ClickActiveButton("StageDeployButton");
+            yield return WaitForScreen("FormationScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("FormationScreen");
+            ClickActiveButton("BackButton");
+            yield return WaitForScreen("WorldScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("WorldScreen");
+            ClickActiveButton("HomeNavButton");
+            yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
+
+            ClickActiveButton("InventoryNavButton");
+            yield return WaitForScreen("InventoryScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("InventoryScreen");
+            Require(CountDescendantsWithPrefix("InventoryScreen", "InventoryItem_") == 4,
+                "Inventory screen does not expose the four local-demo item definitions.");
+            ClickActiveButton("InventoryItem_echo_gel");
+            yield return null;
+            Text itemName = FindDescendantComponent<Text>("InventoryScreen", "ItemName");
+            Require(itemName != null && itemName.text.IndexOf("Echo Gel", StringComparison.Ordinal) >= 0,
+                "Inventory item selection did not update the detail panel.");
+            ClickActiveButton("HomeNavButton");
+            yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
+
+            ClickActiveButton("MissionNavButton");
+            yield return WaitForScreen("MissionsScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("MissionsScreen");
+            Require(controller.CurrentPlayerState != null && controller.CurrentPlayerState.TotalDraws >= 1,
+                "Recruitment did not advance the shared mission state.");
+            ClickActiveButton("MissionAction_mission_first_signal");
+            yield return null;
+            Require(controller.CurrentPlayerState.IsMissionClaimed("mission_first_signal"),
+                "Claiming First Signal did not persist mission completion.");
+            ClickActiveButton("HomeNavButton");
+            yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
+
+            ClickActiveButton("SettingsButton");
+            yield return WaitForScreen("SettingsScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("SettingsScreen");
+            Slider musicSlider = FindDescendantComponent<Slider>("SettingsScreen", "MusicVolume");
+            Slider effectsSlider = FindDescendantComponent<Slider>("SettingsScreen", "EffectsVolume");
+            Toggle fullscreenToggle = FindDescendantComponent<Toggle>("SettingsScreen", "FullscreenToggle");
+            Toggle frameRateToggle = FindDescendantComponent<Toggle>("SettingsScreen", "FrameRateToggle");
+            Require(musicSlider != null && effectsSlider != null &&
+                    fullscreenToggle != null && frameRateToggle != null,
+                "Settings screen is missing one or more functional controls.");
+            bool fullscreenBefore = controller.CurrentPlayerState.Settings.Fullscreen;
+            bool frameRateBefore = controller.CurrentPlayerState.Settings.SixtyFps;
+            musicSlider.value = 0.41f;
+            effectsSlider.value = 0.63f;
+            fullscreenToggle.isOn = !fullscreenBefore;
+            frameRateToggle.isOn = !frameRateBefore;
+            yield return null;
+            PlayerSettingsState changedSettings = controller.CurrentPlayerState.Settings;
+            Require(Mathf.Approximately(changedSettings.MusicVolume, 0.41f) &&
+                    Mathf.Approximately(changedSettings.EffectsVolume, 0.63f) &&
+                    changedSettings.Fullscreen == !fullscreenBefore &&
+                    changedSettings.SixtyFps == !frameRateBefore,
+                "Settings controls did not persist their changed values.");
+            ClickActiveButton("OpenResetConfirmationButton");
+            yield return null;
+            GameObject resetPanel = FindSceneObject("ResetConfirmPanel");
+            Require(resetPanel != null && resetPanel.activeInHierarchy,
+                "Settings reset action did not open a destructive-action confirmation.");
+            ClickActiveButton("CancelResetButton");
+            yield return null;
+            Require(!resetPanel.activeInHierarchy,
+                "Cancel did not close the local-data reset confirmation.");
+            ClickActiveButton("BackButton");
+            yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
+
+            ClickActiveButton("ArenaFeatureButton");
+            yield return WaitForScreen("FeatureLockedScreen", StepTimeoutSeconds);
+            AssertOnlyScreenActive("FeatureLockedScreen");
+            Text lockedTitle = FindDescendantComponent<Text>("FeatureLockedScreen", "LockedFeatureTitle");
+            Require(lockedTitle != null && string.Equals(lockedTitle.text, "ARENA", StringComparison.Ordinal),
+                "Locked feature route did not preserve its navigation context.");
+            ClickActiveButton("BackButton");
             yield return WaitForScreen("HomeScreen", StepTimeoutSeconds);
             AssertOnlyScreenActive("HomeScreen");
         }
@@ -571,6 +777,25 @@ namespace GenericGachaRPG
             return (int)value;
         }
 
+        private static int ReadInventoryAmount(PlayerState state, string itemId)
+        {
+            if (state == null || string.IsNullOrEmpty(itemId))
+            {
+                return 0;
+            }
+
+            for (int index = 0; index < state.InventoryItems.Count; index++)
+            {
+                InventoryItemState item = state.InventoryItems[index];
+                if (item != null && string.Equals(item.ItemId, itemId, StringComparison.Ordinal))
+                {
+                    return item.Amount;
+                }
+            }
+
+            return 0;
+        }
+
         private static int CountDescendantsWithPrefix(string rootName, string prefix)
         {
             GameObject root = FindSceneObject(rootName);
@@ -661,20 +886,21 @@ namespace GenericGachaRPG
             return false;
         }
 
-        private static void RequireVisibleBasicSlimes()
+        private static void RequireVisiblePixelCharacters()
         {
-            BasicSlimeVisualController[] controllers =
-                UnityEngine.Object.FindObjectsByType<BasicSlimeVisualController>(FindObjectsInactive.Include);
+            PixelCharacterVisual[] visuals =
+                UnityEngine.Object.FindObjectsByType<PixelCharacterVisual>(FindObjectsInactive.Include);
             int verified = 0;
-            for (int i = 0; i < controllers.Length; i++)
+            var runtimeNames = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < visuals.Length; i++)
             {
-                BasicSlimeVisualController controller = controllers[i];
-                if (controller == null || !controller.gameObject.scene.IsValid())
+                PixelCharacterVisual visual = visuals[i];
+                if (visual == null || !visual.gameObject.scene.IsValid())
                 {
                     continue;
                 }
 
-                string objectName = controller.gameObject.name;
+                string objectName = visual.gameObject.name;
                 if (objectName.Length < 2 ||
                     (objectName[0] != 'P' && objectName[0] != 'E') ||
                     !char.IsDigit(objectName[1]))
@@ -682,26 +908,41 @@ namespace GenericGachaRPG
                     continue;
                 }
 
-                Require(controller.AnimatedDecorationCount > 0,
-                    $"Basic Slime '{objectName}' has no animated element decorations.");
-                Renderer[] renderers = controller.GetComponentsInChildren<Renderer>(false);
-                bool hasVisibleBounds = false;
-                for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
-                {
-                    Renderer renderer = renderers[rendererIndex];
-                    if (renderer != null && renderer.enabled && renderer.bounds.size.sqrMagnitude > 0.01f)
-                    {
-                        hasVisibleBounds = true;
-                        break;
-                    }
-                }
-
-                Require(hasVisibleBounds,
-                    $"Basic Slime '{objectName}' has no enabled renderer with visible bounds.");
+                Require(runtimeNames.Add(objectName),
+                    $"Pixel2D runtime unit name '{objectName}' is duplicated.");
+                Require(visual.IsConfigured &&
+                        visual.BodyRenderer != null &&
+                        visual.BodyRenderer.enabled &&
+                        visual.BodyRenderer.sprite != null &&
+                        visual.BodyRenderer.sprite.texture != null &&
+                        visual.BodyRenderer.sprite.texture.filterMode == FilterMode.Point &&
+                        visual.BodyRenderer.bounds.size.sqrMagnitude > 0.01f,
+                    $"Pixel2D unit '{objectName}' has no visible point-filtered SpriteRenderer.");
                 verified++;
             }
 
-            Require(verified == 7, $"Expected to visually verify 7 Basic Slimes; found {verified}.");
+            int expected = BattleRules.DemoPlayerTeamSize + BattleRules.DemoEnemyTeamSize;
+            Require(verified == expected,
+                $"Expected to visually verify {expected} Pixel2D units; found {verified}.");
+        }
+
+        private static PixelCharacterVisual FindPixelCharacter(string runtimePrefix, string characterId)
+        {
+            PixelCharacterVisual[] visuals =
+                UnityEngine.Object.FindObjectsByType<PixelCharacterVisual>(FindObjectsInactive.Include);
+            for (int index = 0; index < visuals.Length; index++)
+            {
+                PixelCharacterVisual visual = visuals[index];
+                if (visual != null &&
+                    visual.gameObject.scene.IsValid() &&
+                    visual.gameObject.name.StartsWith(runtimePrefix + "_", StringComparison.Ordinal) &&
+                    string.Equals(visual.CharacterId, characterId, StringComparison.Ordinal))
+                {
+                    return visual;
+                }
+            }
+
+            return null;
         }
 
         private static void VerifyRageWorldBars()
@@ -736,7 +977,7 @@ namespace GenericGachaRPG
             }
 
             Require(verifiedLabels == BattleRules.DemoPlayerTeamSize + BattleRules.DemoEnemyTeamSize,
-                $"Expected eight numeric Rage labels; found {verifiedLabels}.");
+                $"Expected ten numeric Rage labels; found {verifiedLabels}.");
         }
 
         private static void VerifyDemoEnemyScalingAndCatherineKit(DemoBattlePresenter presenter)
@@ -745,7 +986,7 @@ namespace GenericGachaRPG
             Require(result != null, "Cannot verify Catherine kit without a battle result.");
             VerifyWindWheelBreakDisplacement(result);
             Require(result.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize,
-                "Demo player runtime snapshot does not contain three units.");
+                "Demo player runtime snapshot does not contain five units.");
             Require(result.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize,
                 "Demo enemy runtime snapshot does not contain five units.");
             for (int index = 0; index < result.EnemyUnits.Count; index++)
@@ -1345,6 +1586,24 @@ namespace GenericGachaRPG
             return null;
         }
 
+        private static int CountSceneObjectsNamed(string objectName)
+        {
+            Transform[] transforms = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include);
+            int count = 0;
+            for (int index = 0; index < transforms.Length; index++)
+            {
+                Transform candidate = transforms[index];
+                if (candidate != null &&
+                    candidate.gameObject.scene.IsValid() &&
+                    string.Equals(candidate.name, objectName, StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         private void Finish(bool success, string message, Exception exception)
         {
             if (finished)
@@ -1357,7 +1616,7 @@ namespace GenericGachaRPG
             Application.runInBackground = originalRunInBackground;
             if (success)
             {
-                Debug.Log($"{PassMarker} {message}", this);
+                Debug.Log($"{PassMarker} {PixelPassMarker} {FullSystemPassMarker} {message}", this);
             }
             else
             {

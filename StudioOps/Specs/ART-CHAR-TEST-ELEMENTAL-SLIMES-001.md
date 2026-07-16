@@ -1,7 +1,7 @@
 # Asset Spec：`ART-CHAR-TEST-ELEMENTAL-SLIMES-001 五元素基础史莱姆`
 
 > 状态：已通过内部原型验收
-> 用途：标准池测试单位、五槽编队与固定 3v5 战斗基础美术基准
+> 用途：标准池角色的历史 3D 美术基准与当前 Pixel2D 缺失时的兼容回退
 > 最后更新：2026-07-14
 
 ## 视觉目标
@@ -40,7 +40,7 @@
 | `violet_arcanist` | 雷 | `PF_BasicSlime_Lightning` |
 
 - 保留原角色 ID、显示名、技能、数值、稀有度与卡池权重，避免存档迁移。
-- 每个 Prefab 根节点有 `CharacterView` 与 `BasicSlimeVisualController`，模型位于独立 `ModelRoot`；正常战斗不调用程序化人形回退。
+- 每个兼容 Prefab 根节点有 `CharacterView` 与 `BasicSlimeVisualController`，模型位于独立 `ModelRoot`；当前正常战斗先加载 Pixel2D Sprite，不调用这些 3D Prefab 或程序化人形回退。
 - 元素本轮只作为视觉分类，不修改伤害、治疗、射程、速度、目标选择或卡池逻辑。
 
 ## 验收
@@ -48,5 +48,5 @@
 - [x] GPT Image 五元素正侧视设定表已生成并登记
 - [x] Blender 五系模型、预览与几何审计全部通过；单体 1,064–1,324 triangles
 - [x] 五个 FBX 与五个 Unity Prefab 通过生成器和验证器
-- [x] 当前 3v5 为一名限定 UR 与七名基础元素史莱姆；五槽收藏/编队继续保留
+- [x] 历史 3v5 曾使用一名限定 UR 与七名基础元素史莱姆；当前正常 5v5 已由十个 `PixelCharacterVisual` 接管，旧 Prefab 只作兼容回退
 - [x] PlayMode、Windows Build、1920×1080 与 1280×720 视觉核验通过

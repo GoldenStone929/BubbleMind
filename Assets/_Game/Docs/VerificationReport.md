@@ -1,14 +1,15 @@
-# P0 Verification Report
+# BubbleMind Verification Report
 
 > P0 基线验证日期：2026-07-13
 > 最新回归日期：2026-07-15
 > Unity：6000.5.3f1 / URP 17.5
-> 结论：P0 垂直切片、怒气/三技能、20 格 3v5 职业测试、角色档案/2D 卡面/UI 重制，以及 2026-07-15 的参考系统图谱与角色内容模板回归均通过。最终 Generate、连续生成幂等、PlayMode、Windows x64 / D3D11 Build 与 1600x900 真实独立窗口检查均已完成。
+> 结论：P0 垂直切片、怒气/三技能、历史 20 格 3v5 职业测试、角色档案/2D 卡面/UI 重制、参考系统图谱、2D 像素 5v5 转换与完整游戏系统壳均已通过各自回归。最新权威运行基线提供 Home、World、Characters、Recruit、Formation、Battle/Result、Inventory、Missions 与 Settings，并完成三关离线主线和奖励闭环。
 
 ## 交付入口
 
 - Unity 场景：`Assets/_Game/Scenes/GachaRPGDemo.unity`
-- Windows 试玩版：`Builds/Windows/BubbleMind.exe`
+- Windows 完整系统试玩版：`Builds/FullSystemWindows/BubbleMind.exe`
+- Windows 历史像素纵切片：`Builds/Windows/BubbleMind.exe`
 - 试玩说明：`Assets/_Game/README_START_HERE.md`
 - Play Mode 截图：`Artifacts/UnityQA/PlayMode_Home.png`
 
@@ -228,8 +229,47 @@ Demo Scene         C64F5B293EEBBFFD34DAA6EFA45DEA8A759E13BA653938C6F183BB0D08322
 
 完整制作记录：`StudioOps/MILESTONES/2026-07-15_HUNYUAN3D_MODEL_EVALUATION.md`。
 
+## 2026-07-15 2D 像素 5v5 纵切片验证
+
+本轮只转换运行时美术与部署入口，不重写抽卡、收藏、角色档案、技能、怒气、存档或确定性战斗核心。默认阵容为 Catherine Yuki、Gold Ranger、Ember Striker、Verdant Medic、Violet Arcanist；玩家保存的合法五槽阵容会直接构造五人战斗请求。
+
+| 验证项 | 结果 | 证据 |
+|---|---|---|
+| 七角色像素 Sprite 与地图导入 | 通过 | `Artifacts/PixelPvp2D/Generate1.log` 出现 `[GenericGachaRPG][PIXEL_PVP_VERIFY_PASS_20260715]`；七张 128×128 Sprite 与 480×270 地图均验证 Point、无 Mipmap、Clamp、Uncompressed 与 Resources 加载 |
+| 保存五槽直接参战 | 通过 | verifier 检查默认主角 + 四伙伴顺序；`DemoGameController` 从当前 `draftFormation` 解析玩家队伍，不再使用历史固定三人名单 |
+| 正常流程无旧 3D 角色 | 通过 | PlayMode 运行时恰好生成 10 个 `PixelCharacterVisual`、0 个旧 3D 史莱姆控制器，并拒绝程序化回退 |
+| 5v5 全流程与重开 | 通过 | `Artifacts/PixelPvp2D/PlaySmoke1.log` 出现 `[GenericGachaRPG][PIXEL_PVP_PLAY_SMOKE_PASS_20260715]`；覆盖 Formation → Battle → Result → Restart 第二局 → Home、10 个怒气条与单一 BattleWorld |
+| Windows x64 / D3D11 | 通过 | `Artifacts/PixelPvp2D/WindowsBuild1.log` 出现 `[GenericGachaRPG][PIXEL_PVP_WINDOWS_BUILD_PASS_20260715]`；BuildReport `143,616,984` bytes / `69.7s` |
+| 真实独立窗口 | 通过 | 最新 `Builds/Windows/BubbleMind.exe` 已启动；首页明确显示 “Catherine and four slimes” 与 “five-versus-five Pixel PvP trial”，像素星渊观测台覆盖完整宽屏画幅；实战在 19.3 秒进入 Victory 结算并显示存活的 Pixel2D Catherine / Ember、世界条和 Restart / Return Home；后续视觉微调交由玩家当前试玩反馈驱动 |
+| 清洁室边界 | 通过 | 只参考“像素 Sprite + 现代 3D 引擎渲染”的广义技术；没有复制参考作品的角色、字体、UI、地图、构图、玩法或资产，也没有新增第三方运行依赖 |
+
+主程序 `BubbleMind.exe` 为 `667,648` bytes，SHA-256 `5AE0C84993C6BFF7D0F03166CAFD148CDEC61F67EC85B5D97600E04B2ABB26E4`；Unity Player Stub 未变化，更新内容位于同目录数据与程序集，因此必须保留整个 `Builds/Windows` 分发集合。
+
+完整制作记录：`StudioOps/MILESTONES/2026-07-15_PIXEL_PVP_2D_VERTICAL_SLICE.md`。
+
+## 2026-07-15 完整系统壳与离线主线闭环验证
+
+本轮把既有角色、招募、五槽编队和确定性 5v5 像素战斗接入完整元系统。Home 与 App Shell 提供统一资源栏和主导航；World 以三个 `StageDefinition` 驱动关卡详情、顺序解锁、体力消耗与奖励；Inventory、Missions、Settings 使用同一 `PlayerState` schema v4 持久化。Arena、Events、Shop、Mail、Guild 只进入明确锁定页面，没有伪造在线行为。
+
+| 验证项 | 结果 | 证据 |
+|---|---|---|
+| 数据、关卡与迁移 | 通过 | `Artifacts/FullSystem/Generate.log` 出现 `[GenericGachaRPG][FULL_SYSTEM_VERIFY_PASS_20260715]`；覆盖三关 ID/顺序/前置/敌人引用/奖励/解锁、schema v3 → v4、内存存档、抽卡、编队和确定性战斗 |
+| 完整页面导航 | 通过 | PlayMode 覆盖 App Shell、Home、World、三个关卡节点、Characters/Recruit 既有路径、Formation 返回、Inventory、Missions、Settings 和 LockedFeature；路由切换时只有目标页面激活 |
+| World → 战斗 → 进度闭环 | 通过 | `PlaySmokeEconomyFinal.log` 连续选择 Stage 1-1、进入 Formation、完成确定性胜利并断言体力精确扣除一次、通关/胜场、首通 Crystal、Gold 与 Echo Gel；返回 Home 后 Continue 显示并打开 1-2，World 的 1-2 节点可交互 |
+| Restart 与结算幂等 | 通过 | Restart 创建新的单一 `BattleWorld`，再次扣除 1-1 体力并只发 Gold/Echo Gel/胜场，不重复发首通 Crystal；`battleResultCommitted` 防止同一局完成回调重复写入经济状态 |
+| Missions / Settings | 通过 | PlayMode 实际领取 First Signal 任务；把 Music/Effects 设为 0.41/0.63，翻转 Fullscreen/60 FPS 并断言状态保存，同时覆盖全屏模态重置确认层的打开和取消 |
+| 最终 UI 修复 | 通过 | Boss `Void Fragment` 进入 `StageRewardGrant.RareMaterials` 并显示在结算摘要；Home Continue 不再保留陈旧关卡；Recruit 概率说明区域扩展，避免文案截断/按钮重叠 |
+| PlayMode 完整系统冒烟 | 通过 | `Artifacts/FullSystem/PlaySmokeEconomyFinal.log` 出现 `[FULL_SYSTEM_PLAY_SMOKE_PASS_20260715]`，并保留既有 `[P0_PLAY_SMOKE_PASS_20260713]` 与 `[PIXEL_PVP_PLAY_SMOKE_PASS_20260715]` |
+| Windows x64 / D3D11 | 通过 | `Artifacts/FullSystem/WindowsBuildFinal2.log` 出现 `[GenericGachaRPG][FULL_SYSTEM_VERIFY_PASS_20260715]` 与 `[GenericGachaRPG][FULL_SYSTEM_WINDOWS_BUILD_PASS_20260715]`；BuildReport `143,676,760` bytes / `65.4s`，包含最终经济与 UI 修复 |
+| 1600×900 独立窗口 | 通过 | `Builds/FullSystemWindows/BubbleMind.exe` 以窗口模式启动；主页玩家/资源栏、核心热点、锁定入口和 Home/World/Heroes/Recruit/Inventory/Missions 底部导航无重叠或裁切 |
+| 清洁室与工作区边界 | 通过 | 本轮未下载或增加第三方运行依赖；`analysis/` 未修改，工作区根目录 XAPK/APK 未读取、运行、解包或提交 |
+
+关卡配置为：1-1 Fracture Gate（6 Energy / 1,000 Power / 首通 100 Crystal / 250 Gold / 2 Echo Gel）、1-2 Resonance Gallery（8 / 1,800 / 120 / 350 / 3）、1-3 Event Horizon（10 / 2,600 / 200 / 500 / 5，Boss 首通另得 1 Void Fragment）。1-2 依赖 1-1，1-3 依赖 1-2。
+
+完整制作记录：`StudioOps/MILESTONES/2026-07-15_FULL_SYSTEM_SHELL.md`。
+
 ## 已知 P1 打磨项
 
-固定 Tick 直线接近已经满足坦克驻留与换敌规则，但尚无碰撞分离、分道或 NavMesh；多人围攻及黑洞吸附时可能发生模型与姓名牌相交。正式 Animator、表现队列、收藏页 3D 角色预览及其余角色正式模型留待后续里程碑。
+固定 Tick 直线接近已经满足坦克驻留与换敌规则，但尚无碰撞分离、分道或 NavMesh；多人围攻及黑洞吸附时可能发生 Sprite 与姓名牌相交。逐帧像素动画、表现队列、分层地图、音频和联网 PvP 留待后续里程碑。
 
 说明：`Logs/Editor.log` 中可能保留修复前的历史冒烟失败记录；最终成功标记及其后的干净退出才是本次交付基线。

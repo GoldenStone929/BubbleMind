@@ -19,7 +19,10 @@ namespace GenericGachaRPG.Editor
         private const string CharacterFolder = "Assets/_Game/Data/Characters";
         private const string CharacterProfileFolder = "Assets/_Game/Data/CharacterProfiles";
         private const string GachaFolder = "Assets/_Game/Data/Gacha";
+        private const string StageFolder = "Assets/_Game/Data/Stages";
         private const string PortraitFolder = "Assets/_Game/Art/Generated/UI/Portraits";
+        private const string PixelSpriteFolder = "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites";
+        private const string PixelArenaPath = "Assets/_Game/Art/Generated/Pixel2D/Environments/AbyssalObservatory/Textures/Resources/AbyssalObservatory_Pixel.png";
         private static readonly string[] RequiredCharacterIds =
         {
             "azure_vanguard",
@@ -43,6 +46,20 @@ namespace GenericGachaRPG.Editor
             CatherineYukiBattleKit.Skill3Id,
             CatherineYukiBattleKit.UltimateId
         };
+        private static readonly string[] RequiredStageIds =
+        {
+            "stage_1_1",
+            "stage_1_2",
+            "stage_1_3"
+        };
+        private static readonly string[] RequiredStageEnemyCharacterIds =
+        {
+            "cyan_warden",
+            "azure_vanguard",
+            "violet_arcanist",
+            "gold_ranger",
+            "verdant_medic"
+        };
 
         static DemoSceneGenerator()
         {
@@ -62,6 +79,7 @@ namespace GenericGachaRPG.Editor
             EnsureFolders();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             ConfigurePortraitImportSettings();
+            ConfigurePixelImportSettings();
             AbyssalObservatoryAssetBuilder.EnsureAssets();
             GameDatabase database = GenerateContentIfNeeded();
             bool sceneCreated = GenerateSceneIfNeeded(database);
@@ -125,7 +143,9 @@ namespace GenericGachaRPG.Editor
         {
             if (database == null ||
                 !ContainsAllCharacters(database, RequiredCharacterIds) ||
-                !ContainsAllSkills(database, RequiredSkillIds))
+                !ContainsAllSkills(database, RequiredSkillIds) ||
+                !ContainsAllStages(database, RequiredStageIds) ||
+                !HasExpectedStageContent(database))
             {
                 return false;
             }
@@ -164,7 +184,9 @@ namespace GenericGachaRPG.Editor
             if (database.DemoPlayerBattleCharacterIds.Count != BattleRules.DemoPlayerTeamSize ||
                 !string.Equals(database.DemoPlayerBattleCharacterIds[0], "ur_cosmic_slime", System.StringComparison.Ordinal) ||
                 !string.Equals(database.DemoPlayerBattleCharacterIds[1], "gold_ranger", System.StringComparison.Ordinal) ||
-                !string.Equals(database.DemoPlayerBattleCharacterIds[2], "ember_striker", System.StringComparison.Ordinal))
+                !string.Equals(database.DemoPlayerBattleCharacterIds[2], "ember_striker", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoPlayerBattleCharacterIds[3], "verdant_medic", System.StringComparison.Ordinal) ||
+                !string.Equals(database.DemoPlayerBattleCharacterIds[4], "violet_arcanist", System.StringComparison.Ordinal))
             {
                 return false;
             }
@@ -265,6 +287,102 @@ namespace GenericGachaRPG.Editor
             for (int i = 0; i < requiredIds.Count; i++)
             {
                 if (database.GetSkill(requiredIds[i]) == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool ContainsAllStages(GameDatabase database, IReadOnlyList<string> requiredIds)
+        {
+            if (database == null || database.Stages == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < requiredIds.Count; i++)
+            {
+                if (database.GetStage(requiredIds[i]) == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HasExpectedStageContent(GameDatabase database)
+        {
+            return database.FirstStage != null &&
+                   string.Equals(database.FirstStage.Id, RequiredStageIds[0], StringComparison.Ordinal) &&
+                   HasExpectedStage(
+                       database.GetStage(RequiredStageIds[0]),
+                       "Fracture Gate",
+                       string.Empty,
+                       6,
+                       1000,
+                       100,
+                       250,
+                       2,
+                       false) &&
+                   HasExpectedStage(
+                       database.GetStage(RequiredStageIds[1]),
+                       "Resonance Gallery",
+                       RequiredStageIds[0],
+                       8,
+                       1800,
+                       120,
+                       350,
+                       3,
+                       false) &&
+                   HasExpectedStage(
+                       database.GetStage(RequiredStageIds[2]),
+                       "Event Horizon",
+                       RequiredStageIds[1],
+                       10,
+                       2600,
+                       200,
+                       500,
+                       5,
+                       true);
+        }
+
+        private static bool HasExpectedStage(
+            StageDefinition stage,
+            string displayName,
+            string prerequisiteStageId,
+            int energyCost,
+            int recommendedPower,
+            int firstClearCrystals,
+            int goldReward,
+            int materialReward,
+            bool isBoss)
+        {
+            if (stage == null ||
+                !string.Equals(stage.ChapterId, "chapter_1", StringComparison.Ordinal) ||
+                !string.Equals(stage.DisplayName, displayName, StringComparison.Ordinal) ||
+                string.IsNullOrWhiteSpace(stage.Description) ||
+                !string.Equals(stage.PrerequisiteStageId, prerequisiteStageId, StringComparison.Ordinal) ||
+                stage.EnergyCost != energyCost ||
+                stage.RecommendedPower != recommendedPower ||
+                stage.FirstClearCrystalReward != firstClearCrystals ||
+                stage.GoldReward != goldReward ||
+                stage.MaterialReward != materialReward ||
+                stage.IsBossStage != isBoss ||
+                stage.EnemyCharacterIds == null ||
+                stage.EnemyCharacterIds.Count != RequiredStageEnemyCharacterIds.Length)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < RequiredStageEnemyCharacterIds.Length; index++)
+            {
+                if (!string.Equals(
+                        stage.EnemyCharacterIds[index],
+                        RequiredStageEnemyCharacterIds[index],
+                        StringComparison.Ordinal))
                 {
                     return false;
                 }
@@ -755,6 +873,46 @@ namespace GenericGachaRPG.Editor
                 "Six original signals. R 60% • SR 34% • SSR 6%");
             EditorUtility.SetDirty(banner);
 
+            var generatedStages = new List<StageDefinition>
+            {
+                CreateStage(
+                    "Stage_1_1.asset",
+                    RequiredStageIds[0],
+                    "Fracture Gate",
+                    "Secure the broken relay before the rift spreads.",
+                    string.Empty,
+                    6,
+                    1000,
+                    100,
+                    250,
+                    2,
+                    false),
+                CreateStage(
+                    "Stage_1_2.asset",
+                    RequiredStageIds[1],
+                    "Resonance Gallery",
+                    "Push through a corridor where every impact returns as an echo.",
+                    RequiredStageIds[0],
+                    8,
+                    1800,
+                    120,
+                    350,
+                    3,
+                    false),
+                CreateStage(
+                    "Stage_1_3.asset",
+                    RequiredStageIds[2],
+                    "Event Horizon",
+                    "Defeat the singularity guard at the observatory core.",
+                    RequiredStageIds[1],
+                    10,
+                    2600,
+                    200,
+                    500,
+                    5,
+                    true)
+            };
+
             GameDatabase database = GetOrCreateAsset<GameDatabase>(DatabasePath, out _);
             characters = MergeDefinitions(database.Characters, characters, character => character.Id);
             skills = MergeDefinitions(database.Skills, skills, skill => skill.Id);
@@ -762,6 +920,10 @@ namespace GenericGachaRPG.Editor
                 database.GachaBanners,
                 new[] { banner },
                 candidate => candidate.Id);
+            List<StageDefinition> stages = MergeDefinitions(
+                database.Stages,
+                generatedStages,
+                stage => stage.Id);
             database.Configure(
                 3000,
                 new[]
@@ -776,22 +938,51 @@ namespace GenericGachaRPG.Editor
                 {
                     "ur_cosmic_slime",
                     "gold_ranger",
-                    "ember_striker"
+                    "ember_striker",
+                    "verdant_medic",
+                    "violet_arcanist"
                 },
-                new[]
-                {
-                    "cyan_warden",
-                    "azure_vanguard",
-                    "violet_arcanist",
-                    "gold_ranger",
-                    "verdant_medic"
-                },
+                RequiredStageEnemyCharacterIds,
                 characters,
                 skills,
-                banners);
+                banners,
+                stages);
 
             EditorUtility.SetDirty(database);
             return database;
+        }
+
+        private static StageDefinition CreateStage(
+            string assetName,
+            string id,
+            string displayName,
+            string description,
+            string prerequisiteStageId,
+            int energyCost,
+            int recommendedPower,
+            int firstClearCrystals,
+            int goldReward,
+            int materialReward,
+            bool isBoss)
+        {
+            StageDefinition stage = GetOrCreateAsset<StageDefinition>(
+                $"{StageFolder}/{assetName}",
+                out _);
+            stage.Configure(
+                id,
+                "chapter_1",
+                displayName,
+                description,
+                prerequisiteStageId,
+                RequiredStageEnemyCharacterIds,
+                energyCost,
+                recommendedPower,
+                firstClearCrystals,
+                goldReward,
+                materialReward,
+                isBoss);
+            EditorUtility.SetDirty(stage);
+            return stage;
         }
 
         private static CharacterDefinition CreateCharacter(
@@ -1252,6 +1443,91 @@ namespace GenericGachaRPG.Editor
             }
         }
 
+        private static void ConfigurePixelImportSettings()
+        {
+            string[] characterIds =
+            {
+                "ur_cosmic_slime",
+                "azure_vanguard",
+                "ember_striker",
+                "gold_ranger",
+                "verdant_medic",
+                "violet_arcanist",
+                "cyan_warden"
+            };
+
+            for (int i = 0; i < characterIds.Length; i++)
+            {
+                ConfigurePixelSpriteImporter($"{PixelSpriteFolder}/Pixel_{characterIds[i]}.png", false);
+            }
+
+            ConfigurePixelSpriteImporter($"{PixelSpriteFolder}/PixelShadow.png", true);
+
+            TextureImporter arenaImporter = AssetImporter.GetAtPath(PixelArenaPath) as TextureImporter;
+            if (arenaImporter == null)
+            {
+                throw new FileNotFoundException($"Required Pixel2D arena is missing: {PixelArenaPath}");
+            }
+
+            bool arenaChanged = arenaImporter.textureType != TextureImporterType.Default ||
+                                arenaImporter.mipmapEnabled ||
+                                arenaImporter.wrapMode != TextureWrapMode.Clamp ||
+                                arenaImporter.filterMode != FilterMode.Point ||
+                                !arenaImporter.sRGBTexture ||
+                                arenaImporter.textureCompression != TextureImporterCompression.Uncompressed ||
+                                arenaImporter.npotScale != TextureImporterNPOTScale.None ||
+                                arenaImporter.maxTextureSize != 512;
+            arenaImporter.textureType = TextureImporterType.Default;
+            arenaImporter.mipmapEnabled = false;
+            arenaImporter.wrapMode = TextureWrapMode.Clamp;
+            arenaImporter.filterMode = FilterMode.Point;
+            arenaImporter.sRGBTexture = true;
+            arenaImporter.textureCompression = TextureImporterCompression.Uncompressed;
+            arenaImporter.npotScale = TextureImporterNPOTScale.None;
+            arenaImporter.maxTextureSize = 512;
+            if (arenaChanged)
+            {
+                arenaImporter.SaveAndReimport();
+            }
+        }
+
+        private static void ConfigurePixelSpriteImporter(string path, bool shadow)
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null)
+            {
+                throw new FileNotFoundException($"Required Pixel2D sprite is missing: {path}");
+            }
+
+            Vector2 requiredPivot = shadow ? new Vector2(0.5f, 0.5f) : new Vector2(0.5f, 0.03f);
+            bool changed = importer.textureType != TextureImporterType.Sprite ||
+                           importer.spriteImportMode != SpriteImportMode.Single ||
+                           importer.mipmapEnabled ||
+                           importer.wrapMode != TextureWrapMode.Clamp ||
+                           importer.filterMode != FilterMode.Point ||
+                           !importer.sRGBTexture ||
+                           !importer.alphaIsTransparency ||
+                           importer.textureCompression != TextureImporterCompression.Uncompressed ||
+                           !Mathf.Approximately(importer.spritePixelsPerUnit, PixelCharacterBuilder.PixelsPerUnit) ||
+                           Vector2.Distance(importer.spritePivot, requiredPivot) > 0.0001f ||
+                           importer.maxTextureSize != 256;
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Point;
+            importer.sRGBTexture = true;
+            importer.alphaIsTransparency = true;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.spritePixelsPerUnit = PixelCharacterBuilder.PixelsPerUnit;
+            importer.spritePivot = requiredPivot;
+            importer.maxTextureSize = 256;
+            if (changed)
+            {
+                importer.SaveAndReimport();
+            }
+        }
+
         private static bool GenerateSceneIfNeeded(GameDatabase database)
         {
             if (File.Exists(Path.GetFullPath(ScenePath)))
@@ -1269,6 +1545,8 @@ namespace GenericGachaRPG.Editor
             Camera camera = cameraObject.GetComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0.025f, 0.045f, 0.085f, 1f);
+            camera.orthographic = true;
+            camera.orthographicSize = 6.35f;
             camera.fieldOfView = 46f;
             camera.transform.position = new Vector3(0f, 5.6f, -12.8f);
             camera.transform.rotation = Quaternion.LookRotation(new Vector3(0f, 1.15f, 0f) - camera.transform.position);
@@ -1486,6 +1764,7 @@ namespace GenericGachaRPG.Editor
             EnsureFolder("Assets/_Game/Data", "Characters");
             EnsureFolder("Assets/_Game/Data", "CharacterProfiles");
             EnsureFolder("Assets/_Game/Data", "Gacha");
+            EnsureFolder("Assets/_Game/Data", "Stages");
             EnsureFolder("Assets/_Game", "Scenes");
             EnsureFolder("Assets/_Game", "Art");
             EnsureFolder("Assets/_Game/Art", "Generated");

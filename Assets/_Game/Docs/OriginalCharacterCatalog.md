@@ -68,11 +68,11 @@
 ## 当前测试部署
 
 ```text
-玩家：Catherine Yuki / Gold Ranger / Ember Striker
+默认玩家：Catherine Yuki / Gold Ranger / Ember Striker / Verdant Medic / Violet Arcanist
 敌方：Cyan Warden / Azure Vanguard / Violet Arcanist / Gold Ranger / Verdant Medic
 ```
 
-Formation 仍保存五个不重复角色槽位；当前 3v5 是独立的战斗测试名单。敌方测试实例使用 10x HP 和 0.1x ATK，角色资产本身不被改写。
+Formation 保存五个不重复角色槽位；当前合法保存阵容会直接作为本地 5v5 的玩家名单。敌方测试实例使用 10x HP 和 0.1x ATK，角色资产本身不被改写。
 
 ## 内容生产状态
 

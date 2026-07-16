@@ -12,7 +12,7 @@ namespace GenericGachaRPG
     {
         public const int MaximumTeamSize = 5;
         public const int TeamSize = MaximumTeamSize;
-        public const int DemoPlayerTeamSize = 3;
+        public const int DemoPlayerTeamSize = 5;
         public const int DemoEnemyTeamSize = 5;
         public const int BattlefieldDivisionCount = 20;
         public const float BattlefieldLength = 20f;

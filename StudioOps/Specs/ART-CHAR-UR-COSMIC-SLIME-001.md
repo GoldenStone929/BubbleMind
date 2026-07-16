@@ -5,11 +5,12 @@
 > 英文工作名：Abyssal Singularity Slime
 > 负责人：Codex
 > 最后更新：2026-07-15
+> 当前运行时状态：兼容/历史 3D 原型；默认战斗视觉由 `ART-CHAR-PIXEL-PARTY-001` 接管
 
 ## 1. 用途与玩家视角
 
-- 游戏内用途：首个正式 3D 角色样板；进入收藏、默认五槽编队首槽和现有固定 3v5 职业测试战斗。
-- 出现场景与典型屏幕占比：战斗中高度约占画面 12%–20%；收藏页允许近景旋转预览。
+- 游戏内用途：历史首个 3D 角色样板与当前兼容回退资产；Catherine 仍进入收藏和默认五槽编队首槽，正常 5v5 战斗的默认表现已由 `ART-CHAR-PIXEL-PARTY-001` 接管。
+- 历史 3D 目标屏占比：战斗中高度约占画面 12%–20%；未来收藏页可使用近景旋转预览。当前试玩只显示 2D 卡面与 Pixel2D 战斗 Sprite。
 - 必须传达的信息：UR 稀有度、宇宙/黑洞主题、沉重引力感、非人形凝胶生命、危险但可读。
 - 不在本资产范围内：完整限定池经济规则、商业发布权、整套角色阵容、付费皮肤、最终移动端优化。
 
@@ -84,7 +85,7 @@ CharacterRoot
 - Model Importer：scale 1；Read/Write 默认关闭；Generate Colliders 关闭；Normals 从文件导入；Tangents 自动。
 - Rig：None；无 Animator 时必须正常工作。
 - Prefab：`Assets/_Game/Prefabs/Characters/PF_UR_CosmicSlime.prefab`。
-- 运行时连接：`CharacterDefinition.characterPrefab` 指向 Prefab；`DemoBattlePresenter` 优先实例化 Prefab，缺失时回退 `ProceduralCharacterBuilder`。
+- 运行时连接：`CharacterDefinition.characterPrefab` 继续指向 Prefab 作为兼容资产；`DemoBattlePresenter` 先调用 `PixelCharacterBuilder`，像素素材缺失时才实例化 authored Prefab，再缺失才回退 `ProceduralCharacterBuilder`。
 - 数据：新增稳定 ID `ur_cosmic_slime`；现有 Generator 必须纳入该定义，重复运行不能把它移除。
 - UR 显示：全局稀有度为 `R -> SR -> SSR -> SP -> UR`；本角色显示 `UR / TANK / LIMITED`，进入默认编队但排除标准池。
 - 战斗数据：战场主轴为 20 格。Catherine 为 Tank，攻击距离固定为 2；按移动速度接近到最大射程边界后留在前线，锁定目标死亡后才重新接近最近敌人。Assassin 同为 2，Support / Ranged / Mage 为 10；`Wind Wheel: Break` 请求击退 5 格并受战场边界限制。
@@ -113,7 +114,7 @@ CharacterRoot
 - [x] 网格、法线、材质槽、比例与 Pivot 合格；首版仅依赖程序化材质，不需要贴图 UV
 - [x] Unity 6000.5.3f1 中 FBX 导入、Prefab 生成与 C# 核心验证成功
 - [x] Prefab、Sockets 与 `CharacterView` 正确
-- [x] 收藏/编队条目与战斗模型均可见
+- [x] 收藏/编队条目与历史 3D 战斗模型曾完成实机验证；当前默认战斗改用对应 Pixel2D Sprite
 - [x] URP 材质、纯黑核心、三点布光与轨道动画通过 1920×1080 / 3440×1392 级宽屏实机视觉检查
 - [x] Blender 几何与视觉预算通过：19,000 / 20,000 triangles，6 / 6 materials
 - [x] 纯黑体积事件视界、侧视吸积盘、下轨净空、近黑外壳与接地审计全部通过
@@ -135,4 +136,4 @@ CharacterRoot
 - 当前没有 Tripo 候选；混元候选已经形成受控 A/B 基线，但中央黑洞被误读为表面凹陷，轨道和液滴存在断裂/漂浮碎片，尚不能覆盖本地 Blender 基线。
 - Hunyuan3D-2/2.1 社区许可证的授权地域排除欧盟、英国和韩国，并覆盖输出/结果；当前候选禁止进入公开仓库或全球发行包。正式路线等待腾讯云 HY-3D 3.1 账户、条款、受限凭据、参考图权利和 credits 授权。
 - 历史 Windows 构建曾出现 D3D11 保留字冲突与通用实心技能球遮挡；本轮 `RageWindowsBuild.log` 再次确认最终 D3D11 构建通过且无 `Shader error`。
-- 当前仍是内部原型：多人近战会发生模型相交，正式 Animator、碰撞分离和收藏页 3D 近景预览留待后续里程碑。
+- 当前仍是兼容内部原型：历史 3D 多人近战会发生模型相交；正常 Pixel2D 战斗的逐帧动画、碰撞分离和未来收藏页 3D 近景预览留待后续里程碑。

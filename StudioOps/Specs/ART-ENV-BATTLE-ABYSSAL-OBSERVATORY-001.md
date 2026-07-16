@@ -1,7 +1,7 @@
 # Asset Spec：`ART-ENV-BATTLE-ABYSSAL-OBSERVATORY-001 星渊观测台`
 
 > 状态：已批准用于内部原型
-> 用途：首个最多五人每侧、当前固定 3v5 的 20 格战斗地图与视觉基准
+> 用途：首个最多五人每侧的 20 格战斗地图源概念；当前运行时 Pixel2D 版本由 `ART-ENV-PIXEL-ABYSSAL-001` 接管
 > 最后更新：2026-07-14
 
 ## 视觉目标

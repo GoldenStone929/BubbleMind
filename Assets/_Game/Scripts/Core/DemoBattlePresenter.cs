@@ -7,14 +7,14 @@ using UnityEngine.Rendering;
 namespace GenericGachaRPG
 {
     /// <summary>
-    /// Replays presentation-neutral battle events using procedural characters.
+    /// Replays presentation-neutral battle events with Pixel2D sprites and compatibility fallbacks.
     /// It never changes battle calculations; it only visualizes the completed,
     /// deterministic simulation result.
     /// </summary>
     public sealed class DemoBattlePresenter : MonoBehaviour
     {
         private const float PlaybackSpeed = 1.25f;
-        private const string ArenaBackdropResource = "AbyssalObservatory_Concept";
+        private const string ArenaBackdropResource = "AbyssalObservatory_Pixel";
         private const string ArenaBackdropMaterialResource = "MAT_AbyssalObservatoryBackdrop";
 
         private readonly Dictionary<string, UnitPresentation> units = new Dictionary<string, UnitPresentation>();
@@ -80,7 +80,9 @@ namespace GenericGachaRPG
         {
             if (playerCharacters == null || playerCharacters.Count != BattleRules.DemoPlayerTeamSize)
             {
-                throw new ArgumentException("Player demo team must contain exactly three characters.", nameof(playerCharacters));
+                throw new ArgumentException(
+                    $"Player demo team must contain exactly {BattleRules.DemoPlayerTeamSize} characters.",
+                    nameof(playerCharacters));
             }
 
             if (enemyCharacters == null || enemyCharacters.Count != BattleRules.DemoEnemyTeamSize)
@@ -425,7 +427,9 @@ namespace GenericGachaRPG
                 backdropObject.transform.position =
                     battleCamera.transform.position + battleCamera.transform.forward * distance;
                 backdropObject.transform.rotation = battleCamera.transform.rotation;
-                float height = 2f * distance * Mathf.Tan(battleCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * 1.08f;
+                float height = battleCamera.orthographic
+                    ? battleCamera.orthographicSize * 2f * 1.08f
+                    : 2f * distance * Mathf.Tan(battleCamera.fieldOfView * 0.5f * Mathf.Deg2Rad) * 1.08f;
                 backdropObject.transform.localScale = new Vector3(height * battleCamera.aspect, height, 1f);
             }
             else
@@ -575,7 +579,18 @@ namespace GenericGachaRPG
             int styleSeed,
             bool enemy)
         {
-            CharacterView view = CreateAuthoredCharacter(runtimeId, definition, position, rotation);
+            CharacterView view = PixelCharacterBuilder.Create(
+                runtimeId,
+                definition,
+                worldRoot,
+                position,
+                rotation,
+                battleCamera,
+                enemy);
+            if (view == null)
+            {
+                view = CreateAuthoredCharacter(runtimeId, definition, position, rotation);
+            }
             if (view == null)
             {
                 Color primary = enemy
@@ -929,6 +944,8 @@ namespace GenericGachaRPG
             battleCamera.transform.rotation = Quaternion.LookRotation(
                 new Vector3(0f, 1.15f, 0f) - battleCamera.transform.position,
                 Vector3.up);
+            battleCamera.orthographic = true;
+            battleCamera.orthographicSize = 6.35f;
             battleCamera.fieldOfView = 46f;
             battleCamera.clearFlags = CameraClearFlags.SolidColor;
             battleCamera.backgroundColor = new Color(0.025f, 0.045f, 0.085f, 1f);

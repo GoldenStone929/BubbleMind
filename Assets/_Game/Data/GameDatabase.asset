@@ -23,6 +23,8 @@ MonoBehaviour:
   - ur_cosmic_slime
   - gold_ranger
   - ember_striker
+  - verdant_medic
+  - violet_arcanist
   demoEnemyBattleCharacterIds:
   - cyan_warden
   - azure_vanguard
@@ -50,3 +52,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5c3f09408bca7a44088f944a7be020df, type: 2}
   gachaBanners:
   - {fileID: 11400000, guid: 57b4391235427d9419c17b060ba4ca73, type: 2}
+  stages:
+  - {fileID: 11400000, guid: ff9feb5534a554c4f8dff9a9495413a0, type: 2}
+  - {fileID: 11400000, guid: ac0ae6f771c9a0640b8427ff66f13f55, type: 2}
+  - {fileID: 11400000, guid: 4f727847de49dee4592b2cda76064cdb, type: 2}

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bcf5c7d88419864b9b62cae99cba1ed, type: 3}
+  m_Name: Stage_1_2
+  m_EditorClassIdentifier: Assembly-CSharp::GenericGachaRPG.StageDefinition
+  stageId: stage_1_2
+  chapterId: chapter_1
+  displayName: Resonance Gallery
+  description: Push through a corridor where every impact returns as an echo.
+  prerequisiteStageId: stage_1_1
+  enemyCharacterIds:
+  - cyan_warden
+  - azure_vanguard
+  - violet_arcanist
+  - gold_ranger
+  - verdant_medic
+  energyCost: 8
+  recommendedPower: 1800
+  firstClearCrystalReward: 120
+  goldReward: 350
+  materialReward: 3
+  bossStage: 0

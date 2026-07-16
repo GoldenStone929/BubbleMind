@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace GenericGachaRPG
@@ -20,15 +21,27 @@ namespace GenericGachaRPG
         private IGachaService gachaService;
         private IFormationService formationService;
         private DemoBattlePresenter battlePresenter;
-        private ObservatoryHomeScreenView homeScreen;
+        private DemoUiRouter router;
+        private AppShellView appShell;
+        private HomeHubScreenView homeScreen;
+        private WorldStageScreenView worldScreen;
         private SummonScreenView gachaScreen;
         private CharacterPageScreenView collectionScreen;
         private RosterFormationScreenView formationScreen;
+        private InventoryScreenView inventoryScreen;
+        private MissionsScreenView missionsScreen;
+        private SettingsScreenView settingsScreen;
+        private LockedFeatureScreenView lockedFeatureScreen;
         private BattleScreenView battleScreen;
-        private DemoScreen currentScreen;
+        private StageDefinition activeStage;
+        private string selectedStageId = string.Empty;
         private string formationFeedback = string.Empty;
+        private string missionFeedback = string.Empty;
+        private bool battleResultCommitted;
 
         public GameDatabase Database => database;
+        public PlayerState CurrentPlayerState => gameState?.State;
+        public AppRoute CurrentRoute => router == null ? AppRoute.Home : router.CurrentRoute;
 
         public void Configure(GameDatabase gameDatabase, Camera cameraToUse)
         {
@@ -38,7 +51,6 @@ namespace GenericGachaRPG
 
         private void Start()
         {
-            Application.targetFrameRate = 60;
             Application.runInBackground = true;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
@@ -57,7 +69,9 @@ namespace GenericGachaRPG
             EnsureSceneCamera();
             BuildScreens();
             ResetDraftFromSavedFormation();
-            ShowScreen(DemoScreen.Home);
+            ApplyRuntimeSettings();
+            router.ResetTo(AppRoute.Home);
+            ApplyLaunchRouteOption();
         }
 
         private void OnDestroy()
@@ -67,6 +81,11 @@ namespace GenericGachaRPG
                 gameState.StateChanged -= OnStateChanged;
             }
 
+            if (router != null)
+            {
+                router.RouteChanged -= OnRouteChanged;
+            }
+
             if (battlePresenter != null)
             {
                 battlePresenter.BattleCompleted -= OnBattleCompleted;
@@ -74,26 +93,91 @@ namespace GenericGachaRPG
             }
         }
 
+        private void Update()
+        {
+            bool cancelPressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+            cancelPressed |= Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame;
+            if (!cancelPressed || router == null)
+            {
+                return;
+            }
+
+            if (router.CurrentRoute == AppRoute.Settings && settingsScreen != null && settingsScreen.TryCloseModal())
+            {
+                return;
+            }
+
+            if (router.CurrentRoute == AppRoute.Battle)
+            {
+                ReturnWorldFromBattle();
+                return;
+            }
+
+            router.Back(AppRoute.Home);
+        }
+
         private void BuildScreens()
         {
             Canvas canvas = DemoUiFactory.CreateCanvas(transform);
             RectTransform root = DemoUiFactory.CreateStretchRect("ScreenRoot", canvas.transform);
 
-            homeScreen = new ObservatoryHomeScreenView(
+            homeScreen = new HomeHubScreenView(
                 root,
+                OpenCurrentStageWorld,
                 OpenGacha,
                 OpenCollection,
                 OpenFormation,
-                BeginBattleFromSavedFormation,
-                ResetDemoData);
-            gachaScreen = new SummonScreenView(root, DrawSingle, ReturnHome);
-            collectionScreen = new CharacterPageScreenView(root, ReturnHome);
+                OpenLockedFeature);
+            worldScreen = new WorldStageScreenView(
+                root,
+                database,
+                SelectStage,
+                OpenSelectedStageFormation,
+                NavigateBack);
+            gachaScreen = new SummonScreenView(root, DrawSingle, NavigateBack);
+            collectionScreen = new CharacterPageScreenView(root, NavigateBack);
             formationScreen = new RosterFormationScreenView(
                 root,
                 ToggleFormationCharacter,
                 BeginBattleFromDraft,
-                ReturnHome);
-            battleScreen = new BattleScreenView(root, RestartBattle, ReturnHomeFromBattle);
+                NavigateBack);
+            inventoryScreen = new InventoryScreenView(root, NavigateBack);
+            missionsScreen = new MissionsScreenView(root, ClaimMission, NavigateForMission, NavigateBack);
+            settingsScreen = new SettingsScreenView(
+                root,
+                SetMusicVolume,
+                SetEffectsVolume,
+                SetFullscreen,
+                SetSixtyFps,
+                ResetDemoData,
+                NavigateBack);
+            lockedFeatureScreen = new LockedFeatureScreenView(root, NavigateBack);
+            battleScreen = new BattleScreenView(
+                root,
+                RestartBattle,
+                ReturnWorldFromBattle,
+                ReturnHomeFromBattle);
+
+            router = new DemoUiRouter();
+            router.Register(AppRoute.Home, homeScreen);
+            router.Register(AppRoute.World, worldScreen);
+            router.Register(AppRoute.Gacha, gachaScreen);
+            router.Register(AppRoute.Collection, collectionScreen);
+            router.Register(AppRoute.Formation, formationScreen);
+            router.Register(AppRoute.Inventory, inventoryScreen);
+            router.Register(AppRoute.Missions, missionsScreen);
+            router.Register(AppRoute.Settings, settingsScreen);
+            router.Register(AppRoute.LockedFeature, lockedFeatureScreen);
+            router.Register(AppRoute.Battle, battleScreen);
+            router.RouteChanged += OnRouteChanged;
+
+            appShell = new AppShellView(
+                canvas.transform,
+                NavigateFromShell,
+                OpenFormation,
+                OpenSettings,
+                OpenLockedFeature);
+            appShell.SetVisible(false);
 
             battlePresenter = GetComponent<DemoBattlePresenter>();
             if (battlePresenter == null)
@@ -105,72 +189,148 @@ namespace GenericGachaRPG
             battlePresenter.BattleCompleted += OnBattleCompleted;
         }
 
-        private void ShowScreen(DemoScreen screen)
+        private void OnRouteChanged(AppRoute route, string context)
         {
-            currentScreen = screen;
-            homeScreen?.SetVisible(screen == DemoScreen.Home);
-            gachaScreen?.SetVisible(screen == DemoScreen.Gacha);
-            collectionScreen?.SetVisible(screen == DemoScreen.Collection);
-            formationScreen?.SetVisible(screen == DemoScreen.Formation);
-            battleScreen?.SetVisible(screen == DemoScreen.Battle);
-            RefreshScreen(screen);
-            SelectFirstInteractableButton(screen);
+            bool showShell = UsesAppShell(route);
+            appShell?.SetVisible(showShell);
+            appShell?.SetActiveRoute(route);
+            RefreshScreen(route, context);
+            SelectFirstInteractableButton(route);
         }
 
-        private void SelectFirstInteractableButton(DemoScreen screen)
+        private void NavigateFromShell(AppRoute route)
         {
-            DemoScreenView activeView = screen switch
+            switch (route)
             {
-                DemoScreen.Gacha => gachaScreen,
-                DemoScreen.Collection => collectionScreen,
-                DemoScreen.Formation => formationScreen,
-                DemoScreen.Battle => battleScreen,
-                _ => homeScreen
-            };
+                case AppRoute.Home:
+                    router.ResetTo(AppRoute.Home);
+                    break;
+                case AppRoute.World:
+                    OpenWorld();
+                    break;
+                case AppRoute.Gacha:
+                    OpenGacha();
+                    break;
+                case AppRoute.Collection:
+                    OpenCollection();
+                    break;
+                case AppRoute.Formation:
+                    OpenFormation();
+                    break;
+                case AppRoute.Inventory:
+                    router.Navigate(AppRoute.Inventory);
+                    break;
+                case AppRoute.Missions:
+                    missionFeedback = string.Empty;
+                    router.Navigate(AppRoute.Missions);
+                    break;
+                case AppRoute.Settings:
+                    OpenSettings();
+                    break;
+                default:
+                    router.Navigate(route);
+                    break;
+            }
+        }
 
-            if (activeView == null || EventSystem.current == null)
+        private void NavigateBack()
+        {
+            router?.Back(AppRoute.Home);
+        }
+
+        private void OpenWorld()
+        {
+            StageDefinition current = database.GetCurrentStage(gameState.State) ?? database.FirstStage;
+            if (current != null && string.IsNullOrEmpty(selectedStageId))
+            {
+                selectedStageId = current.Id;
+            }
+
+            router.Navigate(AppRoute.World);
+        }
+
+        private void OpenCurrentStageWorld()
+        {
+            StageDefinition current = database.GetCurrentStage(gameState.State) ?? database.FirstStage;
+            selectedStageId = current == null ? string.Empty : current.Id;
+            router.Navigate(AppRoute.World);
+        }
+
+        private void SelectStage(string stageId)
+        {
+            if (database.GetStage(stageId) == null)
             {
                 return;
             }
 
-            Button[] buttons = activeView.Root.GetComponentsInChildren<Button>(false);
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].IsInteractable())
-                {
-                    EventSystem.current.SetSelectedGameObject(buttons[i].gameObject);
-                    return;
-                }
-            }
+            selectedStageId = stageId;
+            worldScreen.Refresh(gameState.State, selectedStageId);
+        }
+
+        private void OpenSelectedStageFormation()
+        {
+            string stageId = worldScreen == null ? selectedStageId : worldScreen.SelectedStageId;
+            StageDefinition stage = database.GetStage(stageId) ?? database.GetCurrentStage(gameState.State);
+            OpenFormationForStage(stage);
         }
 
         private void OpenGacha()
         {
             gachaScreen.ClearResult();
-            ShowScreen(DemoScreen.Gacha);
+            router.Navigate(AppRoute.Gacha);
         }
 
         private void OpenCollection()
         {
-            ShowScreen(DemoScreen.Collection);
+            router.Navigate(AppRoute.Collection);
         }
 
         private void OpenFormation()
         {
-            ResetDraftFromSavedFormation();
-            formationFeedback = string.Empty;
-            ShowScreen(DemoScreen.Formation);
+            StageDefinition stage = database.GetCurrentStage(gameState.State) ?? database.FirstStage;
+            OpenFormationForStage(stage);
         }
 
-        private void ReturnHome()
+        private void OpenFormationForStage(StageDefinition stage)
         {
-            ShowScreen(DemoScreen.Home);
+            activeStage = stage;
+            if (stage != null)
+            {
+                selectedStageId = stage.Id;
+            }
+
+            ResetDraftFromSavedFormation();
+            formationFeedback = stage == null
+                ? string.Empty
+                : $"Preparing {FormatStageId(stage.Id)} {stage.DisplayName}.";
+            router.Navigate(AppRoute.Formation);
+        }
+
+        private void OpenSettings()
+        {
+            router.Navigate(AppRoute.Settings);
+        }
+
+        private void OpenLockedFeature(string feature)
+        {
+            router.Navigate(AppRoute.LockedFeature, feature ?? string.Empty);
+        }
+
+        private void ReturnWorldFromBattle()
+        {
+            battlePresenter.StopBattle();
+            if (activeStage != null)
+            {
+                selectedStageId = activeStage.Id;
+            }
+
+            router.ResetTo(AppRoute.World);
         }
 
         private void ReturnHomeFromBattle()
         {
             battlePresenter.StopBattle();
-            ShowScreen(DemoScreen.Home);
+            router.ResetTo(AppRoute.Home);
         }
 
         private void DrawSingle()
@@ -204,7 +364,9 @@ namespace GenericGachaRPG
             {
                 if (formationService.TrySetFormation(draftFormation, out string reason))
                 {
-                    formationFeedback = "Formation saved. Ready for battle.";
+                    formationFeedback = activeStage == null
+                        ? "Formation saved. Ready for battle."
+                        : $"Formation saved for {FormatStageId(activeStage.Id)}.";
                 }
                 else
                 {
@@ -213,13 +375,7 @@ namespace GenericGachaRPG
             }
 
             formationScreen.Refresh(database, gameState.State, draftFormation, formationFeedback);
-            homeScreen.Refresh(gameState.State);
-        }
-
-        private void BeginBattleFromSavedFormation()
-        {
-            ResetDraftFromSavedFormation();
-            BeginBattleFromDraft();
+            appShell?.Refresh(gameState.State, database);
         }
 
         private void BeginBattleFromDraft()
@@ -227,57 +383,151 @@ namespace GenericGachaRPG
             if (!formationService.TrySetFormation(draftFormation, out string reason))
             {
                 formationFeedback = reason;
-                ShowScreen(DemoScreen.Formation);
+                router.Replace(AppRoute.Formation);
                 return;
             }
 
-            List<CharacterDefinition> playerTeam = ResolveCharacters(database.DemoPlayerBattleCharacterIds);
-            List<CharacterDefinition> enemyTeam = ResolveCharacters(database.DemoEnemyBattleCharacterIds);
+            StageDefinition stage = activeStage ?? database.GetCurrentStage(gameState.State) ?? database.FirstStage;
+            IReadOnlyList<string> enemyIds = stage != null && stage.EnemyCharacterIds.Count > 0
+                ? stage.EnemyCharacterIds
+                : database.DemoEnemyBattleCharacterIds;
+            List<CharacterDefinition> playerTeam = ResolveCharacters(draftFormation);
+            List<CharacterDefinition> enemyTeam = ResolveCharacters(enemyIds);
             if (playerTeam.Count != BattleRules.DemoPlayerTeamSize ||
                 enemyTeam.Count != BattleRules.DemoEnemyTeamSize)
             {
                 formationFeedback = "Battle content is incomplete. Run Generate or Repair Demo.";
-                ShowScreen(DemoScreen.Formation);
+                router.Replace(AppRoute.Formation);
                 return;
             }
 
-            ShowScreen(DemoScreen.Battle);
+            if (stage != null && !gameState.TryStartStage(stage, out reason))
+            {
+                formationFeedback = reason;
+                router.Replace(AppRoute.Formation);
+                return;
+            }
+
+            activeStage = stage;
+            battleResultCommitted = false;
+            router.Navigate(AppRoute.Battle);
             battlePresenter.StartBattle(playerTeam, enemyTeam, battleScreen, battleSeed);
         }
 
         private void RestartBattle()
         {
+            battlePresenter.StopBattle();
             ResetDraftFromSavedFormation();
             BeginBattleFromDraft();
         }
 
-        private void ResetDemoData()
+        private void ClaimMission(string missionId)
         {
-            if (battlePresenter != null)
+            bool claimed = gameState.TryClaimMission(missionId, out string reason);
+            missionFeedback = claimed ? reason : $"Unable to claim: {reason}";
+            missionsScreen.Refresh(gameState.State, missionFeedback);
+            appShell?.Refresh(gameState.State, database);
+        }
+
+        private void NavigateForMission(string missionId)
+        {
+            DemoMissionDefinition mission = DemoMissionCatalog.Get(missionId);
+            if (mission == null)
             {
-                battlePresenter.StopBattle();
+                missionFeedback = "Mission route is unavailable.";
+                missionsScreen.Refresh(gameState.State, missionFeedback);
+                return;
             }
 
+            switch (mission.Objective)
+            {
+                case DemoMissionObjective.DrawCharacters:
+                    OpenGacha();
+                    break;
+                case DemoMissionObjective.OwnCharacters:
+                    OpenCollection();
+                    break;
+                case DemoMissionObjective.ClearStage:
+                    if (!string.IsNullOrEmpty(mission.StageId))
+                    {
+                        selectedStageId = mission.StageId;
+                    }
+
+                    router.Navigate(AppRoute.World);
+                    break;
+                case DemoMissionObjective.WinBattles:
+                    StageDefinition stage = database.GetCurrentStage(gameState.State) ?? database.FirstStage;
+                    if (stage != null)
+                    {
+                        selectedStageId = stage.Id;
+                    }
+
+                    router.Navigate(AppRoute.World);
+                    break;
+            }
+        }
+
+        private void ResetDemoData()
+        {
+            battlePresenter?.StopBattle();
             gameState.Reset();
-            ResetDraftFromSavedFormation();
+            activeStage = null;
+            battleResultCommitted = false;
+            selectedStageId = string.Empty;
             formationFeedback = "Demo data reset to its original state.";
+            missionFeedback = string.Empty;
+            ResetDraftFromSavedFormation();
             gachaScreen.ClearResult();
-            ShowScreen(DemoScreen.Home);
+            ApplyRuntimeSettings();
+            router.ResetTo(AppRoute.Home);
+        }
+
+        private void SetMusicVolume(float value)
+        {
+            gameState.SetMusicVolume(value);
+            ApplyRuntimeSettings();
+        }
+
+        private void SetEffectsVolume(float value)
+        {
+            gameState.SetEffectsVolume(value);
+        }
+
+        private void SetFullscreen(bool value)
+        {
+            gameState.SetFullscreen(value);
+            ApplyRuntimeSettings();
+        }
+
+        private void SetSixtyFps(bool value)
+        {
+            gameState.SetSixtyFps(value);
+            ApplyRuntimeSettings();
         }
 
         private void OnStateChanged(PlayerState state)
         {
-            RefreshScreen(currentScreen);
+            appShell?.Refresh(state, database);
+            if (router != null)
+            {
+                RefreshScreen(router.CurrentRoute, router.Context);
+            }
         }
 
         private void OnBattleCompleted(BattleResult result)
         {
-            // P0 keeps rewards presentation-only. Production rewards would be
-            // committed by a backend-authoritative IBattleRewardService.
-            RefreshScreen(currentScreen);
+            if (battleResultCommitted)
+            {
+                return;
+            }
+
+            battleResultCommitted = true;
+            StageRewardGrant grant = gameState.CommitBattleResult(activeStage, result);
+            battleScreen.SetRewardSummary(grant);
+            RefreshScreen(AppRoute.Battle, string.Empty);
         }
 
-        private void RefreshScreen(DemoScreen screen)
+        private void RefreshScreen(AppRoute route, string context = "")
         {
             if (gameState == null)
             {
@@ -285,20 +535,68 @@ namespace GenericGachaRPG
             }
 
             PlayerState state = gameState.State;
-            switch (screen)
+            appShell?.Refresh(state, database);
+            switch (route)
             {
-                case DemoScreen.Gacha:
+                case AppRoute.Home:
+                    homeScreen?.Refresh(state, database);
+                    break;
+                case AppRoute.World:
+                    worldScreen?.Refresh(state, selectedStageId);
+                    break;
+                case AppRoute.Gacha:
                     gachaScreen?.Refresh(state, database.DefaultBanner, database);
                     break;
-                case DemoScreen.Collection:
+                case AppRoute.Collection:
                     collectionScreen?.Refresh(database, state);
                     break;
-                case DemoScreen.Formation:
+                case AppRoute.Formation:
                     formationScreen?.Refresh(database, state, draftFormation, formationFeedback);
                     break;
-                case DemoScreen.Home:
-                    homeScreen?.Refresh(state);
+                case AppRoute.Inventory:
+                    inventoryScreen?.Refresh(state);
                     break;
+                case AppRoute.Missions:
+                    missionsScreen?.Refresh(state, missionFeedback);
+                    break;
+                case AppRoute.Settings:
+                    settingsScreen?.Refresh(state.Settings);
+                    break;
+                case AppRoute.LockedFeature:
+                    lockedFeatureScreen?.ShowFeature(context, state);
+                    break;
+            }
+        }
+
+        private void SelectFirstInteractableButton(AppRoute route)
+        {
+            DemoScreenView activeView = route switch
+            {
+                AppRoute.World => worldScreen,
+                AppRoute.Gacha => gachaScreen,
+                AppRoute.Collection => collectionScreen,
+                AppRoute.Formation => formationScreen,
+                AppRoute.Inventory => inventoryScreen,
+                AppRoute.Missions => missionsScreen,
+                AppRoute.Settings => settingsScreen,
+                AppRoute.LockedFeature => lockedFeatureScreen,
+                AppRoute.Battle => battleScreen,
+                _ => homeScreen
+            };
+
+            if (activeView == null || EventSystem.current == null)
+            {
+                return;
+            }
+
+            Button[] buttons = activeView.Root.GetComponentsInChildren<Button>(false);
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] != null && buttons[i].IsInteractable())
+                {
+                    EventSystem.current.SetSelectedGameObject(buttons[i].gameObject);
+                    return;
+                }
             }
         }
 
@@ -337,6 +635,82 @@ namespace GenericGachaRPG
             }
 
             return result;
+        }
+
+        private void ApplyRuntimeSettings()
+        {
+            PlayerSettingsState settings = gameState?.State?.Settings;
+            Application.targetFrameRate = settings != null && !settings.SixtyFps ? 30 : 60;
+            AudioListener.volume = settings == null ? 1f : Mathf.Clamp01(settings.MusicVolume);
+            if (!Application.isEditor &&
+                settings != null &&
+                !HasCommandLineOption("-screen-fullscreen") &&
+                Screen.fullScreen != settings.Fullscreen)
+            {
+                Screen.fullScreen = settings.Fullscreen;
+            }
+        }
+
+        private static bool HasCommandLineOption(string option)
+        {
+            string[] arguments = Environment.GetCommandLineArgs();
+            for (int index = 0; index < arguments.Length; index++)
+            {
+                if (string.Equals(arguments[index], option, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ApplyLaunchRouteOption()
+        {
+            string[] arguments = Environment.GetCommandLineArgs();
+            const string prefix = "-app-route=";
+            for (int index = 0; index < arguments.Length; index++)
+            {
+                string argument = arguments[index];
+                if (string.IsNullOrEmpty(argument) ||
+                    !argument.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string routeName = argument.Substring(prefix.Length);
+                if (!Enum.TryParse(routeName, true, out AppRoute route) ||
+                    route == AppRoute.Battle)
+                {
+                    return;
+                }
+
+                if (route == AppRoute.LockedFeature)
+                {
+                    OpenLockedFeature("ARENA");
+                }
+                else
+                {
+                    NavigateFromShell(route);
+                }
+
+                return;
+            }
+        }
+
+        private static bool UsesAppShell(AppRoute route)
+        {
+            return route == AppRoute.Home ||
+                   route == AppRoute.World ||
+                   route == AppRoute.Inventory ||
+                   route == AppRoute.Missions;
+        }
+
+        private static string FormatStageId(string stageId)
+        {
+            return string.IsNullOrEmpty(stageId)
+                ? "STAGE"
+                : stageId.Replace("stage_", string.Empty).Replace('_', '-');
         }
 
         private void EnsureSceneCamera()

@@ -9,12 +9,19 @@ namespace GenericGachaRPG.Editor
     public static class DemoProjectVerifier
     {
         public const string PassMarker = "[GenericGachaRPG][P0_VERIFY_PASS_20260713]";
+        public const string PixelPassMarker = "[GenericGachaRPG][PIXEL_PVP_VERIFY_PASS_20260715]";
+        public const string FullSystemPassMarker =
+            "[GenericGachaRPG][FULL_SYSTEM_VERIFY_PASS_20260715]";
 
         private const string MenuPath = "Tools/Generic Gacha RPG/Verify P0 Demo";
         private const string DatabasePath = "Assets/_Game/Data/GameDatabase.asset";
         private const string ScenePath = "Assets/_Game/Scenes/GachaRPGDemo.unity";
         private const string BackdropTexturePath =
             "Assets/_Game/Art/Generated/Environments/AbyssalObservatory/Textures/Resources/AbyssalObservatory_Concept.png";
+        private const string PixelSpriteFolder =
+            "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites";
+        private const string PixelBackdropTexturePath =
+            "Assets/_Game/Art/Generated/Pixel2D/Environments/AbyssalObservatory/Textures/Resources/AbyssalObservatory_Pixel.png";
         private const string UiFontPath =
             "Assets/_Game/Resources/Fonts/NotoSansCJKsc-Regular.otf";
         private const int VerificationSeed = 731925;
@@ -31,6 +38,7 @@ namespace GenericGachaRPG.Editor
             VerifyRulesContract();
             VerifyGeneratorExpansionContract();
             GachaBannerDefinition banner = VerifyDatabase(database);
+            VerifyVersionThreeMigration(database);
             GameStateService gameState = VerifyDefaultSave(database);
             VerifySingleDraw(database, banner, gameState);
             VerifyFormation(database, gameState);
@@ -38,7 +46,7 @@ namespace GenericGachaRPG.Editor
             VerifySceneAndBuildSettings();
 
             Debug.Log(
-                $"{PassMarker} Database, in-memory save, gacha, formation, deterministic battle, scene, and Build Settings all passed.");
+                $"{PassMarker} {PixelPassMarker} {FullSystemPassMarker} Database, stages, v3-to-v4 migration, in-memory save, gacha, formation-driven 5v5, Pixel2D assets, deterministic battle, scene, and Build Settings all passed.");
         }
 
         private static void VerifyGeneratorExpansionContract()
@@ -94,6 +102,7 @@ namespace GenericGachaRPG.Editor
             Require(database.Characters != null, "Database character list is null.");
             Require(database.Skills != null, "Database skill list is null.");
             Require(database.GachaBanners != null, "Database banner list is null.");
+            Require(database.Stages != null, "Database stage list is null.");
             Require(database.Characters.Count >= 7,
                 $"Database must contain at least the 7 demo characters; found {database.Characters.Count}.");
             Require(database.Skills.Count >= 10,
@@ -187,7 +196,9 @@ namespace GenericGachaRPG.Editor
             {
                 CatherineYukiBattleKit.CharacterId,
                 "gold_ranger",
-                AssassinBattleKit.CharacterId
+                AssassinBattleKit.CharacterId,
+                "verdant_medic",
+                "violet_arcanist"
             };
             for (int index = 0; index < expectedDemoPlayerIds.Length; index++)
             {
@@ -339,9 +350,11 @@ namespace GenericGachaRPG.Editor
             RequireCharacterCombatProfile(database, "violet_arcanist", BattleRules.RangedAttackRange, 3.4f);
             RequireCharacterCombatProfile(database, "gold_ranger", BattleRules.RangedAttackRange, 3.8f);
             RequireCharacterCombatProfile(database, "cyan_warden", BattleRules.MeleeAttackRange, 3.15f);
+            VerifyStageDefinitions(database);
 
             VerifyBasicSlimeAssets(database);
             VerifyBackdropTextureImport();
+            VerifyPixel2DAssets();
             VerifyUiFontImport();
 
             Material backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>(
@@ -350,6 +363,262 @@ namespace GenericGachaRPG.Editor
             Require(backdropMaterial.shader != null, "Abyssal Observatory backdrop material has no shader.");
 
             return banner;
+        }
+
+        private static void VerifyStageDefinitions(GameDatabase database)
+        {
+            Require(database.Stages.Count >= 3,
+                $"Database must contain at least the three Chapter 1 stages; found {database.Stages.Count}.");
+
+            var stageIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < database.Stages.Count; index++)
+            {
+                StageDefinition stage = database.Stages[index];
+                Require(stage != null, $"Stage slot {index} is null.");
+                Require(!string.IsNullOrWhiteSpace(stage.Id), $"Stage slot {index} has an empty id.");
+                Require(stageIds.Add(stage.Id), $"Stage id '{stage.Id}' is duplicated.");
+                Require(!string.IsNullOrWhiteSpace(stage.ChapterId),
+                    $"Stage '{stage.Id}' has no chapter id.");
+                Require(!string.IsNullOrWhiteSpace(stage.DisplayName),
+                    $"Stage '{stage.Id}' has no display name.");
+                Require(!string.IsNullOrWhiteSpace(stage.Description),
+                    $"Stage '{stage.Id}' has no description.");
+                Require(stage.EnergyCost > 0,
+                    $"Stage '{stage.Id}' must have a positive energy cost.");
+                Require(stage.RecommendedPower > 0,
+                    $"Stage '{stage.Id}' must have positive recommended power.");
+                Require(stage.FirstClearCrystalReward >= 0 &&
+                        stage.GoldReward >= 0 &&
+                        stage.MaterialReward >= 0,
+                    $"Stage '{stage.Id}' has a negative reward.");
+                Require(!string.Equals(stage.Id, stage.PrerequisiteStageId, StringComparison.Ordinal),
+                    $"Stage '{stage.Id}' cannot require itself.");
+                Require(stage.EnemyCharacterIds != null &&
+                        stage.EnemyCharacterIds.Count == BattleRules.DemoEnemyTeamSize,
+                    $"Stage '{stage.Id}' must define exactly {BattleRules.DemoEnemyTeamSize} enemies.");
+
+                var enemyIds = new HashSet<string>(StringComparer.Ordinal);
+                for (int enemyIndex = 0; enemyIndex < stage.EnemyCharacterIds.Count; enemyIndex++)
+                {
+                    string enemyId = stage.EnemyCharacterIds[enemyIndex];
+                    Require(!string.IsNullOrWhiteSpace(enemyId),
+                        $"Stage '{stage.Id}' enemy slot {enemyIndex} has an empty id.");
+                    Require(enemyIds.Add(enemyId),
+                        $"Stage '{stage.Id}' duplicates enemy '{enemyId}'.");
+                    Require(database.TryGetCharacter(enemyId, out _),
+                        $"Stage '{stage.Id}' references unknown enemy '{enemyId}'.");
+                }
+            }
+
+            for (int index = 0; index < database.Stages.Count; index++)
+            {
+                StageDefinition stage = database.Stages[index];
+                if (!string.IsNullOrEmpty(stage.PrerequisiteStageId))
+                {
+                    Require(database.GetStage(stage.PrerequisiteStageId) != null,
+                        $"Stage '{stage.Id}' requires unknown stage '{stage.PrerequisiteStageId}'.");
+                }
+
+                var visited = new HashSet<string>(StringComparer.Ordinal);
+                StageDefinition cursor = stage;
+                while (cursor != null && !string.IsNullOrEmpty(cursor.PrerequisiteStageId))
+                {
+                    Require(visited.Add(cursor.Id),
+                        $"Stage prerequisite chain contains a cycle at '{cursor.Id}'.");
+                    cursor = database.GetStage(cursor.PrerequisiteStageId);
+                    Require(cursor != null,
+                        $"Stage prerequisite chain from '{stage.Id}' is broken.");
+                }
+            }
+
+            StageDefinition stageOne = RequireStage(
+                database,
+                0,
+                "stage_1_1",
+                "Fracture Gate",
+                string.Empty,
+                6,
+                1000,
+                100,
+                250,
+                2,
+                false);
+            StageDefinition stageTwo = RequireStage(
+                database,
+                1,
+                "stage_1_2",
+                "Resonance Gallery",
+                "stage_1_1",
+                8,
+                1800,
+                120,
+                350,
+                3,
+                false);
+            StageDefinition stageThree = RequireStage(
+                database,
+                2,
+                "stage_1_3",
+                "Event Horizon",
+                "stage_1_2",
+                10,
+                2600,
+                200,
+                500,
+                5,
+                true);
+
+            PlayerState progression = database.CreateDefaultPlayerState();
+            Require(progression != null, "Stage unlock verification could not create a player state.");
+            Require(database.IsStageUnlocked(stageOne, progression),
+                "Chapter 1-1 must be unlocked for a new player.");
+            Require(!database.IsStageUnlocked(stageTwo, progression) &&
+                    !database.IsStageUnlocked(stageThree, progression),
+                "Later Chapter 1 stages must begin locked.");
+            Require(database.GetCurrentStage(progression) == stageOne,
+                "A new player's current stage must be Chapter 1-1.");
+
+            RecordStageVictoryForVerification(progression, stageOne.Id);
+            Require(database.IsStageUnlocked(stageTwo, progression) &&
+                    !database.IsStageUnlocked(stageThree, progression),
+                "Clearing Chapter 1-1 must unlock only Chapter 1-2.");
+            Require(database.GetCurrentStage(progression) == stageTwo,
+                "Current stage must advance to Chapter 1-2 after clearing Chapter 1-1.");
+
+            RecordStageVictoryForVerification(progression, stageTwo.Id);
+            Require(database.IsStageUnlocked(stageThree, progression),
+                "Clearing Chapter 1-2 must unlock Chapter 1-3.");
+            Require(database.GetCurrentStage(progression) == stageThree,
+                "Current stage must advance to Chapter 1-3 after clearing Chapter 1-2.");
+        }
+
+        private static StageDefinition RequireStage(
+            GameDatabase database,
+            int expectedIndex,
+            string id,
+            string displayName,
+            string prerequisiteStageId,
+            int energyCost,
+            int recommendedPower,
+            int firstClearCrystals,
+            int goldReward,
+            int materialReward,
+            bool isBoss)
+        {
+            StageDefinition stage = database.GetStage(id);
+            Require(stage != null, $"Required stage '{id}' is missing.");
+            string assetPath = AssetDatabase.GetAssetPath(stage);
+            Require(!string.IsNullOrWhiteSpace(assetPath) &&
+                    assetPath.StartsWith("Assets/_Game/Data/Stages/", StringComparison.Ordinal),
+                $"Required stage '{id}' must be a project-owned asset in Data/Stages.");
+            Require(expectedIndex < database.Stages.Count && database.Stages[expectedIndex] == stage,
+                $"Required stage '{id}' must occupy database slot {expectedIndex}.");
+            Require(string.Equals(stage.ChapterId, "chapter_1", StringComparison.Ordinal) &&
+                    string.Equals(stage.DisplayName, displayName, StringComparison.Ordinal) &&
+                    string.Equals(stage.PrerequisiteStageId, prerequisiteStageId, StringComparison.Ordinal),
+                $"Required stage '{id}' identity or prerequisite is incorrect.");
+            Require(stage.EnergyCost == energyCost &&
+                    stage.RecommendedPower == recommendedPower &&
+                    stage.FirstClearCrystalReward == firstClearCrystals &&
+                    stage.GoldReward == goldReward &&
+                    stage.MaterialReward == materialReward &&
+                    stage.IsBossStage == isBoss,
+                $"Required stage '{id}' tuning does not match the Chapter 1 contract.");
+            Require(stage.EnemyCharacterIds.Count == database.DemoEnemyBattleCharacterIds.Count,
+                $"Required stage '{id}' enemy roster size differs from the demo enemy roster.");
+            for (int index = 0; index < database.DemoEnemyBattleCharacterIds.Count; index++)
+            {
+                Require(string.Equals(
+                        stage.EnemyCharacterIds[index],
+                        database.DemoEnemyBattleCharacterIds[index],
+                        StringComparison.Ordinal),
+                    $"Required stage '{id}' enemy slot {index} differs from the demo enemy roster.");
+            }
+
+            return stage;
+        }
+
+        private static void RecordStageVictoryForVerification(PlayerState state, string stageId)
+        {
+            MethodInfo method = typeof(PlayerState).GetMethod(
+                "RecordStageVictory",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(method != null, "PlayerState stage progression method is unavailable.");
+            object result = method.Invoke(state, new object[] { stageId });
+            Require(result is bool && (bool)result,
+                $"Could not record verifier stage victory for '{stageId}'.");
+        }
+
+        private static void VerifyVersionThreeMigration(GameDatabase database)
+        {
+            var ownedEntries = new List<string>();
+            var formationEntries = new List<string>();
+            for (int index = 0; index < database.StarterCharacterIds.Count; index++)
+            {
+                string id = database.StarterCharacterIds[index];
+                ownedEntries.Add(
+                    $"{{\"characterId\":\"{id}\",\"level\":{index + 1},\"copies\":1}}");
+                formationEntries.Add($"\"{id}\"");
+            }
+
+            string legacyJson =
+                "{\"schemaVersion\":3,\"currency\":2468,\"ownedCharacters\":[" +
+                string.Join(",", ownedEntries) +
+                "],\"teamFormation\":{\"characterIds\":[" +
+                string.Join(",", formationEntries) +
+                "]},\"lastSavedUtc\":\"legacy-v3\"}";
+            PlayerState legacyState = JsonUtility.FromJson<PlayerState>(legacyJson);
+            Require(legacyState != null && legacyState.SchemaVersion == 3,
+                "Verifier could not deserialize the schema-v3 player-state fixture.");
+
+            MethodInfo normalizeMethod = typeof(PlayerState).GetMethod(
+                "Normalize",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(normalizeMethod != null, "PlayerState migration entry point is unavailable.");
+            object normalized = normalizeMethod.Invoke(legacyState, null);
+            Require(normalized is bool && (bool)normalized,
+                "Schema-v3 player state was rejected instead of migrating.");
+            Require(legacyState.SchemaVersion == PlayerState.CurrentSchemaVersion,
+                "Schema-v3 player state did not migrate to the current schema.");
+            Require(legacyState.Currency == 2468,
+                "Schema-v3 migration did not preserve player currency.");
+            Require(legacyState.Gold == 2500 &&
+                    legacyState.Energy == 120 &&
+                    legacyState.MaxEnergy == 120,
+                "Schema-v3 migration did not initialize meta currencies and energy.");
+            Require(legacyState.TotalDraws == 0 && legacyState.BattleWins == 0,
+                "Schema-v3 migration introduced unexpected progression counters.");
+            Require(legacyState.OwnedCharacters.Count == database.StarterCharacterIds.Count &&
+                    legacyState.TeamFormation != null &&
+                    legacyState.TeamFormation.IsComplete,
+                "Schema-v3 migration did not preserve the owned roster and formation.");
+            for (int index = 0; index < database.StarterCharacterIds.Count; index++)
+            {
+                string id = database.StarterCharacterIds[index];
+                Require(legacyState.HasCharacter(id) &&
+                        string.Equals(
+                            legacyState.TeamFormation.CharacterIds[index],
+                            id,
+                            StringComparison.Ordinal),
+                    $"Schema-v3 migration changed starter slot {index} ('{id}').");
+            }
+
+            Require(legacyState.GetItemAmount("standard_ticket") == 3 &&
+                    legacyState.GetItemAmount("echo_gel") == 12 &&
+                    legacyState.GetItemAmount("void_fragment") == 1 &&
+                    legacyState.GetItemAmount("universal_shard") == 0,
+                "Schema-v3 migration did not initialize the starter inventory.");
+            Require(legacyState.ClearedStageIds != null && legacyState.ClearedStageIds.Count == 0 &&
+                    legacyState.ClaimedMissionIds != null && legacyState.ClaimedMissionIds.Count == 0,
+                "Schema-v3 migration introduced unexpected stage or mission completion.");
+            Require(legacyState.Settings != null &&
+                    legacyState.Settings.MusicVolume >= 0f &&
+                    legacyState.Settings.MusicVolume <= 1f &&
+                    legacyState.Settings.EffectsVolume >= 0f &&
+                    legacyState.Settings.EffectsVolume <= 1f,
+                "Schema-v3 migration did not initialize valid settings.");
+            Require(string.Equals(legacyState.LastSavedUtc, "legacy-v3", StringComparison.Ordinal),
+                "Schema-v3 migration did not preserve the legacy save timestamp.");
         }
 
         private static bool HasAcquisitionSource(
@@ -736,6 +1005,56 @@ namespace GenericGachaRPG.Editor
                 "Abyssal Observatory artwork must clamp on every wrap axis.");
         }
 
+        private static void VerifyPixel2DAssets()
+        {
+            string[] characterIds =
+            {
+                "ur_cosmic_slime",
+                "azure_vanguard",
+                "ember_striker",
+                "gold_ranger",
+                "verdant_medic",
+                "violet_arcanist",
+                "cyan_warden"
+            };
+
+            for (int index = 0; index < characterIds.Length; index++)
+            {
+                string path = $"{PixelSpriteFolder}/Pixel_{characterIds[index]}.png";
+                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                Require(sprite != null, $"Pixel2D battle sprite is missing for '{characterIds[index]}'.");
+                Require(sprite.texture != null && sprite.texture.width == 128 && sprite.texture.height == 128,
+                    $"Pixel2D sprite '{characterIds[index]}' must use a 128x128 source canvas.");
+                Require(importer != null &&
+                        importer.textureType == TextureImporterType.Sprite &&
+                        importer.spriteImportMode == SpriteImportMode.Single &&
+                        importer.filterMode == FilterMode.Point &&
+                        !importer.mipmapEnabled &&
+                        importer.wrapMode == TextureWrapMode.Clamp &&
+                        importer.alphaIsTransparency &&
+                        importer.textureCompression == TextureImporterCompression.Uncompressed &&
+                        Mathf.Approximately(importer.spritePixelsPerUnit, PixelCharacterBuilder.PixelsPerUnit),
+                    $"Pixel2D sprite '{characterIds[index]}' import settings are invalid.");
+            }
+
+            string shadowPath = $"{PixelSpriteFolder}/PixelShadow.png";
+            Require(AssetDatabase.LoadAssetAtPath<Sprite>(shadowPath) != null,
+                "Pixel2D runtime shadow sprite is missing.");
+
+            Texture2D arena = AssetDatabase.LoadAssetAtPath<Texture2D>(PixelBackdropTexturePath);
+            TextureImporter arenaImporter = AssetImporter.GetAtPath(PixelBackdropTexturePath) as TextureImporter;
+            Require(arena != null && arena.width == 480 && arena.height == 270,
+                "Pixel2D Abyssal Observatory must use the 480x270 virtual canvas.");
+            Require(arenaImporter != null &&
+                    arenaImporter.textureType == TextureImporterType.Default &&
+                    arenaImporter.filterMode == FilterMode.Point &&
+                    !arenaImporter.mipmapEnabled &&
+                    arenaImporter.wrapMode == TextureWrapMode.Clamp &&
+                    arenaImporter.textureCompression == TextureImporterCompression.Uncompressed,
+                "Pixel2D Abyssal Observatory import settings are invalid.");
+        }
+
         private static void VerifyUiFontImport()
         {
             Font font = AssetDatabase.LoadAssetAtPath<Font>(UiFontPath);
@@ -987,7 +1306,7 @@ namespace GenericGachaRPG.Editor
             var enemyTeam = new BattleTeam(enemyCharacters);
             Require(playerTeam.Count == BattleRules.DemoPlayerTeamSize &&
                     enemyTeam.Count == BattleRules.DemoEnemyTeamSize,
-                "BattleTeam must preserve the authored variable 3-versus-5 roster sizes.");
+                "BattleTeam must preserve the authored five-versus-five roster sizes.");
             var firstContext = new BattleContext(
                 playerTeam,
                 enemyTeam,
@@ -1013,8 +1332,10 @@ namespace GenericGachaRPG.Editor
             Require(first.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize &&
                     string.Equals(first.PlayerUnits[0].CharacterId, CatherineYukiBattleKit.CharacterId, StringComparison.Ordinal) &&
                     string.Equals(first.PlayerUnits[1].CharacterId, "gold_ranger", StringComparison.Ordinal) &&
-                    string.Equals(first.PlayerUnits[2].CharacterId, AssassinBattleKit.CharacterId, StringComparison.Ordinal),
-                "Runtime demo roster must be P0 Catherine, P1 Gold Ranger, and P2 Ember Striker.");
+                    string.Equals(first.PlayerUnits[2].CharacterId, AssassinBattleKit.CharacterId, StringComparison.Ordinal) &&
+                    string.Equals(first.PlayerUnits[3].CharacterId, "verdant_medic", StringComparison.Ordinal) &&
+                    string.Equals(first.PlayerUnits[4].CharacterId, "violet_arcanist", StringComparison.Ordinal),
+                "Runtime demo roster must be Catherine plus Gold, Ember, Verdant, and Violet.");
             Require(first.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize,
                 "Runtime demo enemy roster must contain five units.");
             string[] expectedRuntimeEnemyIds =
@@ -1098,7 +1419,7 @@ namespace GenericGachaRPG.Editor
             IReadOnlyList<CharacterDefinition> enemyCharacters)
         {
             Require(result.PlayerUnits.Count == BattleRules.DemoPlayerTeamSize,
-                "Demo player runtime snapshot does not contain three units.");
+                "Demo player runtime snapshot does not contain five units.");
             Require(result.EnemyUnits.Count == BattleRules.DemoEnemyTeamSize,
                 "Demo enemy runtime snapshot does not contain five units.");
             for (int index = 0; index < result.EnemyUnits.Count; index++)
@@ -2053,9 +2374,9 @@ namespace GenericGachaRPG.Editor
             Require(TeamFormationState.RequiredMemberCount == BattleRules.TeamSize,
                 "Formation and battle team-size rules have diverged.");
             Require(BattleTeam.MaximumMemberCount == BattleRules.MaximumTeamSize &&
-                    BattleRules.DemoPlayerTeamSize == 3 &&
+                    BattleRules.DemoPlayerTeamSize == 5 &&
                     BattleRules.DemoEnemyTeamSize == 5,
-                "BattleTeam bounds or the demo 3-versus-5 roster sizes have diverged.");
+                "BattleTeam bounds or the demo five-versus-five roster sizes have diverged.");
             Require(BattleRules.BattlefieldDivisionCount == 20 &&
                     Mathf.Approximately(BattleRules.BattlefieldLength, 20f) &&
                     Mathf.Approximately(BattleRules.BattlefieldUnit, 1f),

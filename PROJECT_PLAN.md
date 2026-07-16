@@ -1,10 +1,10 @@
 # GenericGachaRPG 项目主计划（自包含执行 Prompt）
 
-> 计划版本：v2.6-hunyuan3d-evaluation<br>
-> 当前状态：阶段 6.8 已完成；腾讯官方 Hunyuan3D-2/2mv 三组几何候选、Blender 四视图审计与 9,000 面自动减面预览已完成；现有 Unity UR 资产保持不变，正式替换等待腾讯云 HY-3D 3.1 授权与服务条款审查<br>
+> 计划版本：v2.8-full-system-shell<br>
+> 当前状态：阶段 6.10 已完成；在既有 2D 像素 5v5 纵切片上新增全局 App Shell、完整主页、三关世界地图、背包、任务、设置、奖励结算与在线功能锁定入口，形成可重复游玩的离线主线闭环<br>
 > 最近更新：2026-07-15
 > 沟通语言：所有面向用户的沟通、进度和交付说明一律使用中文；代码标识符可使用英文
-> 当前唯一目标：在 Unity 中交付一个用户可以亲自按 Play 试玩的原创 3D 抽卡 RPG 垂直切片 Demo
+> 当前唯一目标：在 Unity 中交付一个用户可以亲自试玩、从主页进入各系统并完成关卡/奖励循环的原创 2D 像素 / 2.5D 抽卡 PvP/RPG Demo；玩法保持一名主角带四只史莱姆的五人编队
 
 ---
 
@@ -56,8 +56,8 @@ PROJECT_PLAN.md
 - Unity Editor：`6000.5.3f1`
 - Render Pipeline：URP `17.5.0`
 - 项目起点是新建的 Unity URP 模板；P0 内容现已完整落在 `Assets/_Game`。
-- 已生成自定义游戏脚本、七名角色（六名标准池角色与一名 UR 限定坦克样板）、十项技能资产、抽卡池、本地存档、五槽编队、固定 3v5 自动战斗、完整 UI、演示场景和编辑器工具。
-- 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity`；当前 Windows 独立版统一输出为 `Builds/Windows/BubbleMind.exe`。
+- 已生成自定义游戏脚本、七名角色（六名标准池角色与一名 UR 限定坦克样板）、十项技能资产、抽卡池、本地存档、五槽编队、保存阵容驱动的 5v5 像素自动战斗、完整 UI、演示场景和编辑器工具。
+- 已生成可试玩场景 `Assets/_Game/Scenes/GachaRPGDemo.unity`；当前完整系统 Windows 独立版输出为 `Builds/FullSystemWindows/BubbleMind.exe`，历史像素纵切片保留在 `Builds/Windows/BubbleMind.exe`。
 - 当前项目已在 `GenericGachaRPG` 内建立本地 Git/Git LFS 仓库；`main` 初始基线提交为 `27ac1da`。用户已于 2026-07-14 明确授权把该仓库推送到 `https://github.com/GoldenStone929/BubbleMind.git`；其他远端、构建发布或外部服务仍需另行授权。
 - Unity Editor 当前可能处于打开状态。不要强制关闭 Unity，也不要在项目被打开时另启会冲突的第二个 Editor 实例。
 - 项目位于 OneDrive。实施时只操作真正需要的源文件，避免修改 `Library`、`Temp`、`Logs` 等生成目录，并留意同步与导入延迟。
@@ -114,18 +114,19 @@ Assets/_Game/Docs/ThirdPartyInventory.md
 
 ## 3. 产品目标
 
-构建一套原创、干净、可扩展的移动端 3D 抽卡 RPG 框架，并先交付一个可在 Unity Editor 与 Windows 独立版中直接试玩的垂直切片。
+构建一套原创、干净、可扩展的移动端抽卡 PvP/RPG 框架，并交付一个可在 Unity Editor 与 Windows 独立版中直接试玩的 2D 像素 / 2.5D 垂直切片。现有确定性战斗与数据层继续作为权威；3D 角色/地图不再是当前默认表现，但作为兼容回退保留。
 
 ### 当前 Demo 的完整玩家流程
 
 ```text
 Home 主页
-  → Gacha 抽卡
-  → Character Collection 角色收藏
-  → Formation 五槽编队
-  → 3v5 Automated Battle 职业测试战斗
-  → Result 战斗结果
-  → Return Home 或 Restart
+  ├─ World 世界 → Stage Detail 关卡详情 → Formation 五槽编队
+  │    → 5v5 Pixel Battle → Result / Rewards → World / Home / Restart
+  ├─ Recruit 抽卡
+  ├─ Characters / Hero Archive 角色档案
+  ├─ Inventory 背包
+  ├─ Missions 任务
+  └─ Settings 设置
 ```
 
 ### 长期方向
@@ -135,8 +136,8 @@ Home 主页
 - 自动普通攻击与角色专属技能、动作和 VFX。
 - 抽卡、角色收藏、编队和基础养成。
 - 角色、技能、关卡和卡池全部数据驱动。
-- 将来支持 AI 辅助生成的 3D 角色。
-- 通过统一骨架、动画接口和 Socket 契约量产角色。
+- 将来可并行支持 AI 辅助的 2D Sprite Sheet 或 3D 兼容资产，但当前默认表现保持 Pixel2D。
+- 通过统一 Sprite、动作接口和 Socket 契约量产角色；旧 3D 契约仅作兼容回退。
 - 新增角色主要依靠数据与资产导入，不修改战斗核心源码。
 
 ### 本轮不追求
@@ -145,7 +146,7 @@ Home 主页
 - 不做真实登录、联网后端、数据库、PvP、公会、邮件、排行榜或活动系统。
 - 不做真钱充值、IAP 或商店支付。
 - P0 默认不下载第三方角色、插件或模板；如后续确有必要，只能依照“项目内隔离、官方来源、最小依赖”的规则处理。
-- P0 已不依赖 Blender、正式模型、配音或最终商业美术；当前后继里程碑只制作一个正式 3D 角色样板，不扩展整套阵容。
+- 当前试玩不依赖 Blender、正式 3D 模型、配音或最终商业美术；默认运行时已使用七角色 Pixel2D Sprite，后续优先扩展逐帧动画与像素场景分层。
 - 不在 Windows 上尝试最终 iOS 构建。
 
 ---
@@ -211,9 +212,9 @@ Demo 中所有内容必须新创并保持通用。
 
 ## 6. Demo 内容规格
 
-### 6.1 原创占位角色
+### 6.1 原创角色与防崩回退
 
-创建至少 6 名原创通用角色，使用 Unity Primitive 程序化组装的统一 3D 彩色火柴人/低多边形角色：
+维护至少 7 名原创角色。正常战斗按稳定角色 ID 加载 128×128 Pixel2D Sprite；只有像素素材和 authored 3D Prefab 同时缺失时，最后级防崩路径才使用 Unity Primitive 程序化组装的低多边形占位角色：
 
 - Sphere：头部
 - Capsule/Cube：躯干
@@ -243,13 +244,12 @@ Demo 中所有内容必须新创并保持通用。
 
 包含：
 
-- 游戏标题：`Generic Gacha RPG Demo`
-- 当前 Demo 货币
-- Gacha 按钮
-- Characters 按钮
-- Formation 按钮
-- Battle 按钮
-- Reset Demo Data 按钮
+- 游戏标题：`BubbleMind`
+- 玩家档案，以及 Crystal / Gold / Energy 全局资源栏
+- Recruit、Hero Archive、Formation 三个核心入口
+- Continue Story 与 Open World 主线入口
+- Home / World / Heroes / Recruit / Inventory / Missions 底部主导航
+- Settings 与带锁定说明的 Arena / Events / Shop / Mail / Guild 入口
 
 使用 Unity 内置 uGUI。适配 `1920×1080` 横屏和安全区域，鼠标点击与触摸式点击都可用，不依赖键盘。
 
@@ -271,7 +271,7 @@ P1 才实现：
 
 - 十连抽。
 - 十连最低稀有度保证。
-- 重复角色转换为通用碎片。
+- Universal Shard 的消耗、觉醒和更完整的重复补偿。
 - 更完整的保底与结果摘要。
 
 所有权重、保底阈值和重复转换数量均为新创、可配置的 Demo 数值。
@@ -297,13 +297,13 @@ P1 才实现：
 - 禁止重复角色。
 - 提供合法默认编队。
 - 保存选定编队。
-- 当前存档与 Formation 仍保存 5 人；测试战斗从数据库中的独立名单部署玩家 3 人和敌方 5 人。
+- 当前存档与 Formation 保存 5 人；玩家确认的合法五槽阵容直接部署为 5 名玩家单位，对抗 5 名测试敌人。
 
-### 6.6 3v5 射程自动战斗
+### 6.6 5v5 射程自动战斗
 
 场景要求：
 
-- 玩家 3 人在左，敌方 5 人在右；玩家测试阵容固定为 Catherine 坦克、Gold Ranger 射手和 Ember Striker 刺客。
+- 玩家 5 人在左，敌方 5 人在右；新存档默认阵容为 Catherine 主角与 Gold、Ember、Verdant、Violet 四只伙伴史莱姆，之后直接读取玩家保存的合法五槽阵容。
 - 战场主轴长度为 20 格，所有出生、移动、击退和瞬移必须限制在左右边界内。
 - 固定出生槽位、持续逻辑位置与侧向移动游戏镜头。
 - 简单地面、背景、灯光和 Ground Marker。
@@ -348,6 +348,16 @@ P0 至少支持三类通用技能效果：
 - 角色页必须能区分运行时战斗槽、完整能力档案和养成/获取信息；数据不在 UI 中重复硬编码。
 - 生成器与验证器必须允许未来新增角色、技能和卡池内容，避免把当前 7 角色/10 技能误当成永久上限。
 - 完成条件包括首轮与最终 Generate、PlayMode、生成器幂等、Windows Build、真实窗口视觉和差异审查；上一轮 Build 不能替代本轮证据。
+
+### 6.8 完整系统壳与离线主线闭环
+
+- `DemoUiRouter` 管理 Home、World、Recruit、Characters、Formation、Inventory、Missions、Settings、LockedFeature 与 Battle；`AppShellView` 统一玩家档案、Crystal、Gold、Energy、编队、邮件/设置入口和六项底部导航。
+- World 由三个 `StageDefinition` 驱动：1-1 Fracture Gate、1-2 Resonance Gallery、1-3 Event Horizon；关卡按稳定 ID 和前置顺序解锁，并显示体力、推荐战力、首通水晶与常规掉落。
+- 主循环固定为 World → Stage Detail → Formation → Battle → Result/Rewards → World（下一关解锁）、Home 或 Restart；关卡进入、体力扣除、胜利记录和奖励发放由 `GameStateService` 权威处理。
+- 同一战斗的结果只允许提交一次；Restart 创建新局、再次扣除体力并发放常规奖励，但不重复首通奖励。Home Continue 必须从最新进度解析已解锁关卡，Boss Void Fragment 必须进入结算摘要。
+- Inventory 展示本地材料、招募券和 Universal Shard；Missions 根据抽卡、拥有角色、胜场和 1-3 通关计算进度并幂等领取；Settings 保存音量、全屏、帧率与确认式 Reset。
+- PlayerState schema v4 保存 Gold、Energy、抽卡次数、胜场、背包、通关、任务和设置，并显式迁移 v3 的水晶、拥有角色与五槽阵容。
+- Arena、Events、Shop、Mail、Guild 只提供带上下文的锁定说明；不伪造在线 PvP、IAP、账号或服务器奖励。
 
 ---
 
@@ -411,10 +421,11 @@ Demo 使用本地离线实现。正式产品中的账号、货币、抽卡、购
 至少保存：
 
 - Demo 货币
+- Gold 与 Energy
 - 已拥有角色
 - 角色等级（P0 可全部为 1）
 - 当前五人编队
-- P1 的碎片数据
+- 背包物品、通关关卡、抽卡/胜场计数、已领取任务与设置
 - `schemaVersion`
 
 要求：
@@ -437,7 +448,7 @@ Demo 使用本地离线实现。正式产品中的账号、货币、抽卡、购
 
 ### 7.6 角色表现契约
 
-程序化角色与未来 FBX/正式 Prefab 都通过 `CharacterView` 接入。
+当前 Pixel2D Sprite、旧 authored 3D Prefab 与最后级程序化防崩角色都通过 `CharacterView` 接入；正常流程必须由 `PixelCharacterBuilder` 优先创建像素角色。
 
 统一层级/Socket 契约：
 
@@ -559,13 +570,14 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 
 负责生成或修复：
 
-- 6 个示例 CharacterDefinition
+- 7 个示例 CharacterDefinition
 - P0 所需 SkillDefinition
 - Demo Gacha Banner
+- Chapter 01 的 3 个 StageDefinition
 - 原创 URP 材质
-- 程序化角色配置/Prefab
-- Home、Gacha、Collection、Formation、Battle、Result UI
-- Camera、Light、Floor、Background、Formation Slots
+- 7 张 Pixel2D 战斗 Sprite、像素地图及旧 3D/程序化兼容回退配置
+- Home、World、Gacha、Collection、Formation、Battle、Result、Inventory、Missions、Settings 与 LockedFeature UI
+- 正交 Camera、Pixel Background、世界 UI、VFX 与 Formation Slots
 - Managers、EventSystem
 - 完整 `GachaRPGDemo.unity`
 - Build Settings 场景项
@@ -646,7 +658,7 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 - 战斗必定以胜/负/超时结束。
 - Unity 编译错误为 0。
 
-### 阶段 4 — 角色表现、UI 和完整场景
+### 阶段 4 — 角色表现、UI 和完整场景（历史 P0 基线，默认表现已被阶段 6.9 取代）
 
 交付：
 
@@ -670,12 +682,12 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 - `README_START_HERE.md`。
 - 架构摘要、Clean-room 可追溯说明和 Demo 限制。
 - 编译、Play Mode、自动化全流程与 Windows Build 验证记录。
-- `Builds/Windows/BubbleMind.exe` 及其 Unity 运行支持文件。
+- `Builds/FullSystemWindows/BubbleMind.exe` 及其 Unity 运行支持文件。
 
 完成条件：
 
 - 用户只需打开 `Assets/_Game/Scenes/GachaRPGDemo.unity` 并点击 Play。
-- 或直接运行 `Builds/Windows/BubbleMind.exe`。
+- 或直接运行 `Builds/FullSystemWindows/BubbleMind.exe`。
 - 完整流程可重复试玩。
 - 不得用“代码已写但未编译”或“场景未生成”宣称完成。
 
@@ -683,9 +695,10 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 
 候选：
 
-- 首个正式 3D 角色样板、Prefab/CharacterView 接入与 URP 表现。
+- 七角色逐帧像素动画、分层像素地图与 Pixel2D/CharacterView 量产管线。
+- 首个正式 3D 角色样板作为已完成的历史兼容研究，不再代表默认战斗表现。
 - 十连和最低稀有度保证。
-- 重复角色碎片。
+- Universal Shard 消耗与觉醒。
 - 更丰富技能类型。
 - 角色详情和基础升级。
 - 视觉与音效润色。
@@ -699,11 +712,12 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 
 - Unity 项目编译错误为 0。
 - `Assets/_Game/Scenes/GachaRPGDemo.unity` 确实存在并可打开。
-- Home → Gacha → Collection → Formation → Battle → Result → Home/Restart 全流程可完成。
+- Home 的全局导航可以进入 World、Gacha、Collection、Formation、Inventory、Missions 和 Settings，并可正确返回。
+- World → Stage Detail → Formation → Battle → Result/Rewards → World/Home/Restart 全流程可完成，三关按前置顺序解锁。
 - 新存档有足够 Demo 货币，至少可以多次单抽。
 - 单抽正确扣费并更新收藏；重新进入页面状态仍正确。
 - 编队只能保存 5 名已拥有且不重复的角色。
-- 玩家生成 3 个单位，敌方生成 5 个单位；五槽编队存档不受影响。
+- 玩家生成 5 个单位，敌方生成 5 个单位；玩家单位必须与当前合法五槽编队逐一对应。
 - 普攻、怒气、技能槽 1 大招与错峰技能槽 2 / 3 可见且有效。
 - 怒气上限 1000、初始 0；普攻命中 +100、受伤 +50，满怒大招后归零。
 - 20 格战场内 Tank / Assassin 在射程 2 停位，其余职业在射程 10 停位；Catherine 直线技能请求击退 5 格，接近地图边缘时按战场边界截断。
@@ -711,7 +725,8 @@ Tools > Generic Gacha RPG > Generate or Repair Demo
 - 单位能够死亡，死亡后不行动、不被选为目标。
 - 战斗能够稳定产生结果，超时保护有效。
 - Restart 和 Return Home 有实际行为。
-- 存档可重新加载；Reset Demo Data 能恢复默认状态。
+- 存档可重新加载；Settings 中的 Reset Local Demo Data 经二次确认后能恢复默认状态。
+- PlayMode 必须修改并验证 Music、Effects、Fullscreen 与 60 FPS 四项设置，并覆盖全屏模态确认层。
 - Generator 连续运行两次不会复制内容或破坏场景。
 - 无未处理异常、持续 NullReference 或 MissingReference。
 - 没有任何原应用专有代码、资产、品牌、数据或服务器依赖。
@@ -767,7 +782,7 @@ Assets/_Game/Docs/DemoLimitations.md
 3. 如何按 Play；
 4. Demo 当前包含什么；
 5. 在哪里编辑角色、技能和卡池数据；
-6. 将来如何用正式 3D 模型替换程序化角色。
+6. 如何扩展 Pixel2D Sprite Sheet，以及旧 authored 3D/程序化角色仅在素材缺失时如何回退。
 
 `AnalysisTraceability.md` 仅记录：
 
@@ -831,7 +846,7 @@ Agent 实际 Play Mode 验证：是 / 否
 
 | 阶段 | 状态 | 主要交付物 | 验证证据 | 更新时间 |
 |---|---|---|---|---|
-| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.6 已同步混元 3D 评估结论、许可证边界与正式模型授权门槛 | 2026-07-15 |
+| 计划制定 | 已完成 | `PROJECT_PLAN.md` | v2.8 已同步完整系统壳、离线主线闭环、schema v4 与在线功能边界 | 2026-07-15 |
 | 阶段 0：基线检查 | 已完成 | 路径、版本、现有改动、目录基础 | Unity 6000.5.3f1、URP/uGUI/Input System/Test Framework 与构建支持已确认 | 2026-07-13 |
 | 阶段 1：数据与服务 | 已完成 | 定义、存档、默认数据、服务接口 | 七角色/三技能/一组六角色标准抽卡池；内存存档、抽卡与编队验证通过 | 2026-07-14 |
 | 阶段 2：主页/抽卡/收藏/编队 | 已完成 | 完整非战斗流程 | 自动化 UI 冒烟测试已走通 Home、单抽、收藏与编队 | 2026-07-13 |
@@ -839,7 +854,7 @@ Agent 实际 Play Mode 验证：是 / 否
 | 阶段 4：表现与场景 | 已完成 | 角色、UI、VFX、Generator、Scene | 程序化角色、运行时 UI、表现层及场景已在 Unity Play Mode 实测 | 2026-07-13 |
 | 阶段 5：P0 验证与试玩 | 已完成 | 可重复试玩的完整流程与 Windows Build | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS`；详见 `VerificationReport.md` | 2026-07-13 |
 | 长期制作基础设施 | 已完成（清理待授权） | 本地 Git/LFS、`AGENTS.md`、StudioOps、项目级 `.codex/config.toml`、嵌入式隔离 Unity MCP、隔离 uv/Python 与 Editor Bootstrap | 48 工具离线协议复测、`UNITY_MCP_SMOKE_PASS`、P0/Play 回归与最终 Windows 构建均通过；项目外残留详见 `VerificationReport.md` | 2026-07-14 |
-| 阶段 6：P1 | 进行中 | 首个地图、五人战斗、怒气/三技能、UR 真实凝胶、角色档案与内容模板已进入可复用阶段；正式角色动画、十连、碎片、升级仍延期 | `StudioOps/CURRENT_MILESTONE.md` | 2026-07-15 |
+| 阶段 6：P1 | 进行中 | 地图、五人战斗、怒气/三技能、角色档案、完整系统壳与 Universal Shard 获取已进入可复用阶段；正式角色动画、十连、碎片消耗、升级仍延期 | `StudioOps/CURRENT_MILESTONE.md` | 2026-07-15 |
 | 阶段 6.1：五人射程战斗与史莱姆重制 | 已完成 | 五槽/5v5、攻击距离、持续位置与锁敌、1.6 倍回放、六材质黑洞史莱姆及紧凑战斗 UI | `P0_VERIFY_PASS`、`P0_PLAY_SMOKE_PASS`、`WINDOWS_BUILD_PASS` 与真实 1920×1080 窗口核验 | 2026-07-14 |
 | 阶段 6.2：柔和漫画地图与元素测试史莱姆 | 已完成 | 水火土风雷五套基础史莱姆、柔和漫画星渊观测台、限定黑洞动画与统一视觉集成 | GPT Image 设定底稿、五系 Blender/FBX/Prefab、几何审计、PlayMode、Windows Build 与双分辨率实机核验均完成 | 2026-07-14 |
 | 阶段 6.3：Catherine 满级技能与 UR 视觉重制 | 已完成 | 满级三技能/领域/觉醒、大招全体拉拽与击飞、10×HP/0.1×ATK 测试敌人、UR Blend Shapes、Slime Toon Shader 与原创黑洞 VFX | `GenerateCompile3.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 均通过；D3D11 无 Shader error，1920×1080 / 1280×720 实机逐帧确认吸附、坍缩与击飞 | 2026-07-14 |
@@ -848,6 +863,8 @@ Agent 实际 Play Mode 验证：是 / 否
 | 阶段 6.6：角色档案、2D 卡面与 UI 重制 | 已完成 | 角色主从详情页、七张原创竖版卡面、抽卡结果揭示、五槽卡面编队、Noto Sans CJK SC 与清洁室 UI 知识库 | `Artifacts/CharacterPage/GenerateFinal.log`、`PlaySmokeFinal.log`、`WindowsBuildFinal.log` 全部通过；最终 Windows 窗口确认 3,000 初始水晶、真实单抽 2D 卡面与重置 | 2026-07-15 |
 | 阶段 6.7：参考系统图谱与角色内容模板 | 已完成 | 三层清洁室知识库、36 系统/25 页面/27 实体/89 关系、七角色 `CharacterContentProfile`、角色页 Combat/Archive/Growth、Profile 归属/连续逐级参数/来源/战斗参数验证 | 终审后的 `GenerateTriggerCompile.log`、`PlaySmokeOwnershipFinal.log`、`WindowsBuildOwnershipFinal.log` 全部通过；四文件连续生成哈希一致，1600x900 独立窗口完成首页、角色三模式与 Recruitment 检查，最终包重新打开在首页 | 2026-07-15 |
 | 阶段 6.8：腾讯混元 3D 模型候选评估 | 已完成（正式接入待授权） | 腾讯官方 Hunyuan3D-2 单视图、Hunyuan3D-2mv 前视图与三视图共三组无纹理几何候选；Blender 归一化四视图审计；单视图 442,980 triangles 原始网格的 9,000 triangles 自动减面预览 | 三组均通过非空网格/体积审计，但中央黑洞被误读为凹陷且轨道/液滴含破碎漂浮件；预览通过面数与接地检查；原始候选、渲染和请求均留在 Git 忽略的 `_ProjectTools/Hunyuan3D/`，Unity 与 Build 未更改 | 2026-07-15 |
+| 阶段 6.9：2D 像素抽卡 PvP 纵切片 | 已完成 | Catherine 主角 + 四史莱姆的保存五槽阵容直接参战；七个稳定角色 ID 的原创像素战斗 Sprite；像素化星渊观测台；2.5D Billboard、现代 VFX、技能与世界血条 | `Artifacts/PixelPvp2D/Generate1.log`、`PlaySmoke1.log`、`WindowsBuild1.log` 分别通过 Pixel PvP 专用 PASS；自动覆盖 5v5、十个像素单位、Result、Restart 第二局与 Home；Windows 独立包已实际启动 | 2026-07-15 |
+| 阶段 6.10：完整系统壳与离线主线闭环 | 已完成 | 全局 App Shell、Home/World/Characters/Recruit/Formation/Battle/Result/Inventory/Missions/Settings、三关顺序解锁、幂等奖励与 schema v4 | `Generate.log`、`PlaySmokeEconomyFinal.log`、`WindowsBuildFinal2.log` 通过 Full System 专用 PASS；增强冒烟覆盖两次体力/奖励、1-2 解锁和四项设置，最终 Build `143,676,760` bytes / `65.4s`；Windows 入口为 `Builds/FullSystemWindows/BubbleMind.exe` | 2026-07-15 |
 
 状态仅使用：`未开始 / 进行中 / 修复中 / 已完成 / 阻塞`。
 
@@ -912,6 +929,12 @@ Agent 实际 Play Mode 验证：是 / 否
 | 2026-07-15 | Profile 保存防误挂归属外键，逐级表必须连续 | 共享技能的角色可能误换 Profile；只校验首末等级会让缺级表伪装成完整数据 | `ownerCharacterId` 必须匹配 `CharacterDefinition.Id`，但不成为第二身份权威；等级记录必须从 Lv.1 连续到 MaxLevel |
 | 2026-07-15 | 腾讯官方 Hunyuan3D-2/2mv 仅用于首个 UR 的内部几何候选评估 | 用户明确要求尝试腾讯混元 3D；本机 RTX 4060 8GB、16GB RAM 与 13GB 级磁盘余量不适合完整本地 Hunyuan3D-2.1 纹理管线 | 三组零费用官方 Space 作业与 9,000 面预览已完成；所有产物保持 `_ProjectTools/` 隔离，未替换现有 Unity 模型 |
 | 2026-07-15 | 不把开源混元候选提交或用于正式全球发行 | Hunyuan3D-2/2.1 社区许可证的授权地域排除欧盟、英国和韩国，并将输出/结果纳入限制；当前几何还把黑洞误读为凹陷且含漂浮碎片 | Git 只记录参数、哈希和审计结论；正式候选转向腾讯云 HY-3D 3.1 + PBR + 智能拓扑，并等待账户、条款、凭据和 credits 授权 |
+| 2026-07-15 | 当前产品表现从默认 3D 改为原创 2D 像素 Sprite + 2.5D 场景 | 用户明确要求只把此前 3D 角色与地图转换为 2D，不改变抽卡 PvP 类型 | 抽卡、收藏、五槽编队、角色 ID、数值、技能与确定性模拟全部保留；3D Prefab 只作为兼容回退，不删除 |
+| 2026-07-15 | 玩家战斗恢复为编队驱动的五人阵容 | 用户确认核心是“一名主角 + 四只史莱姆”，不是横版探索或单 Boss 游戏 | Catherine Yuki 固定为默认主角/首槽，Gold、Ember、Verdant、Violet 为默认四伙伴；玩家保存的合法五槽阵容直接进入 5v5 |
+| 2026-07-15 | 只借鉴《潜水员戴夫》的广义美术技术，不复制其内容 | 用户明确说明参考仅限 2D 像素角色与现代渲染形成的层次感 | 所有角色、地图、字体、UI、玩法、名称与特效继续使用 BubbleMind 原创设计；不复刻现有 IP 资产或构图 |
+| 2026-07-15 | 正式模型延期，优先完成完整游戏系统壳 | 用户指出当前没有可进入不同区域的主页面，并要求重新结合 `analysis` 的高层系统结构构建完整系统 | 保留现有 Pixel2D 战斗表现；新增全局导航、三关世界、背包、任务、设置和奖励闭环，模型不再阻塞玩法系统 |
+| 2026-07-15 | 在线模块以锁定入口表达，不做虚假离线替身 | 竞技场、活动、商店、邮件和公会依赖账号、后端、IAP 或在线时效 | 页面架构保留未来连接点；当前锁定页说明边界，禁止发放伪造服务器奖励或执行真实货币行为 |
+| 2026-07-15 | 玩家存档升级为 schema v4 | 完整系统需要持久化金币、体力、关卡、背包、任务与设置，同时必须保留现有玩家的水晶、角色和五槽阵容 | v3 → v4 使用显式迁移和默认补全；验证器覆盖迁移、损坏恢复、重置与存档往返 |
 
 ---
 
@@ -919,7 +942,7 @@ Agent 实际 Play Mode 验证：是 / 否
 
 P0 已完成。以下选项不会阻塞当前试玩版，可在用户试玩后决定：
 
-1. P1 玩法优先级：首个 UR 样板、怒气与三技能轮转已经完成；下一步决定十连/保底/碎片或角色升级与养成。
+1. P1 玩法优先级：完整系统壳、首章三关、Universal Shard 获取、怒气与三技能轮转已经完成；下一步决定十连/保底/碎片消耗，或角色升级与养成。
 2. 美术方向：星空/黑洞史莱姆的真实凝胶与三点布光样板已经通过内部原型门槛；腾讯混元几何候选已证明可改善主体有机轮廓，但正式替换需先完成腾讯云 HY-3D 3.1 授权、许可审查和 Blender 重拓扑。
 3. 战斗方向：优先加入碰撞/分道与正式动作，或扩展更多技能机制和目标策略。
 4. 下一目标平台：继续 Windows，或优先 WebGL/Android 适配。

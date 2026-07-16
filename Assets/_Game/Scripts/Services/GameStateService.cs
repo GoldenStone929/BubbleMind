@@ -16,6 +16,9 @@ namespace GenericGachaRPG
         public event Action<int> CurrencyChanged;
         public event Action<IReadOnlyList<OwnedCharacterState>> CollectionChanged;
         public event Action<TeamFormationState> FormationChanged;
+        public event Action<PlayerState> ProgressChanged;
+        public event Action<IReadOnlyList<InventoryItemState>> InventoryChanged;
+        public event Action<PlayerSettingsState> SettingsChanged;
 
         public GameStateService(GameDatabase database)
             : this(database, CreateSaveService(database))
@@ -110,9 +113,12 @@ namespace GenericGachaRPG
             }
 
             isNewCharacter = State.RegisterCharacterCopy(character.Id);
+            State.RecordGachaDraw(!isNewCharacter);
             saveService.Save(State);
             CurrencyChanged?.Invoke(State.Currency);
             CollectionChanged?.Invoke(State.OwnedCharacters);
+            InventoryChanged?.Invoke(State.InventoryItems);
+            ProgressChanged?.Invoke(State);
             StateChanged?.Invoke(State);
             return true;
         }
@@ -130,12 +136,190 @@ namespace GenericGachaRPG
             StateChanged?.Invoke(State);
         }
 
+        public bool CanEnterStage(StageDefinition stage, out string reason)
+        {
+            if (stage == null)
+            {
+                reason = "No stage is selected.";
+                return false;
+            }
+
+            if (State == null)
+            {
+                reason = "Player state is unavailable.";
+                return false;
+            }
+
+            if (Database != null && !Database.IsStageUnlocked(stage, State))
+            {
+                reason = string.IsNullOrEmpty(stage.PrerequisiteStageId)
+                    ? "This stage is locked."
+                    : $"Clear {stage.PrerequisiteStageId.Replace("stage_", string.Empty).Replace('_', '-')} first.";
+                return false;
+            }
+
+            if (State.Energy < stage.EnergyCost)
+            {
+                reason = $"Not enough energy. Need {stage.EnergyCost}.";
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        public bool TryStartStage(StageDefinition stage, out string reason)
+        {
+            if (!CanEnterStage(stage, out reason))
+            {
+                return false;
+            }
+
+            if (!State.TrySpendEnergy(stage.EnergyCost))
+            {
+                reason = "Not enough energy.";
+                return false;
+            }
+
+            SaveAndRaiseProgress();
+            return true;
+        }
+
+        public StageRewardGrant CommitBattleResult(StageDefinition stage, BattleResult result)
+        {
+            bool victory = result != null && result.Outcome == BattleOutcome.PlayerVictory;
+            if (stage == null || !victory || State == null)
+            {
+                return StageRewardGrant.None(stage == null ? string.Empty : stage.Id, victory);
+            }
+
+            bool firstClear = State.RecordStageVictory(stage.Id);
+            int crystals = firstClear ? stage.FirstClearCrystalReward : 0;
+            State.AddCurrency(crystals);
+            State.AddGold(stage.GoldReward);
+            State.AddInventoryItem("echo_gel", stage.MaterialReward);
+            int rareMaterials = stage.IsBossStage && firstClear ? 1 : 0;
+            if (rareMaterials > 0)
+            {
+                State.AddInventoryItem("void_fragment", rareMaterials);
+            }
+
+            SaveAndRaiseProgress();
+            return new StageRewardGrant(
+                stage.Id,
+                true,
+                firstClear,
+                crystals,
+                stage.GoldReward,
+                stage.MaterialReward,
+                rareMaterials);
+        }
+
+        public bool TryClaimMission(string missionId, out string reason)
+        {
+            DemoMissionDefinition mission = DemoMissionCatalog.Get(missionId);
+            if (mission == null || State == null)
+            {
+                reason = "Mission is unavailable.";
+                return false;
+            }
+
+            if (State.IsMissionClaimed(mission.Id))
+            {
+                reason = "Reward already claimed.";
+                return false;
+            }
+
+            if (!mission.IsComplete(State))
+            {
+                reason = "Mission is not complete.";
+                return false;
+            }
+
+            if (!State.MarkMissionClaimed(mission.Id))
+            {
+                reason = "Reward already claimed.";
+                return false;
+            }
+
+            State.AddCurrency(mission.CrystalReward);
+            State.AddGold(mission.GoldReward);
+            SaveAndRaiseProgress();
+            reason = "Reward claimed.";
+            return true;
+        }
+
+        public void SetMusicVolume(float value)
+        {
+            if (State == null)
+            {
+                return;
+            }
+
+            State.SetMusicVolume(value);
+            SaveAndRaiseSettings();
+        }
+
+        public void SetEffectsVolume(float value)
+        {
+            if (State == null)
+            {
+                return;
+            }
+
+            State.SetEffectsVolume(value);
+            SaveAndRaiseSettings();
+        }
+
+        public void SetFullscreen(bool value)
+        {
+            if (State == null)
+            {
+                return;
+            }
+
+            State.SetFullscreen(value);
+            SaveAndRaiseSettings();
+        }
+
+        public void SetSixtyFps(bool value)
+        {
+            if (State == null)
+            {
+                return;
+            }
+
+            State.SetSixtyFps(value);
+            SaveAndRaiseSettings();
+        }
+
+        private void SaveAndRaiseProgress()
+        {
+            saveService.Save(State);
+            CurrencyChanged?.Invoke(State.Currency);
+            InventoryChanged?.Invoke(State.InventoryItems);
+            ProgressChanged?.Invoke(State);
+            StateChanged?.Invoke(State);
+        }
+
+        private void SaveAndRaiseSettings()
+        {
+            saveService.Save(State);
+            SettingsChanged?.Invoke(State.Settings);
+            StateChanged?.Invoke(State);
+        }
+
         private void RaiseAllChanged()
         {
             StateChanged?.Invoke(State);
             CurrencyChanged?.Invoke(Currency);
             CollectionChanged?.Invoke(State == null ? Array.Empty<OwnedCharacterState>() : State.OwnedCharacters);
             FormationChanged?.Invoke(State == null ? null : State.TeamFormation);
+            ProgressChanged?.Invoke(State);
+            InventoryChanged?.Invoke(State == null
+                ? Array.Empty<InventoryItemState>()
+                : State.InventoryItems);
+            SettingsChanged?.Invoke(State == null ? null : State.Settings);
         }
 
         private static ISaveService CreateSaveService(GameDatabase database)

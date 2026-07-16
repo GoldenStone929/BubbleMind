@@ -1,0 +1,93 @@
+{
+  "assetId": "ART-CHAR-PIXEL-PARTY-001",
+  "generatedUtc": "2026-07-15",
+  "pipeline": "Project-local Pillow/NumPy/SciPy crop, hard-alpha extraction, 58px working sprite, nearest-neighbor 2x, 48-color palette",
+  "artDirection": "Original BubbleMind character designs rendered as crisp pixel combat sprites; no copied third-party game assets, UI, characters, maps, or typography.",
+  "characters": [
+    {
+      "characterId": "ur_cosmic_slime",
+      "source": "Assets/_Game/Art/Source/Characters/Pixel2D/ur_cosmic_slime/Pixel_ur_cosmic_slime_Source.png",
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_ur_cosmic_slime.png",
+      "sha256": "E8C21A224755F94ED7DBCA152EB3AC380F388912868B8D9F6203042BB1C445F3"
+    },
+    {
+      "characterId": "azure_vanguard",
+      "source": "Assets/_Game/Art/Source/Characters/BasicElementSlimes/BasicElementSlimes_ConceptSheet.png",
+      "crop": [
+        18,
+        174,
+        316,
+        568
+      ],
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_azure_vanguard.png",
+      "sha256": "C9FEA9BF3A32C8DC5B840B830A2821CEAE967218C1F2EF054128EEA2CF47A379"
+    },
+    {
+      "characterId": "ember_striker",
+      "source": "Assets/_Game/Art/Source/Characters/BasicElementSlimes/BasicElementSlimes_ConceptSheet.png",
+      "crop": [
+        348,
+        174,
+        652,
+        568
+      ],
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_ember_striker.png",
+      "sha256": "2D317E08F91A17C532E2252C1795B02CD20B5195DF1F94BDC6297366E18365E6"
+    },
+    {
+      "characterId": "gold_ranger",
+      "source": "Assets/_Game/Art/Source/Characters/BasicElementSlimes/BasicElementSlimes_ConceptSheet.png",
+      "crop": [
+        686,
+        174,
+        984,
+        568
+      ],
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_gold_ranger.png",
+      "sha256": "7C9F806EFBCB0CA12C0FA0B0229BEDB75F4AF48A4EA10938F20895000B3FE520"
+    },
+    {
+      "characterId": "verdant_medic",
+      "source": "Assets/_Game/Art/Source/Characters/BasicElementSlimes/BasicElementSlimes_ConceptSheet.png",
+      "crop": [
+        1005,
+        174,
+        1324,
+        568
+      ],
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_verdant_medic.png",
+      "sha256": "6FDC0B2B15D775C0E335F94114D87E33218F0F0A09A595CA64680EAB9B5B3006"
+    },
+    {
+      "characterId": "violet_arcanist",
+      "source": "Assets/_Game/Art/Source/Characters/BasicElementSlimes/BasicElementSlimes_ConceptSheet.png",
+      "crop": [
+        1334,
+        174,
+        1662,
+        568
+      ],
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_violet_arcanist.png",
+      "sha256": "8BE561B42A0445EF8B95F9556CF6C68E810E7B1EF6F36E8F1723B59BD896A818"
+    },
+    {
+      "characterId": "cyan_warden",
+      "source": "Pixel_azure_vanguard.png (shared water-family battle silhouette)",
+      "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/Pixel_cyan_warden.png",
+      "sha256": "C9FEA9BF3A32C8DC5B840B830A2821CEAE967218C1F2EF054128EEA2CF47A379"
+    }
+  ],
+  "arena": {
+    "source": "Assets/_Game/Art/Generated/Environments/AbyssalObservatory/Textures/Resources/AbyssalObservatory_Concept.png",
+    "output": "Assets/_Game/Art/Generated/Pixel2D/Environments/AbyssalObservatory/Textures/Resources/AbyssalObservatory_Pixel.png",
+    "sha256": "F359F32BD5E8620CA7736E78A8ECD3D7772DA34A3450E42480EBB838347E5A99",
+    "size": [
+      480,
+      270
+    ]
+  },
+  "shadow": {
+    "output": "Assets/_Game/Art/Generated/Pixel2D/Characters/Resources/BattleSprites/PixelShadow.png",
+    "sha256": "970BB4356478431D66DAF3D0EB72D81670AB2D6398DA8A7B7DB99AD1B99AA7AD"
+  }
+}

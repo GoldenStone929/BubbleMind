@@ -46,7 +46,7 @@ namespace GenericGachaRPG
             Text subtitle = DemoUiFactory.CreateText(
                 "Subtitle",
                 safe,
-                "Survey the observatory, tune your five-unit roster, and enter the 3v5 range trial.",
+                "Lead Catherine and four slimes into a five-versus-five Pixel PvP trial.",
                 22,
                 TextAnchor.UpperLeft,
                 DemoUiFactory.TextSecondary);
@@ -243,6 +243,9 @@ namespace GenericGachaRPG
                 DemoUiFactory.TextPrimary,
                 FontStyle.Bold);
             SetAnchors(bannerText.rectTransform, 0.58f, 0.58f, 0.96f, 0.82f);
+            bannerText.resizeTextForBestFit = true;
+            bannerText.resizeTextMinSize = 22;
+            bannerText.resizeTextMaxSize = 36;
 
             DemoUiFactory.CreateDivider(
                 "BannerDivider",
@@ -354,7 +357,7 @@ namespace GenericGachaRPG
                 return;
             }
 
-            bannerText.text = $"{banner.DisplayName}\n\n{banner.Description}";
+            bannerText.text = $"{banner.DisplayName}\n{banner.Description}";
             pullButton.interactable = banner.TotalWeight > 0f && balance >= banner.SingleDrawCost;
             Text label = pullButton.GetComponentInChildren<Text>();
             if (label != null)
@@ -1383,7 +1386,7 @@ namespace GenericGachaRPG
             battleButton = DemoUiFactory.CreateButton(
                 "BattleButton",
                 safe,
-                "Start 3v5 Trial",
+                "Start 5v5 Battle",
                 DemoUiFactory.Action,
                 () => battle?.Invoke());
             SetAnchors(battleButton.GetComponent<RectTransform>(), 0.72f, 0.06f, 0.96f, 0.16f);
@@ -1408,7 +1411,7 @@ namespace GenericGachaRPG
             }
 
             feedbackText.text = string.IsNullOrEmpty(feedback)
-                ? "Five saved slots are shown above. The demo battle deploys Catherine, Gold Ranger, and Ember Striker."
+                ? "Your five saved slots deploy directly into the local 5v5 Pixel PvP trial."
                 : feedback;
             feedbackText.color = string.IsNullOrEmpty(feedback) ? DemoUiFactory.TextSecondary : DemoUiFactory.Warning;
             battleButton.interactable = draftIds != null && draftIds.Count == TeamFormationState.RequiredMemberCount;

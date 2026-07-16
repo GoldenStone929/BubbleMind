@@ -9,7 +9,10 @@ namespace GenericGachaRPG.Editor
     public static class DemoBuildAutomation
     {
         public const string BuildPassMarker = "[GenericGachaRPG][WINDOWS_BUILD_PASS_20260713]";
-        public const string OutputPath = "Builds/Windows/BubbleMind.exe";
+        public const string PixelBuildPassMarker = "[GenericGachaRPG][PIXEL_PVP_WINDOWS_BUILD_PASS_20260715]";
+        public const string FullSystemBuildPassMarker =
+            "[GenericGachaRPG][FULL_SYSTEM_WINDOWS_BUILD_PASS_20260715]";
+        public const string OutputPath = "Builds/FullSystemWindows/BubbleMind.exe";
 
         [MenuItem("Tools/Generic Gacha RPG/Build Windows Demo _F6", priority = 20)]
         public static void BuildWindowsDemo()
@@ -51,7 +54,8 @@ namespace GenericGachaRPG.Editor
             }
 
             Debug.Log(
-                $"{BuildPassMarker} {OutputPath} ({summary.totalSize:N0} bytes, {summary.totalTime.TotalSeconds:0.0}s)." );
+                $"{BuildPassMarker} {PixelBuildPassMarker} {FullSystemBuildPassMarker} " +
+                $"{OutputPath} ({summary.totalSize:N0} bytes, {summary.totalTime.TotalSeconds:0.0}s)." );
         }
     }
 }
