@@ -37,3 +37,14 @@
 - `WindowsBuildFinal2.log`：`[GenericGachaRPG][FULL_SYSTEM_VERIFY_PASS_20260715]`、`[GenericGachaRPG][FULL_SYSTEM_WINDOWS_BUILD_PASS_20260715]`；`143,676,760` bytes / `65.4s`
 - 完整记录：`MILESTONES/2026-07-15_FULL_SYSTEM_SHELL.md`
 - Windows 试玩入口：`Builds/FullSystemWindows/BubbleMind.exe`
+
+## 暂停中的参考审计交接
+
+> 2026-07-15：用户需要使用电脑，参考游戏只读审计已立即停止；窗口和登录状态保持不动。
+
+- 已完成会话：`OBS-20260715-01`，覆盖主城首页、大世界、角色收藏，以及首个样本角色的图鉴、持有属性、领域、命运和境界。
+- 本机精确记录：`Artifacts/ReferenceAudit/2026-07-15_session-01/`；其中 `NEXT_SESSION_CHECKLIST.md` 是下一次操作入口。
+- 版本化阶段记录：`MILESTONES/2026-07-15_REFERENCE_GAME_AUDIT_SESSION_01.md`。
+- 恢复点：角色 `RC0001` 的“境界”页；下一次应开启新会话并从截图编号 `CAP-20260715-02-0001` 开始。
+- 下一次优先完成 `RC0001` 的咒力、修行、升星、当前技能说明、装备与高级属性，再建立全角色稳定 ID 目录，之后继续系统级页面巡检。
+- 恢复前必须获得用户确认；不得关闭或重启参考游戏，不得消费、领取、抽取、养成、改队、进入战斗、发消息、迁移基地或发起世界行动。

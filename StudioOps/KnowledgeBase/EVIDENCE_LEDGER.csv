@@ -20,3 +20,4 @@ LV-004,live_read_only,reference_window_skill_detail,2026-07-15,notes_only,observ
 LV-005,live_read_only,reference_window_gacha,2026-07-15,notes_only,observed,gacha_entry,fact,"只读查看池入口；未抽取、未消费"
 LV-006,live_read_only,reference_window_probability,2026-07-15,notes_only,observed,probability_entry,fact,"只确认概率说明入口和职责；不记录精确概率"
 LV-007,live_read_only,reference_window_power_saving_mask,2026-07-15,notes_only,blocked,live_access_state,fact,"窗口处于自身省电遮罩，普通唤醒输入未能自动恢复；保持窗口开启且未重启或重新登录"
+LV-008,live_read_only,reference_window_system_audit_session_01,2026-07-15,local_artifacts_only,observed,home_open_world_character_growth,fact,"只读观察主城、大世界、角色收藏、图鉴、持有详情、领域、命运和境界；精确截图留在忽略的本机 Artifacts，账号状态未修改"
