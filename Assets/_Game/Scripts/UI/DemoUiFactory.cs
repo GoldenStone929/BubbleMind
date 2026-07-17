@@ -29,6 +29,19 @@ namespace GenericGachaRPG
         public static readonly Color TextSecondary = new Color(0.78f, 0.82f, 0.86f, 1f);
         public static readonly Color TextMuted = new Color(0.56f, 0.61f, 0.67f, 1f);
 
+        // Presentation tokens for the observatory shell. Legacy screens keep
+        // the palette above until they are intentionally migrated.
+        public static readonly Color Pearl = new Color(0.961f, 0.969f, 0.984f, 1f);
+        public static readonly Color Ink = new Color(0.094f, 0.125f, 0.165f, 1f);
+        public static readonly Color InkSoft = new Color(0.255f, 0.302f, 0.353f, 1f);
+        public static readonly Color Cyan = new Color(0.298f, 0.796f, 0.820f, 1f);
+        public static readonly Color Coral = new Color(1f, 0.431f, 0.384f, 1f);
+        public static readonly Color Gold = new Color(0.949f, 0.784f, 0.369f, 1f);
+        public static readonly Color Leaf = new Color(0.447f, 0.769f, 0.545f, 1f);
+        public static readonly Color PearlOverlay = new Color(0.961f, 0.969f, 0.984f, 0.94f);
+        public static readonly Color InkGlass = new Color(0.047f, 0.071f, 0.098f, 0.84f);
+        public static readonly Color InkLine = new Color(0.094f, 0.125f, 0.165f, 0.20f);
+
         public static Font Font
         {
             get
@@ -83,6 +96,19 @@ namespace GenericGachaRPG
 
         public static GameObject CreateScreenRoot(string name, Transform parent, float artworkAlpha)
         {
+            return CreateScreenRoot(
+                name,
+                parent,
+                artworkAlpha,
+                new Color(0.018f, 0.028f, 0.035f, 0.42f));
+        }
+
+        public static GameObject CreateScreenRoot(
+            string name,
+            Transform parent,
+            float artworkAlpha,
+            Color veilColor)
+        {
             Image background = CreatePanel(
                 name,
                 parent,
@@ -106,7 +132,7 @@ namespace GenericGachaRPG
                 Image veil = CreatePanel(
                     "BackdropVeil",
                     background.transform,
-                    new Color(0.018f, 0.028f, 0.035f, 0.42f),
+                    veilColor,
                     Vector2.zero,
                     Vector2.one,
                     Vector2.zero,
@@ -115,6 +141,114 @@ namespace GenericGachaRPG
             }
 
             return background.gameObject;
+        }
+
+        public static Button CreateCommandButton(
+            string name,
+            Transform parent,
+            string eyebrow,
+            string title,
+            string status,
+            Color accent,
+            UnityEngine.Events.UnityAction onClick)
+        {
+            Text ignoredStatus;
+            return CreateCommandButton(
+                name,
+                parent,
+                eyebrow,
+                title,
+                status,
+                accent,
+                onClick,
+                out ignoredStatus);
+        }
+
+        public static Button CreateCommandButton(
+            string name,
+            Transform parent,
+            string eyebrow,
+            string title,
+            string status,
+            Color accent,
+            UnityEngine.Events.UnityAction onClick,
+            out Text statusText)
+        {
+            Image background = CreateFramedPanel(
+                name,
+                parent,
+                InkGlass,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                new Color(Pearl.r, Pearl.g, Pearl.b, 0.30f));
+            Button button = background.gameObject.AddComponent<Button>();
+            button.targetGraphic = background;
+            ConfigureButtonColors(button);
+            if (onClick != null)
+            {
+                button.onClick.AddListener(onClick);
+            }
+
+            Image rail = CreatePanel(
+                "AccentRail",
+                background.transform,
+                accent,
+                Vector2.zero,
+                new Vector2(0.018f, 1f),
+                Vector2.zero,
+                Vector2.zero);
+            rail.raycastTarget = false;
+
+            Text eyebrowText = CreateText(
+                "Eyebrow",
+                background.transform,
+                eyebrow,
+                12,
+                TextAnchor.MiddleLeft,
+                accent,
+                FontStyle.Bold);
+            SetAnchors(eyebrowText.rectTransform, 0.075f, 0.74f, 0.83f, 0.92f);
+            eyebrowText.resizeTextForBestFit = true;
+            eyebrowText.resizeTextMinSize = 9;
+            eyebrowText.resizeTextMaxSize = 12;
+
+            Text titleText = CreateText(
+                "Title",
+                background.transform,
+                title,
+                23,
+                TextAnchor.MiddleLeft,
+                Pearl,
+                FontStyle.Bold);
+            SetAnchors(titleText.rectTransform, 0.075f, 0.40f, 0.83f, 0.70f);
+            titleText.resizeTextForBestFit = true;
+            titleText.resizeTextMinSize = 14;
+            titleText.resizeTextMaxSize = 23;
+
+            statusText = CreateText(
+                "Status",
+                background.transform,
+                status,
+                13,
+                TextAnchor.MiddleLeft,
+                new Color(Pearl.r, Pearl.g, Pearl.b, 0.70f));
+            SetAnchors(statusText.rectTransform, 0.075f, 0.10f, 0.86f, 0.34f);
+            statusText.resizeTextForBestFit = true;
+            statusText.resizeTextMinSize = 9;
+            statusText.resizeTextMaxSize = 13;
+
+            Text actionMark = CreateText(
+                "ActionMark",
+                background.transform,
+                ">",
+                25,
+                TextAnchor.MiddleCenter,
+                Pearl,
+                FontStyle.Bold);
+            SetAnchors(actionMark.rectTransform, 0.86f, 0.25f, 0.97f, 0.75f);
+            return button;
         }
 
         public static void EnsureEventSystem(Transform parent)
@@ -247,9 +381,17 @@ namespace GenericGachaRPG
             Vector2 anchorMin,
             Vector2 anchorMax,
             Vector2 offsetMin,
-            Vector2 offsetMax)
+            Vector2 offsetMax,
+            Color? color = null)
         {
-            Image line = CreatePanel(name, parent, LineSubtle, anchorMin, anchorMax, offsetMin, offsetMax);
+            Image line = CreatePanel(
+                name,
+                parent,
+                color ?? LineSubtle,
+                anchorMin,
+                anchorMax,
+                offsetMin,
+                offsetMax);
             line.raycastTarget = false;
             return line;
         }
@@ -290,14 +432,7 @@ namespace GenericGachaRPG
 
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
-            ColorBlock colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
-            colors.pressedColor = new Color(0.84f, 0.87f, 0.92f, 1f);
-            colors.disabledColor = new Color(0.45f, 0.48f, 0.54f, 0.55f);
-            colors.colorMultiplier = 1f;
-            colors.fadeDuration = 0.12f;
-            button.colors = colors;
+            ConfigureButtonColors(button);
             Outline outline = rect.gameObject.AddComponent<Outline>();
             outline.effectColor = LineSubtle;
             outline.effectDistance = new Vector2(1f, -1f);
@@ -321,6 +456,31 @@ namespace GenericGachaRPG
             labelRect.offsetMin = new Vector2(18f, 8f);
             labelRect.offsetMax = new Vector2(-18f, -8f);
             return button;
+        }
+
+        private static void ConfigureButtonColors(Button button)
+        {
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+            colors.pressedColor = new Color(0.84f, 0.87f, 0.92f, 1f);
+            colors.disabledColor = new Color(0.45f, 0.48f, 0.54f, 0.55f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.12f;
+            button.colors = colors;
+        }
+
+        private static void SetAnchors(
+            RectTransform rect,
+            float minX,
+            float minY,
+            float maxX,
+            float maxY)
+        {
+            rect.anchorMin = new Vector2(minX, minY);
+            rect.anchorMax = new Vector2(maxX, maxY);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
 
         public static VerticalLayoutGroup AddVerticalLayout(

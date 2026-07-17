@@ -1,50 +1,36 @@
-# 当前里程碑：完整系统壳与离线主线闭环
+# 当前里程碑：参考审计 Session 02 与主页表现升级
 
-> 状态：已完成（Windows 完整系统试玩包已构建）
-> 开始日期：2026-07-15
+> 状态：已完成（最终 Windows 试玩版已构建并保持打开）
+> 日期：2026-07-16
 > 长期范围权威：`../PROJECT_PLAN.md`
 
 ## 目标
 
-- 暂缓正式模型制作，把现有抽卡、角色档案、五槽编队与 5v5 像素战斗接入可导航的完整游戏系统。
-- 提供 Home、World、Characters、Recruit、Formation、Battle、Result、Inventory、Missions 与 Settings 页面。
-- 完成 World → Stage → Formation → Battle → Result → Rewards → World（下一关解锁）/ Home / Restart 的离线主线闭环。
-- 为 Arena、Events、Shop、Mail、Guild 保留明确锁定入口，不伪造联网、IAP 或服务器奖励。
+- 在不关闭、不消费、不领取、不保存改动的前提下完成参考游戏第二轮只读巡检，并把观察转成 clean-room 中性知识。
+- 保留现有 Home → World → Formation → 5v5 → Result 与角色、招募、背包、任务、设置服务，升级共享视觉基础、全幅主页和全局导航壳。
+- 在真实 Windows Player 中确认主页、世界地图、Catherine 角色页和 2D 抽卡结果无重叠或裁切。
 
-## 实施边界
+## 已完成
 
-- UI 通过 `DemoUiRouter` 与 `AppShellView` 导航；货币、体力、关卡奖励、任务和设置仍由服务/存档层权威处理。
-- 三个 `StageDefinition` 使用稳定 ID、顺序前置、体力消耗、推荐战力和奖励数据；战斗继续复用现有确定性 5v5 模拟。
-- 存档 schema 升至 v4，并显式迁移 v3；保留旧水晶、角色和五槽阵容，同时补全金币、体力、进度、背包、任务与设置。
-- `analysis/` 只读且不是运行时依赖；根目录 XAPK/APK 不读取、不运行、不解包。
+- [x] `OBS-20260716-02` 共 67 张连续截图，Manifest 与 Navigation 均为 0001–0067，无缺失、重复或断号。
+- [x] 知识库现有 23 条证据、36 个模块和 92 条关系；专有截图、长文案、角色数值和布局只留在 Git 忽略的 `Artifacts/`。
+- [x] `DemoUiFactory` 新增共享 Pearl/Ink/Cyan/Coral/Gold/Leaf 令牌与可复用命令入口。
+- [x] Home 使用全幅星渊观测台、三处语义热点、动态卡池/收藏/五槽状态和独立 Challenge CTA。
+- [x] App Shell 使用紧凑明亮资源栏和底部主导航；1024px 横屏估算下 Mail/Menu 点击宽度仍大于约 46px。
+- [x] 抽卡后首页收藏状态从 5/7 即时刷新为 6/7；2D 获得卡显示正常。
+- [x] 编译、三组核心验证、三组 PlayMode 冒烟、Windows x64 / D3D11 Build 与真实窗口检查全部通过。
 
-## 验收门槛
+## 证据
 
-- [x] Home 与全局资源栏、底部导航、返回栈和手柄/键盘取消路径可用。
-- [x] World 显示三关、锁定/开放/通关状态、体力、推荐战力与奖励；1-1 → 1-2 → 1-3 顺序解锁。
-- [x] Characters、Recruit、Formation、Inventory、Missions、Settings 进入与返回正常。
-- [x] 1-1 Formation → Battle → Result 连续结算体力、首通水晶、金币和 Echo Gel；Restart 再扣体力并只发常规奖励，同局重复结算被守卫拦截。
-- [x] 返回 Home 后 Continue 刷新为 1-2，World 的 1-2 节点同步解锁；Boss Void Fragment 已进入结算摘要。
-- [x] schema v3 → v4 迁移与关卡前置通过核心验证；任务领取、四项 Settings 持久化和重置确认/取消通过 PlayMode 冒烟。
-- [x] PlayMode 完整系统冒烟与 Windows x64 Build 通过，`1600×900` 主页无重叠或裁切。
-
-## 当前证据目录
-
-`Artifacts/FullSystem/`
-
-- `Generate.log`：`[GenericGachaRPG][FULL_SYSTEM_VERIFY_PASS_20260715]`
-- `PlaySmokeEconomyFinal.log`：`[FULL_SYSTEM_PLAY_SMOKE_PASS_20260715]`
-- `WindowsBuildFinal2.log`：`[GenericGachaRPG][FULL_SYSTEM_VERIFY_PASS_20260715]`、`[GenericGachaRPG][FULL_SYSTEM_WINDOWS_BUILD_PASS_20260715]`；`143,676,760` bytes / `65.4s`
-- 完整记录：`MILESTONES/2026-07-15_FULL_SYSTEM_SHELL.md`
+- 参考审计：`Artifacts/ReferenceAudit/2026-07-16_session-02/`
+- UI 验证：`Artifacts/HomeShellPresentation/`
+- 最终 Build：`Artifacts/HomeShellPresentation/WindowsBuildFinal.log`
+- 可视截图：`Artifacts/HomeShellPresentation/screenshots/`
+- 版本化记录：`MILESTONES/2026-07-16_REFERENCE_GAME_AUDIT_SESSION_02.md`、`MILESTONES/2026-07-16_HOME_SHELL_PRESENTATION_AND_AUDIT.md`
 - Windows 试玩入口：`Builds/FullSystemWindows/BubbleMind.exe`
 
-## 暂停中的参考审计交接
+## 当前交接
 
-> 2026-07-15：用户需要使用电脑，参考游戏只读审计已立即停止；窗口和登录状态保持不动。
-
-- 已完成会话：`OBS-20260715-01`，覆盖主城首页、大世界、角色收藏，以及首个样本角色的图鉴、持有属性、领域、命运和境界。
-- 本机精确记录：`Artifacts/ReferenceAudit/2026-07-15_session-01/`；其中 `NEXT_SESSION_CHECKLIST.md` 是下一次操作入口。
-- 版本化阶段记录：`MILESTONES/2026-07-15_REFERENCE_GAME_AUDIT_SESSION_01.md`。
-- 恢复点：角色 `RC0001` 的“境界”页；下一次应开启新会话并从截图编号 `CAP-20260715-02-0001` 开始。
-- 下一次优先完成 `RC0001` 的咒力、修行、升星、当前技能说明、装备与高级属性，再建立全角色稳定 ID 目录，之后继续系统级页面巡检。
-- 恢复前必须获得用户确认；不得关闭或重启参考游戏，不得消费、领取、抽取、养成、改队、进入战斗、发消息、迁移基地或发起世界行动。
+- BubbleMind 最终试玩版停在 Home，窗口模式约 1920×1080；本次可视 QA 执行一次本地单抽，因此演示存档当前为 2,900 Crystal、收藏 6/7、五槽完整。
+- 参考游戏窗口仍保持开启且未被关闭或重启；本轮未触发开始战斗、领取、购买、刷新、保存阵容或确认 Buff 等变更性控件。
+- 下一阶段按既有路线 A 继续统一 Character/Recruit/Formation/World 的主题组件，正式模型仍放在系统与页面之后。

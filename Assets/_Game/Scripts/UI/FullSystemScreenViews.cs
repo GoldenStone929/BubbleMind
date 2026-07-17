@@ -10,6 +10,9 @@ namespace GenericGachaRPG
         private readonly Text currencyText;
         private readonly Text stageText;
         private readonly Text progressText;
+        private readonly Text recruitStatusText;
+        private readonly Text heroesStatusText;
+        private readonly Text formationStatusText;
         private readonly Button continueButton;
 
         public HomeHubScreenView(
@@ -27,126 +30,160 @@ namespace GenericGachaRPG
             Text location = DemoUiFactory.CreateText(
                 "Location",
                 safe,
-                "ABYSSAL OBSERVATORY  /  HOME HUB",
-                18,
+                "ABYSSAL OBSERVATORY  /  INNER RING",
+                16,
                 TextAnchor.MiddleLeft,
-                DemoUiFactory.Accent,
+                DemoUiFactory.Cyan,
                 FontStyle.Bold);
-            SetAnchors(location.rectTransform, 0.045f, 0.82f, 0.54f, 0.875f);
+            SetAnchors(location.rectTransform, 0.045f, 0.83f, 0.52f, 0.875f);
+            ApplyBackdropShadow(location, 0.72f);
 
             Text title = DemoUiFactory.CreateText(
                 "Title",
                 safe,
                 "BubbleMind",
-                58,
+                62,
                 TextAnchor.MiddleLeft,
-                DemoUiFactory.TextPrimary,
+                DemoUiFactory.Pearl,
                 FontStyle.Bold);
-            SetAnchors(title.rectTransform, 0.045f, 0.70f, 0.55f, 0.82f);
+            SetAnchors(title.rectTransform, 0.045f, 0.72f, 0.52f, 0.83f);
+            ApplyBackdropShadow(title, 0.78f);
 
             Text subtitle = DemoUiFactory.CreateText(
                 "Subtitle",
                 safe,
-                "Assemble five signals, explore the observatory, and stabilize the fracture.",
-                22,
+                "The observatory is stable. A fracture remains beyond the eastern ring.",
+                19,
                 TextAnchor.UpperLeft,
-                DemoUiFactory.TextSecondary);
-            SetAnchors(subtitle.rectTransform, 0.047f, 0.62f, 0.53f, 0.71f);
+                new Color(DemoUiFactory.Pearl.r, DemoUiFactory.Pearl.g, DemoUiFactory.Pearl.b, 0.88f));
+            SetAnchors(subtitle.rectTransform, 0.047f, 0.64f, 0.49f, 0.72f);
+            ApplyBackdropShadow(subtitle, 0.72f);
 
-            Image accountBand = DemoUiFactory.CreatePanel(
+            Image accountBand = DemoUiFactory.CreateFramedPanel(
                 "AccountSummary",
                 safe,
-                new Color(0.025f, 0.04f, 0.06f, 0.82f),
-                new Vector2(0.045f, 0.51f),
-                new Vector2(0.39f, 0.59f),
+                DemoUiFactory.PearlOverlay,
+                new Vector2(0.045f, 0.555f),
+                new Vector2(0.405f, 0.615f),
+                Vector2.zero,
+                Vector2.zero,
+                DemoUiFactory.InkLine);
+            Image accountAccent = DemoUiFactory.CreatePanel(
+                "AccountAccent",
+                accountBand.transform,
+                DemoUiFactory.Gold,
+                Vector2.zero,
+                new Vector2(0.012f, 1f),
                 Vector2.zero,
                 Vector2.zero);
+            accountAccent.raycastTarget = false;
             currencyText = DemoUiFactory.CreateText(
                 "Currency",
                 accountBand.transform,
                 "CRYSTALS 0",
-                20,
+                17,
                 TextAnchor.MiddleLeft,
-                DemoUiFactory.Warning,
+                DemoUiFactory.Ink,
                 FontStyle.Bold);
-            SetAnchors(currencyText.rectTransform, 0.04f, 0.08f, 0.48f, 0.92f);
+            SetAnchors(currencyText.rectTransform, 0.05f, 0.08f, 0.48f, 0.92f);
             progressText = DemoUiFactory.CreateText(
                 "HubProgress",
                 accountBand.transform,
                 "0 STAGES CLEARED",
-                17,
+                15,
                 TextAnchor.MiddleRight,
-                DemoUiFactory.TextSecondary,
+                DemoUiFactory.InkSoft,
                 FontStyle.Bold);
             SetAnchors(progressText.rectTransform, 0.50f, 0.08f, 0.96f, 0.92f);
 
-            CreateHotspot(
+            recruitStatusText = CreateHotspot(
                 "HomeRecruitHotspot",
                 safe,
-                "RECRUIT\nNew signals available",
-                new Vector2(0.58f, 0.62f),
-                new Vector2(0.76f, 0.77f),
-                new Color(0.10f, 0.27f, 0.27f, 0.92f),
+                "SIGNAL DECK",
+                "RECRUIT",
+                "STANDARD SIGNAL",
+                new Vector2(0.585f, 0.69f),
+                new Vector2(0.77f, 0.815f),
+                DemoUiFactory.Cyan,
                 () => openGacha?.Invoke());
-            CreateHotspot(
+            heroesStatusText = CreateHotspot(
                 "HomeHeroesHotspot",
                 safe,
-                "HERO ARCHIVE\nReview skills and growth",
-                new Vector2(0.78f, 0.56f),
-                new Vector2(0.955f, 0.71f),
-                new Color(0.12f, 0.17f, 0.24f, 0.92f),
+                "ARCHIVE",
+                "CHARACTERS",
+                "7 SIGNALS RECORDED",
+                new Vector2(0.775f, 0.535f),
+                new Vector2(0.955f, 0.66f),
+                DemoUiFactory.Gold,
                 () => openCollection?.Invoke());
-            CreateHotspot(
+            formationStatusText = CreateHotspot(
                 "HomeFormationHotspot",
                 safe,
-                "FORMATION\nPrepare five combat slots",
-                new Vector2(0.65f, 0.39f),
-                new Vector2(0.85f, 0.54f),
-                new Color(0.16f, 0.19f, 0.25f, 0.92f),
+                "FIVE SLOTS",
+                "FORMATION",
+                "ACTIVE TEAM",
+                new Vector2(0.60f, 0.385f),
+                new Vector2(0.79f, 0.51f),
+                DemoUiFactory.Leaf,
                 () => openFormation?.Invoke());
 
-            Image trialBand = DemoUiFactory.CreatePanel(
+            Image trialBand = DemoUiFactory.CreateFramedPanel(
                 "ContinueBand",
                 safe,
-                new Color(0.025f, 0.045f, 0.07f, 0.94f),
-                new Vector2(0.045f, 0.18f),
-                new Vector2(0.56f, 0.37f),
+                DemoUiFactory.InkGlass,
+                new Vector2(0.535f, 0.155f),
+                new Vector2(0.955f, 0.315f),
+                Vector2.zero,
+                Vector2.zero,
+                new Color(DemoUiFactory.Pearl.r, DemoUiFactory.Pearl.g, DemoUiFactory.Pearl.b, 0.34f),
+                2f);
+            Image trialAccent = DemoUiFactory.CreatePanel(
+                "ContinueAccent",
+                trialBand.transform,
+                DemoUiFactory.Coral,
+                Vector2.zero,
+                new Vector2(0.014f, 1f),
                 Vector2.zero,
                 Vector2.zero);
+            trialAccent.raycastTarget = false;
             Text eyebrow = DemoUiFactory.CreateText(
                 "ContinueEyebrow",
                 trialBand.transform,
-                "CONTINUE STORY",
-                15,
+                "CURRENT OBJECTIVE",
+                13,
                 TextAnchor.MiddleLeft,
-                DemoUiFactory.Warning,
+                DemoUiFactory.Coral,
                 FontStyle.Bold);
-            SetAnchors(eyebrow.rectTransform, 0.04f, 0.62f, 0.44f, 0.92f);
+            SetAnchors(eyebrow.rectTransform, 0.055f, 0.62f, 0.52f, 0.88f);
             stageText = DemoUiFactory.CreateText(
                 "CurrentStage",
                 trialBand.transform,
                 "CHAPTER 1-1",
-                27,
+                25,
                 TextAnchor.MiddleLeft,
-                DemoUiFactory.TextPrimary,
+                DemoUiFactory.Pearl,
                 FontStyle.Bold);
-            SetAnchors(stageText.rectTransform, 0.04f, 0.15f, 0.68f, 0.66f);
+            SetAnchors(stageText.rectTransform, 0.055f, 0.15f, 0.66f, 0.64f);
+            stageText.resizeTextForBestFit = true;
+            stageText.resizeTextMinSize = 17;
+            stageText.resizeTextMaxSize = 25;
             continueButton = DemoUiFactory.CreateButton(
                 "ContinueStageButton",
                 trialBand.transform,
-                "OPEN WORLD",
-                DemoUiFactory.Action,
+                "CHALLENGE",
+                DemoUiFactory.Coral,
                 () => openWorld?.Invoke());
-            SetAnchors(continueButton.GetComponent<RectTransform>(), 0.70f, 0.18f, 0.96f, 0.82f);
+            SetAnchors(continueButton.GetComponent<RectTransform>(), 0.70f, 0.19f, 0.95f, 0.81f);
 
-            Image featureStrip = DemoUiFactory.CreatePanel(
+            Image featureStrip = DemoUiFactory.CreateFramedPanel(
                 "FutureFeatures",
                 safe,
-                new Color(0.02f, 0.03f, 0.045f, 0.86f),
-                new Vector2(0.60f, 0.19f),
-                new Vector2(0.955f, 0.31f),
+                DemoUiFactory.PearlOverlay,
+                new Vector2(0.045f, 0.17f),
+                new Vector2(0.485f, 0.265f),
                 Vector2.zero,
-                Vector2.zero);
+                Vector2.zero,
+                DemoUiFactory.InkLine);
             CreateFeatureButton(featureStrip.transform, "ArenaFeatureButton", "ARENA", 0.02f, 0.25f,
                 () => openLockedFeature?.Invoke("ARENA"));
             CreateFeatureButton(featureStrip.transform, "EventsFeatureButton", "EVENTS", 0.27f, 0.50f,
@@ -159,15 +196,21 @@ namespace GenericGachaRPG
 
         public void Refresh(PlayerState state, GameDatabase database)
         {
+            RefreshCommandStatuses(state, database);
+
             int currency = state == null ? 0 : state.Currency;
-            int cleared = state == null ? 0 : state.ClearedStageIds.Count;
+            int cleared = state == null || state.ClearedStageIds == null
+                ? 0
+                : state.ClearedStageIds.Count;
             currencyText.text = $"CRYSTALS  {currency:N0}";
             progressText.text = $"{cleared} STAGE{(cleared == 1 ? string.Empty : "S")} CLEARED";
 
-            StageDefinition stage = database == null ? null : database.GetCurrentStage(state);
+            StageDefinition stage = state == null || database == null
+                ? null
+                : database.GetCurrentStage(state);
             if (stage == null)
             {
-                stageText.text = "WORLD DATA UNAVAILABLE";
+                stageText.text = state == null ? "PROFILE DATA UNAVAILABLE" : "WORLD DATA UNAVAILABLE";
                 continueButton.interactable = false;
                 return;
             }
@@ -176,32 +219,82 @@ namespace GenericGachaRPG
             continueButton.interactable = true;
         }
 
-        private static GameObject CreateRoot(Transform parent)
+        private void RefreshCommandStatuses(PlayerState state, GameDatabase database)
         {
-            return DemoUiFactory.CreateScreenRoot("HomeScreen", parent, 0.94f);
+            GachaBannerDefinition banner = database == null ? null : database.DefaultBanner;
+            if (banner == null)
+            {
+                recruitStatusText.text = "SIGNAL DATA OFFLINE";
+            }
+            else
+            {
+                string bannerName = string.IsNullOrWhiteSpace(banner.DisplayName)
+                    ? "STANDARD SIGNAL"
+                    : banner.DisplayName.Trim().ToUpperInvariant();
+                if (state == null)
+                {
+                    recruitStatusText.text = $"{bannerName}  /  OFFLINE";
+                }
+                else if (state.Currency >= banner.SingleDrawCost)
+                {
+                    recruitStatusText.text = $"{bannerName}  /  READY";
+                }
+                else
+                {
+                    int needed = Mathf.Max(0, banner.SingleDrawCost - state.Currency);
+                    recruitStatusText.text = $"{bannerName}  /  NEED {needed:N0}";
+                }
+            }
+
+            string ownedCount = state == null || state.OwnedCharacters == null
+                ? "--"
+                : state.OwnedCharacters.Count.ToString();
+            string totalCount = database == null || database.Characters == null
+                ? "--"
+                : database.Characters.Count.ToString();
+            heroesStatusText.text = $"OWNED {ownedCount}  /  {totalCount}";
+
+            int requiredSlots = TeamFormationState.RequiredMemberCount;
+            formationStatusText.text = state == null || state.TeamFormation == null
+                ? $"SLOTS --  /  {requiredSlots}"
+                : $"SLOTS {state.TeamFormation.Count}  /  {requiredSlots}";
         }
 
-        private static void CreateHotspot(
+        private static GameObject CreateRoot(Transform parent)
+        {
+            return DemoUiFactory.CreateScreenRoot(
+                "HomeScreen",
+                parent,
+                1f,
+                new Color(0.018f, 0.028f, 0.045f, 0.18f));
+        }
+
+        private static Text CreateHotspot(
             string name,
             Transform parent,
-            string label,
+            string eyebrow,
+            string title,
+            string status,
             Vector2 anchorMin,
             Vector2 anchorMax,
-            Color color,
+            Color accent,
             Action action)
         {
-            Button button = DemoUiFactory.CreateButton(name, parent, label, color, () => action?.Invoke());
+            Button button = DemoUiFactory.CreateCommandButton(
+                name,
+                parent,
+                eyebrow,
+                title,
+                status,
+                accent,
+                () => action?.Invoke(),
+                out Text statusText);
             RectTransform rect = button.GetComponent<RectTransform>();
             rect.anchorMin = anchorMin;
             rect.anchorMax = anchorMax;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-            Text text = button.GetComponentInChildren<Text>();
-            if (text != null)
-            {
-                text.fontSize = 21;
-                text.alignment = TextAnchor.MiddleLeft;
-            }
+            return statusText;
         }
 
         private static void CreateFeatureButton(
@@ -216,9 +309,33 @@ namespace GenericGachaRPG
                 name,
                 parent,
                 label + "  LOCKED",
-                new Color(0.055f, 0.07f, 0.095f, 0.96f),
+                new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.08f),
                 () => action?.Invoke());
             SetAnchors(button.GetComponent<RectTransform>(), minX, 0.12f, maxX - 0.015f, 0.88f);
+            Text text = button.GetComponentInChildren<Text>();
+            if (text != null)
+            {
+                text.color = DemoUiFactory.Ink;
+                text.fontSize = 13;
+                text.resizeTextMinSize = 10;
+                text.resizeTextMaxSize = 14;
+                text.rectTransform.offsetMin = new Vector2(6f, 4f);
+                text.rectTransform.offsetMax = new Vector2(-6f, -4f);
+            }
+
+            Outline outline = button.GetComponent<Outline>();
+            if (outline != null)
+            {
+                outline.effectColor = DemoUiFactory.InkLine;
+            }
+        }
+
+        private static void ApplyBackdropShadow(Text text, float alpha)
+        {
+            Shadow shadow = text.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0.01f, 0.02f, 0.035f, alpha);
+            shadow.effectDistance = new Vector2(2f, -2f);
+            shadow.useGraphicAlpha = true;
         }
 
         private static string FormatStageId(string stageId)

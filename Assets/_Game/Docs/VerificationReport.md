@@ -1,9 +1,9 @@
 # BubbleMind Verification Report
 
 > P0 基线验证日期：2026-07-13
-> 最新回归日期：2026-07-15
+> 最新回归日期：2026-07-16
 > Unity：6000.5.3f1 / URP 17.5
-> 结论：P0 垂直切片、怒气/三技能、历史 20 格 3v5 职业测试、角色档案/2D 卡面/UI 重制、参考系统图谱、2D 像素 5v5 转换与完整游戏系统壳均已通过各自回归。最新权威运行基线提供 Home、World、Characters、Recruit、Formation、Battle/Result、Inventory、Missions 与 Settings，并完成三关离线主线和奖励闭环。
+> 结论：P0 垂直切片、怒气/三技能、历史 20 格 3v5 职业测试、角色档案/2D 卡面、参考系统图谱、2D 像素 5v5、完整系统壳及 2026-07-16 主页表现升级均已通过各自回归。最新权威运行基线提供全幅 Home、明亮 App Shell、World、Characters、Recruit、Formation、Battle/Result、Inventory、Missions 与 Settings，并完成三关离线主线和奖励闭环。
 
 ## 交付入口
 
@@ -267,6 +267,25 @@ Demo Scene         C64F5B293EEBBFFD34DAA6EFA45DEA8A759E13BA653938C6F183BB0D08322
 关卡配置为：1-1 Fracture Gate（6 Energy / 1,000 Power / 首通 100 Crystal / 250 Gold / 2 Echo Gel）、1-2 Resonance Gallery（8 / 1,800 / 120 / 350 / 3）、1-3 Event Horizon（10 / 2,600 / 200 / 500 / 5，Boss 首通另得 1 Void Fragment）。1-2 依赖 1-1，1-3 依赖 1-2。
 
 完整制作记录：`StudioOps/MILESTONES/2026-07-15_FULL_SYSTEM_SHELL.md`。
+
+## 2026-07-16 参考审计 Session 02 与主页表现升级验证
+
+本轮没有重写存档、抽卡、战斗或关卡服务。UI 修改只落在 `DemoUiFactory`、`AppShellView` 与 HomeHub：新增共享视觉令牌和命令入口，全幅展示原创星渊观测台，并让卡池、收藏和五槽状态由 `Refresh` 实时读取权威数据。参考游戏的精确截图与专有文本继续只留在 Git 忽略的 Artifacts，版本库知识库只记录中性模块、状态和关系。
+
+| 验证项 | 结果 | 证据 |
+|---|---|---|
+| 参考证据连续性 | 通过 | `Artifacts/ReferenceAudit/2026-07-16_session-02/`：Manifest 67 行、Navigation 67 行，编号 0001–0067 连续；截图缺失、ID 缺失和重复均为 0 |
+| Clean-room 知识库 | 通过 | 23 条证据、36 个模块、92 条关系；新增观察只转化为通用入口分组、规则页、静态目录/持有实例和多队伍配置规律 |
+| UI 编译与核心验证 | 通过 | `Artifacts/HomeShellPresentation/P2Generate.log` 出现 P0、PixelPVP、FullSystem 三组 VERIFY PASS |
+| PlayMode 全流程 | 通过 | `Artifacts/HomeShellPresentation/P2PlaySmoke.log` 出现 P0、PixelPVP、FullSystem 三组 PLAY SMOKE PASS |
+| 审查后修复 | 通过 | Home 三张命令卡状态改为动态刷新；App Shell 重排 Formation/Mail/Menu，1024px 横屏估算下 Mail 约 47.4px、Menu 约 46.4px；三层卡片文字启用 best-fit 且锚区不交叠 |
+| Windows x64 / D3D11 | 通过 | `Artifacts/HomeShellPresentation/WindowsBuildFinal.log` 出现 FullSystem VERIFY 与 WINDOWS BUILD PASS；BuildReport `143,680,856` bytes / `64.4s` |
+| Windows 分发集合 | 通过 | `Builds/FullSystemWindows/` 共 190 个文件、`143,889,594` bytes；EXE 为 `667,648` bytes，SHA-256 `5AE0C84993C6BFF7D0F03166CAFD148CDEC61F67EC85B5D97600E04B2ABB26E4` |
+| 真实窗口视觉 | 通过 | 3440×1440 全屏兼容检查；1920×1080 窗口下 Home、World、Catherine Character 与 Gacha 2D 结果无重叠或裁切，截图位于 `Artifacts/HomeShellPresentation/screenshots/` |
+| 动态状态 | 通过 | Windows Player 中执行一次本地单抽：Crystal 3,000 → 2,900，2D 获得卡显示，返回 Home 后收藏 5/7 → 6/7，资源栏和任务徽标同步刷新 |
+| 运行窗口保留 | 通过 | BubbleMind 最终 Player 停在 Home；参考游戏仍保持开启，未关闭、重启或触发领取、购买、开始战斗、保存阵容等变更性控件 |
+
+完整制作记录：`StudioOps/MILESTONES/2026-07-16_HOME_SHELL_PRESENTATION_AND_AUDIT.md`。
 
 ## 已知 P1 打磨项
 

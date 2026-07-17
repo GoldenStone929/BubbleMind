@@ -41,8 +41,8 @@ namespace GenericGachaRPG
             Image topBar = DemoUiFactory.CreatePanel(
                 "TopBar",
                 safe,
-                new Color(0.025f, 0.035f, 0.055f, 0.95f),
-                new Vector2(0f, 0.91f),
+                DemoUiFactory.PearlOverlay,
+                new Vector2(0f, 0.918f),
                 Vector2.one,
                 Vector2.zero,
                 Vector2.zero);
@@ -52,34 +52,47 @@ namespace GenericGachaRPG
                 Vector2.zero,
                 new Vector2(1f, 0f),
                 Vector2.zero,
-                new Vector2(0f, 2f));
+                new Vector2(0f, 2f),
+                DemoUiFactory.InkLine);
 
-            Image profile = DemoUiFactory.CreatePanel(
+            Image profile = DemoUiFactory.CreateFramedPanel(
                 "PlayerProfile",
                 topBar.transform,
-                new Color(0.08f, 0.105f, 0.15f, 0.92f),
+                new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.045f),
                 new Vector2(0.012f, 0.14f),
                 new Vector2(0.205f, 0.86f),
+                Vector2.zero,
+                Vector2.zero,
+                DemoUiFactory.InkLine);
+            Image avatarPlate = DemoUiFactory.CreatePanel(
+                "AvatarPlate",
+                profile.transform,
+                DemoUiFactory.Cyan,
+                new Vector2(0.018f, 0.10f),
+                new Vector2(0.225f, 0.90f),
                 Vector2.zero,
                 Vector2.zero);
             Text avatar = DemoUiFactory.CreateText(
                 "AvatarGlyph",
-                profile.transform,
+                avatarPlate.transform,
                 "BM",
-                24,
+                20,
                 TextAnchor.MiddleCenter,
-                DemoUiFactory.Accent,
+                DemoUiFactory.Ink,
                 FontStyle.Bold);
-            SetAnchors(avatar.rectTransform, 0.02f, 0.10f, 0.24f, 0.90f);
+            SetAnchors(avatar.rectTransform, 0.05f, 0.05f, 0.95f, 0.95f);
             playerText = DemoUiFactory.CreateText(
                 "PlayerText",
                 profile.transform,
                 "Observer 07  /  LV.12",
-                19,
+                17,
                 TextAnchor.MiddleLeft,
-                DemoUiFactory.TextPrimary,
+                DemoUiFactory.Ink,
                 FontStyle.Bold);
-            SetAnchors(playerText.rectTransform, 0.27f, 0.12f, 0.98f, 0.88f);
+            SetAnchors(playerText.rectTransform, 0.26f, 0.12f, 0.98f, 0.88f);
+            playerText.resizeTextForBestFit = true;
+            playerText.resizeTextMinSize = 12;
+            playerText.resizeTextMaxSize = 17;
 
             crystalText = CreateResourceChip(
                 "ShellCrystals",
@@ -107,42 +120,35 @@ namespace GenericGachaRPG
                 "FormationButton",
                 topBar.transform,
                 "FORMATION",
-                new Color(0.11f, 0.17f, 0.22f, 0.96f),
+                DemoUiFactory.Coral,
                 () => openFormation?.Invoke());
-            SetAnchors(formation.GetComponent<RectTransform>(), 0.825f, 0.14f, 0.905f, 0.86f);
+            SetAnchors(formation.GetComponent<RectTransform>(), 0.825f, 0.14f, 0.894f, 0.86f);
+            StyleShellButton(formation, DemoUiFactory.Pearl, 15, true);
 
             Button mail = DemoUiFactory.CreateButton(
                 "MailButton",
                 topBar.transform,
                 "MAIL",
-                new Color(0.09f, 0.12f, 0.17f, 0.96f),
+                new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.06f),
                 () => openLockedFeature?.Invoke("MAIL"));
-            SetAnchors(mail.GetComponent<RectTransform>(), 0.91f, 0.14f, 0.952f, 0.86f);
-            Text mailLabel = mail.GetComponentInChildren<Text>();
-            if (mailLabel != null)
-            {
-                mailLabel.text = "M";
-            }
+            SetAnchors(mail.GetComponent<RectTransform>(), 0.900f, 0.14f, 0.948f, 0.86f);
+            StyleShellButton(mail, DemoUiFactory.Ink, 12, false);
 
             Button settings = DemoUiFactory.CreateButton(
                 "SettingsButton",
                 topBar.transform,
-                "SETTINGS",
-                new Color(0.09f, 0.12f, 0.17f, 0.96f),
+                "MENU",
+                new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.06f),
                 () => openSettings?.Invoke());
-            SetAnchors(settings.GetComponent<RectTransform>(), 0.956f, 0.14f, 0.995f, 0.86f);
-            Text settingsLabel = settings.GetComponentInChildren<Text>();
-            if (settingsLabel != null)
-            {
-                settingsLabel.text = "S";
-            }
+            SetAnchors(settings.GetComponent<RectTransform>(), 0.952f, 0.14f, 0.999f, 0.86f);
+            StyleShellButton(settings, DemoUiFactory.Ink, 12, false);
 
             Image dock = DemoUiFactory.CreatePanel(
                 "BottomNavigation",
                 safe,
-                new Color(0.025f, 0.035f, 0.055f, 0.97f),
+                DemoUiFactory.PearlOverlay,
                 Vector2.zero,
-                new Vector2(1f, 0.095f),
+                new Vector2(1f, 0.088f),
                 Vector2.zero,
                 Vector2.zero);
             DemoUiFactory.CreateDivider(
@@ -151,7 +157,8 @@ namespace GenericGachaRPG
                 new Vector2(0f, 1f),
                 Vector2.one,
                 new Vector2(0f, -2f),
-                Vector2.zero);
+                Vector2.zero,
+                DemoUiFactory.InkLine);
 
             RectTransform nav = DemoUiFactory.CreateStretchRect("NavButtons", dock.transform, 8f);
             HorizontalLayoutGroup layout = DemoUiFactory.AddHorizontalLayout(
@@ -218,8 +225,21 @@ namespace GenericGachaRPG
                 }
 
                 image.color = pair.Key == route
-                    ? new Color(0.14f, 0.34f, 0.34f, 1f)
-                    : new Color(0.055f, 0.075f, 0.11f, 0.96f);
+                    ? new Color(DemoUiFactory.Cyan.r, DemoUiFactory.Cyan.g, DemoUiFactory.Cyan.b, 0.42f)
+                    : new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.035f);
+                Text label = pair.Value.GetComponentInChildren<Text>();
+                if (label != null)
+                {
+                    label.color = pair.Key == route ? DemoUiFactory.Ink : DemoUiFactory.InkSoft;
+                }
+
+                Outline outline = pair.Value.GetComponent<Outline>();
+                if (outline != null)
+                {
+                    outline.effectColor = pair.Key == route
+                        ? new Color(DemoUiFactory.Cyan.r, DemoUiFactory.Cyan.g, DemoUiFactory.Cyan.b, 0.85f)
+                        : DemoUiFactory.InkLine;
+                }
             }
         }
 
@@ -234,14 +254,24 @@ namespace GenericGachaRPG
                 name,
                 parent,
                 label,
-                new Color(0.055f, 0.075f, 0.11f, 0.96f),
+                new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.035f),
                 () => navigate?.Invoke(route));
-            DemoUiFactory.SetLayout(button.gameObject, 185f, 76f, 1f, 1f);
+            DemoUiFactory.SetLayout(button.gameObject, 185f, 70f, 1f, 1f);
             Text text = button.GetComponentInChildren<Text>();
             if (text != null)
             {
-                text.fontSize = 18;
-                text.resizeTextMaxSize = 20;
+                text.color = DemoUiFactory.InkSoft;
+                text.fontSize = 16;
+                text.resizeTextMinSize = 12;
+                text.resizeTextMaxSize = 17;
+                text.rectTransform.offsetMin = new Vector2(8f, 6f);
+                text.rectTransform.offsetMax = new Vector2(-8f, -6f);
+            }
+
+            Outline outline = button.GetComponent<Outline>();
+            if (outline != null)
+            {
+                outline.effectColor = DemoUiFactory.InkLine;
             }
 
             routeButtons.Add(route, button);
@@ -256,28 +286,60 @@ namespace GenericGachaRPG
             float minX,
             float maxX)
         {
-            Image chip = DemoUiFactory.CreatePanel(
+            Image chip = DemoUiFactory.CreateFramedPanel(
                 name + "Chip",
                 parent,
-                new Color(0.055f, 0.07f, 0.10f, 0.94f),
+                new Color(DemoUiFactory.Ink.r, DemoUiFactory.Ink.g, DemoUiFactory.Ink.b, 0.045f),
                 new Vector2(minX, 0.19f),
                 new Vector2(maxX, 0.81f),
                 Vector2.zero,
+                Vector2.zero,
+                DemoUiFactory.InkLine);
+            Image rail = DemoUiFactory.CreatePanel(
+                "AccentRail",
+                chip.transform,
+                color,
+                Vector2.zero,
+                new Vector2(0.026f, 1f),
+                Vector2.zero,
                 Vector2.zero);
+            rail.raycastTarget = false;
             Text text = DemoUiFactory.CreateText(
                 name,
                 chip.transform,
                 value,
-                18,
+                16,
                 TextAnchor.MiddleCenter,
-                color,
+                DemoUiFactory.Ink,
                 FontStyle.Bold);
             text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 12;
-            text.resizeTextMaxSize = 19;
+            text.resizeTextMinSize = 11;
+            text.resizeTextMaxSize = 16;
             text.rectTransform.offsetMin = new Vector2(10f, 4f);
             text.rectTransform.offsetMax = new Vector2(-10f, -4f);
             return text;
+        }
+
+        private static void StyleShellButton(Button button, Color textColor, int maxFontSize, bool strong)
+        {
+            Text text = button.GetComponentInChildren<Text>();
+            if (text != null)
+            {
+                text.color = textColor;
+                text.fontSize = maxFontSize;
+                text.resizeTextMinSize = Mathf.Min(10, maxFontSize);
+                text.resizeTextMaxSize = maxFontSize;
+                text.rectTransform.offsetMin = new Vector2(6f, 5f);
+                text.rectTransform.offsetMax = new Vector2(-6f, -5f);
+            }
+
+            Outline outline = button.GetComponent<Outline>();
+            if (outline != null)
+            {
+                outline.effectColor = strong
+                    ? new Color(DemoUiFactory.Pearl.r, DemoUiFactory.Pearl.g, DemoUiFactory.Pearl.b, 0.40f)
+                    : DemoUiFactory.InkLine;
+            }
         }
 
         private static Text CreateBadge(Transform parent, string name)
